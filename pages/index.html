@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<meta name="description" content="MarytOpens — modern community governance, local models, and developer workflows.">
+<title>MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/css/main.css">
+<script>(function(){var t=localStorage.getItem('mo_theme');var d=t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light');})();</script>
+</head>
+<body class="landing">
+
+<header class="landing-nav" id="landingNav">
+  <div class="container">
+    <a class="brand" href="/index.html">
+      <img src="/assets/img/logo.svg" alt="" id="brandLogo">
+      <span id="brandName">MarytOpens</span>
+    </a>
+    <div class="spacer"></div>
+    <div class="row-center" style="gap:4px">
+      <div class="dropdown" id="ddLang2">
+        <button class="icon-btn" aria-label="language" id="langBtn"></button>
+        <div class="dropdown-menu" id="langMenu"></div>
+      </div>
+      <button class="icon-btn" id="themeBtn" aria-label="theme"></button>
+      <a class="btn btn-ghost btn-sm hidden" href="/about.html" id="navAbout" data-i18n="nav.about">关于我们</a>
+      <a class="btn btn-primary btn-sm" href="/login.html" id="btnEnter" data-i18n="nav.login">登录</a>
+    </div>
+  </div>
+</header>
+
+<!-- Hero：站长个人介绍 -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid-lines"></div>
+  <div class="container">
+    <div class="hero-inner">
+      <div>
+        <div class="chip-row mb-4" id="heroBadges">
+          <span class="chip">● <span id="statusText">Online</span></span>
+        </div>
+        <h1 id="heroName">Maryt<span class="accent-text">Opens</span></h1>
+        <p class="tagline" id="heroTagline">Building MarytOpens — community, governance, local models.</p>
+        <div class="hero-cta">
+          <a class="btn btn-primary btn-lg" href="/login.html" id="ctaEnter">
+            <span data-i18n="landing.loginFirst">登录后进入社区</span>
+          </a>
+          <a class="btn btn-lg" href="#about" data-i18n="landing.about">关于我</a>
+        </div>
+        <div class="chip-row" id="heroSkills"></div>
+      </div>
+      <div>
+        <div id="heroAvatarWrap"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 关于我 -->
+<section class="section section-alt" id="about">
+  <div class="container container-mid">
+    <div class="section-head">
+      <div class="eyebrow" data-i18n="landing.about">关于我</div>
+      <h2 id="aboutHeading">Hello, 我是站长</h2>
+    </div>
+    <div class="card card-pad">
+      <div class="prose" id="aboutBody"></div>
+    </div>
+  </div>
+</section>
+
+<!-- 平台能力 -->
+<section class="section">
+  <div class="container">
+    <div class="section-head">
+      <div class="eyebrow">Platform</div>
+      <h2>为现代社区治理而生</h2>
+      <p>基于 Cloudflare 边缘网络：Workers + KV + R2 + Pages，全球加速、防 DDoS、无服务器。</p>
+    </div>
+    <div class="grid grid-3" id="featureGrid"></div>
+  </div>
+</section>
+
+<!-- 项目 -->
+<section class="section section-alt" id="projects">
+  <div class="container">
+    <div class="section-head">
+      <div class="eyebrow" data-i18n="landing.projects">项目</div>
+      <h2>我在做的东西</h2>
+    </div>
+    <div class="grid grid-3" id="projectGrid"></div>
+  </div>
+</section>
+
+<!-- 联系 -->
+<section class="section" id="contact">
+  <div class="container container-narrow text-center">
+    <div class="section-head">
+      <div class="eyebrow" data-i18n="landing.contact">联系</div>
+      <h2>一起构建点什么</h2>
+      <p>登录后即可进入社区、发布文章、加入频道，或直接给我发私信。</p>
+    </div>
+    <div class="row-center" style="justify-content:center;flex-wrap:wrap" id="socialRow"></div>
+    <div class="row-center" style="justify-content:center;flex-wrap:wrap;margin-top:16px" id="cfSocial"></div>
+    <div class="row-center" style="justify-content:center;flex-wrap:wrap;gap:12px" id="dlRow">
+      <a class="btn btn-primary btn-xl hidden" id="dlBtn" href="#" target="_blank" rel="noopener"><span id="dlIco"></span><span data-i18n="download.site">本网站下载</span></a>
+      <a class="btn btn-github btn-xl hidden" id="dlGhBtn" href="#" target="_blank" rel="noopener"><span id="dlGhIco"></span><span data-i18n="download.github">前往 GitHub 下载</span></a>
+    </div>
+    <div class="mt-3">
+      <a class="btn btn-lg" href="/login.html" data-i18n="landing.enter">进入社区</a>
+    </div>
+  </div>
+</section>
+
+<footer id="footer"></footer>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script>
+(function () {
+  const { $, el, esc, icon, Theme, Site, Session } = App;
+
+  const FEATURES = [
+    { icon: 'shield',  title: '细粒度权限体系', desc: '超管 / 版主 / 频道主 / 群主 / 板块工作者，30+ 权限位，作用域隔离。' },
+    { icon: 'hash',    title: 'Discord 式频道', desc: '频道内建群组，频道主可自建区域身份组并独立授权。' },
+    { icon: 'lock',    title: '私密文章', desc: '任何人不可见，仅作者与超级管理员可读，也可指定身份组可见。' },
+    { icon: 'key',     title: '安全传输', desc: '密码客户端 SHA-256 预哈希 + 服务端 PBKDF2，永不明文落库或传输。' },
+    { icon: 'bot',     title: '机器人接入', desc: '独立 Bot Token 与 API，Discord 社区联动、自动审核、自动同步。' },
+    { icon: 'globe',   title: '自动多语言', desc: '识别浏览器语言与 12/24 小时制，自动匹配界面，也可手动切换。' },
+    { icon: 'mail',    title: '邮件验证码', desc: '接入 Cloud Mail，注册、找回密码、换绑邮箱全流程验证。' },
+    { icon: 'ban',     title: 'IP 治理', desc: '超管可查看访问日志、封禁 IP、限流防刷、禁言成员。' },
+    { icon: 'zap',     title: '边缘部署', desc: 'Workers + KV + R2 + Pages，免费额度足够，全球低延迟。' },
+  ];
+
+  function render(cfg) {
+    const p = cfg.personal || {};
+
+    if (cfg.logo) $('#brandLogo').src = API.fileURL(cfg.logo);
+    $('#brandName').textContent = cfg.siteTitle || 'MarytOpens';
+
+    const name = p.displayName || cfg.siteTitle || 'MarytOpens';
+    $('#heroName').innerHTML = esc(name).replace(/(.{0,6})(.*)/, (m, a, b) =>
+      esc(a) + (b ? '<span class="accent-text">' + b + '</span>' : ''));
+    $('#heroTagline').textContent = p.tagline || cfg.siteSubtitle || '';
+    $('#aboutHeading').textContent = 'Hello, 我是 ' + name;
+    $('#aboutBody').innerHTML = App.markdown(p.bio || cfg.about || '');
+
+    // 头像
+    const wrap = $('#heroAvatarWrap');
+    if (p.avatar) {
+      wrap.innerHTML = '<img class="hero-avatar" src="' + esc(API.fileURL(p.avatar)) + '" alt="' + esc(name) + '">';
+    } else {
+      wrap.innerHTML = '<div class="hero-avatar hero-avatar-fallback">' + esc(name.charAt(0).toUpperCase()) + '</div>';
+    }
+
+    // 技能
+    $('#heroSkills').innerHTML = (p.skills || []).map((s) => '<span class="chip">' + esc(s) + '</span>').join('');
+
+    // 能力卡
+    $('#featureGrid').innerHTML = FEATURES.map((f) =>
+      '<div class="card card-hover feature-card"><div class="fc-icon">' + icon(f.icon) + '</div>' +
+      '<h4>' + esc(f.title) + '</h4><p>' + esc(f.desc) + '</p></div>').join('');
+
+    // 项目
+    const projects = (p.projects && p.projects.length) ? p.projects : [
+      { name: 'MarytOpens', desc: '基于 Cloudflare 边缘网络的社区治理平台，含完整权限体系与频道系统。', url: '#' },
+    ];
+    $('#projectGrid').innerHTML = projects.map((x) =>
+      '<a class="card card-hover project-card" href="' + esc(App.safeURL(x.url || '#')) + '"' +
+      (x.url && x.url !== '#' ? ' target="_blank" rel="noopener"' : '') + '>' +
+      '<h4>' + icon('folder') + esc(x.name) + '</h4><p>' + esc(x.desc || '') + '</p>' +
+      '<div class="muted xsmall row-center">' + icon('arrowRight') + ' 查看</div></a>').join('');
+
+    // 社交
+    const socials = p.socials || [];
+    $('#socialRow').innerHTML = socials.length
+      ? socials.map((s) => '<a class="btn" href="' + esc(App.safeURL(s.url)) + '" target="_blank" rel="noopener">' +
+          icon(s.icon || 'link') + esc(s.label) + '</a>').join('')
+      : '<span class="muted small">站长尚未配置社交链接</span>';
+
+    // 超管设定的 Discord / GitHub / Telegram 入口（落地页显眼图标）
+    const links = cfg.links || {};
+    const cfBtns = [];
+    if (links.discord) cfBtns.push('<a class="btn btn-discord" href="' + esc(App.safeURL(links.discord)) + '" target="_blank" rel="noopener">' + icon('discord') + '<span>' + esc(I18N.t('landing.joinDiscord')) + '</span></a>');
+    if (links.github) cfBtns.push('<a class="btn btn-github" href="' + esc(App.safeURL(links.github)) + '" target="_blank" rel="noopener">' + icon('github') + '<span>' + esc(I18N.t('landing.starGithub')) + '</span></a>');
+    if (links.telegram) {
+      const tgIco = links.telegramAvatar
+        ? '<img src="' + esc(links.telegramAvatar) + '" style="width:20px;height:20px;border-radius:50%;object-fit:cover" alt="">'
+        : icon('telegram');
+      cfBtns.push('<a class="btn btn-telegram" href="' + esc(App.safeURL(links.telegram)) + '" target="_blank" rel="noopener">' + tgIco + '<span>' + esc(I18N.t('social.telegram')) + '</span></a>');
+    }
+    $('#cfSocial').innerHTML = cfBtns.join('');
+
+    // 客户端下载入口（本网站 + GitHub）
+    if (links.download) {
+      const b = $('#dlBtn');
+      b.href = App.safeURL(links.download);
+      b.classList.remove('hidden');
+      $('#dlIco').innerHTML = icon('download');
+    }
+    if (links.githubDownload) {
+      const g = $('#dlGhBtn');
+      g.href = App.safeURL(links.githubDownload);
+      g.classList.remove('hidden');
+      $('#dlGhIco').innerHTML = icon('github');
+    }
+
+    // 自定义导航按钮（超管在后台配置，position=landing）
+    (cfg.navLinks || []).filter((l) => l.position === 'landing').forEach((l) => {
+      const a = el('a', { class: 'btn btn-sm', href: App.safeURL(l.url), target: l.target || '_self' });
+      a.innerHTML = (l.icon ? icon(l.icon) : '') + esc(l.label);
+      $('#btnEnter').parentElement.insertBefore(a, $('#btnEnter'));
+    });
+  }
+
+  function bindChrome() {
+    const tb = $('#themeBtn');
+    const paint = () => { tb.innerHTML = icon(Theme.effective === 'dark' ? 'moon' : 'sun'); };
+    paint();
+    tb.onclick = () => { Theme.toggle(); paint(); };
+
+    const lb = $('#langBtn'); lb.innerHTML = icon('globe');
+    $('#langMenu').innerHTML =
+      '<div class="dropdown-head">' + I18N.t('settings.language') + '</div>' +
+      '<button class="dropdown-item" data-l="auto">' + icon('monitor') + '<span>Auto</span></button>' +
+      I18N.SUPPORTED.map((l) => '<button class="dropdown-item' + (I18N.locale === l && !I18N.auto ? ' active' : '') + '" data-l="' + l + '">' +
+        '<span style="width:16px;text-align:center">' + I18N.LOCALE_META[l].flag + '</span><span>' + I18N.LOCALE_META[l].name + '</span></button>').join('');
+    $('#langMenu').querySelectorAll('[data-l]').forEach((b) =>
+      b.onclick = () => { I18N.setLocale(b.dataset.l); location.reload(); });
+
+    lb.onclick = (e) => { e.stopPropagation(); $('#ddLang2').classList.toggle('open'); };
+    document.addEventListener('click', () => $('#ddLang2').classList.remove('open'));
+
+    addEventListener('scroll', () => $('#landingNav').classList.toggle('solid', scrollY > 20), { passive: true });
+  }
+
+  (async function init() {
+    Theme.init();
+    bindChrome();
+    let cfg = {};
+    try { cfg = await Site.load(); } catch (e) { App.toast.warn('后端未连接，展示默认内容'); }
+    render(cfg || {});
+
+    // 落地页导航栏的客户端下载图标（超管设定）
+    const dl2 = (Site.cfg && Site.cfg.links && Site.cfg.links.download);
+    if (dl2) {
+      const a = el('a', { class: 'icon-btn', href: App.safeURL(dl2), target: '_blank', rel: 'noopener', 'aria-label': I18N.t('nav.download') });
+      a.innerHTML = icon('download');
+      const enter = $('#btnEnter');
+      if (enter && enter.parentNode) enter.parentNode.insertBefore(a, enter);
+    }
+
+    await Session.load();
+    if (Session.isLoggedIn) {
+      // 已登录：入口直达社区
+      $('#btnEnter').textContent = I18N.t('landing.enter');
+      $('#btnEnter').href = '/home.html';
+      $('#ctaEnter').href = '/home.html';
+      $('#ctaEnter').querySelector('span').textContent = I18N.t('landing.enter');
+      $('#navAbout').classList.remove('hidden');
+
+      // landingMode=community 时，登录用户自动进社区主页
+      if ((Site.cfg || {}).landingMode === 'community') location.replace('/home.html');
+    }
+    App.renderFooter();
+    I18N.apply();
+  })();
+})();
+</script>
+</body>
+</html>

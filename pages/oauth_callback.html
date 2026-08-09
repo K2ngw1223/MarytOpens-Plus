@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>登录中… · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/css/main.css">
+<script>(function(){var t=localStorage.getItem('mo_theme');var d=t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light');})();</script>
+</head>
+<body>
+<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px">
+  <div class="card card-pad text-center" style="max-width:400px;width:100%">
+    <img src="/assets/img/logo.svg" alt="" style="width:48px;margin:0 auto 16px">
+    <div id="state">
+      <div class="spinner spinner-lg" style="margin:0 auto 16px"></div>
+      <h3 id="msg">正在完成第三方登录…</h3>
+      <p class="muted small" id="sub">请稍候，正在校验授权凭证</p>
+    </div>
+  </div>
+</div>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script>
+(function () {
+  const { $, icon } = App;
+  const p = new URLSearchParams(location.search);
+  const token = p.get('token');
+  const err = p.get('error');
+  const redirect = p.get('redirect') || '/home.html';
+
+  function fail(text) {
+    $('#state').innerHTML =
+      '<div style="color:var(--danger);margin-bottom:12px">' + icon('xCircle') + '</div>' +
+      '<h3>登录失败</h3><p class="muted small">' + App.esc(text) + '</p>' +
+      '<a class="btn btn-primary mt-4" href="/login.html">返回登录</a>';
+  }
+
+  (async function () {
+    if (err) return fail(decodeURIComponent(err));
+    if (!token) return fail('未收到授权令牌，请重试。');
+
+    API.setToken(token);
+    try {
+      const d = await API.Auth.me();
+      if (!d.user) throw new Error('会话无效');
+      API.setCachedUser(d.user);
+      $('#msg').textContent = '登录成功，正在进入…';
+      $('#sub').textContent = '欢迎回来，' + (d.user.displayName || d.user.username);
+      setTimeout(() => location.replace(redirect), 500);
+    } catch (e) {
+      API.clearSession();
+      fail(e.message || '会话校验失败');
+    }
+  })();
+})();
+</script>
+</body>
+</html>

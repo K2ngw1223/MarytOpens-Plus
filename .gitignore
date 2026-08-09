@@ -1,0 +1,19 @@
+node_modules/
+.wrangler/
+dist/
+.dev.vars
+.env
+.env.*
+!.env.example
+.secrets
+.secrets.*
+!.secrets.example
+wrangler.toml.bak
+*.log
+.DS_Store
+Thumbs.db
+.vscode/settings.json
+# 本地临时/垃圾文件
+err.txt
+# 临时测试密钥（不应提交）
+_ssh_test_key*

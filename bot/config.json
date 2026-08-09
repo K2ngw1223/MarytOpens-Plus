@@ -1,0 +1,13 @@
+{
+  "discord": {
+    "guildId": "YOUR_GUILD_ID",
+    "publishChannelId": "YOUR_PUBLISH_CHANNEL_ID",
+    "modLogChannelId": "YOUR_MODLOG_CHANNEL_ID",
+    "mirrorChannel": false
+  },
+  "marytOpens": {
+    "apiBase": "https://api.natrois.top",
+    "defaultAuthorId": "REPLACE_WITH_AUTHOR_USER_ID"
+  },
+  "permissionsFile": "src/permissions.json"
+}

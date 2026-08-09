@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>搜索 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/css/main.css">
+<script>(function(){var t=localStorage.getItem('mo_theme');var d=t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light');})();</script>
+</head>
+<body>
+
+<header id="navbar"></header>
+
+<main class="container container-mid py-6">
+  <div class="page-head">
+    <h1 data-i18n="search.title">搜索</h1>
+    <p class="muted" data-i18n="search.tip">输入关键词开始搜索</p>
+  </div>
+
+  <div class="card card-pad mt-4">
+    <div class="search-box">
+      <span class="sb-ico" id="sbIco"></span>
+      <input class="input search-input" id="searchInput" type="search"
+             placeholder="搜索用户、文件、帖子、文章、官方公告…" data-i18n-ph="search.placeholder" autocomplete="off">
+    </div>
+    <div class="chips mt-3" id="searchChips"></div>
+  </div>
+
+  <div id="searchResults" class="mt-4"></div>
+</main>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script src="/assets/js/search.js"></script>
+<script>
+App.boot({ nav: 'search', requireAuth: false, onReady: () => {
+  $('#sbIco').innerHTML = App.icon('search');
+  I18N.apply();
+  SearchUI.init();
+}});
+</script>
+</body>
+</html>

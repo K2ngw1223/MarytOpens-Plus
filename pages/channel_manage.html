@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>频道管理 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/css/main.css">
+</head>
+<body>
+
+<header id="navbar"></header>
+
+<div class="admin-layout">
+
+  <!-- ============================== 左侧导航 ============================== -->
+  <aside class="admin-side">
+    <div class="side-group">
+      <div class="section-title" id="sideChName">频道管理</div>
+      <button class="side-item active" data-pane="general">基本信息</button>
+      <button class="side-item" data-pane="boards">板块管理</button>
+      <button class="side-item" data-pane="groups">群组管理</button>
+      <button class="side-item" data-pane="roles">身份组与权限</button>
+      <button class="side-item" data-pane="members">成员与角色分配</button>
+      <button class="side-item" data-pane="reports">举报处理</button>
+      <button class="side-item" data-pane="danger">危险区域</button>
+    </div>
+    <div class="side-group">
+      <div class="section-title">返回</div>
+      <a class="side-item" id="backToChannel" href="/channels.html">返回频道</a>
+      <a class="side-item" href="/home.html" data-i18n="nav.home">首页</a>
+    </div>
+  </aside>
+
+  <!-- ================================ 主区 ================================ -->
+  <main class="admin-main">
+
+    <!-- 基本信息 -->
+    <section class="tab-panel active" id="pane-general">
+      <div class="admin-header">
+        <div><h2>基本信息</h2><p>频道名称、图标、横幅与可见性设置</p></div>
+        <button class="btn btn-primary" id="btnSaveGeneral" data-i18n="common.save">保存</button>
+      </div>
+
+      <div class="card card-pad">
+        <div class="row" style="gap:16px;align-items:flex-start" >
+          <div class="field" style="flex:0 0 110px">
+            <label class="label" data-i18n="ch.icon">频道图标</label>
+            <input class="input text-center" id="cfIcon" maxlength="4" style="font-size:22px;height:52px">
+          </div>
+          <div class="field grow">
+            <label class="label" data-i18n="ch.name">频道名称</label>
+            <input class="input" id="cfName" maxlength="40">
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="label" data-i18n="ch.desc">频道简介</label>
+          <textarea class="textarea" id="cfDesc" maxlength="300" rows="3"></textarea>
+        </div>
+
+        <div class="field">
+          <label class="label" data-i18n="ch.banner">频道横幅</label>
+          <div class="upload-zone" id="cfBannerZone">
+            <p>点击或拖拽上传横幅图（建议 1200×300，≤5MB）</p>
+          </div>
+          <div class="row mt-2" style="gap:8px;align-items:center">
+            <img id="cfBannerPreview" alt="" style="max-height:70px;border-radius:8px;display:none">
+            <button class="btn btn-sm btn-ghost" id="cfBannerClear" hidden>移除横幅</button>
+          </div>
+        </div>
+
+        <div class="row" style="gap:16px">
+          <div class="field grow">
+            <label class="label">可见性</label>
+            <select class="select" id="cfVis">
+              <option value="public">公开频道 · 所有人可浏览</option>
+              <option value="private">私密频道 · 仅成员可见</option>
+            </select>
+          </div>
+          <div class="field" style="flex:0 0 160px">
+            <label class="label">排序权重</label>
+            <input class="input" id="cfOrder" type="number" value="0">
+            <div class="hint">数值越大越靠前</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 板块管理 -->
+    <section class="tab-panel" id="pane-boards">
+      <div class="admin-header">
+        <div><h2>板块管理</h2><p>板块用于对频道内的文章做分类，最多 30 个</p></div>
+        <div class="row" style="gap:8px">
+          <button class="btn btn-soft" id="btnAddBoard">新增板块</button>
+          <button class="btn btn-primary" id="btnSaveBoards" data-i18n="common.save">保存</button>
+        </div>
+      </div>
+      <div class="card card-pad" id="boardEditor"></div>
+    </section>
+
+    <!-- 群组管理 -->
+    <section class="tab-panel" id="pane-groups">
+      <div class="admin-header">
+        <div><h2>群组管理</h2><p>群组是频道下的二级结构，拥有独立作用域与身份组</p></div>
+        <button class="btn btn-primary" id="btnAddGroup" data-i18n="ch.newGroup">创建群组</button>
+      </div>
+      <div class="card card-pad" id="groupEditor"></div>
+    </section>
+
+    <!-- 身份组与权限 -->
+    <section class="tab-panel" id="pane-roles">
+      <div class="admin-header">
+        <div><h2>身份组与权限</h2><p id="roleScopeHint">当前作用域的权限仅在该区域内生效</p></div>
+        <div class="row" style="gap:8px">
+          <select class="select" id="roleScopeSel" style="min-width:200px"></select>
+          <button class="btn btn-primary" id="btnNewRole" data-i18n="role.create">创建身份组</button>
+        </div>
+      </div>
+      <div class="grid" style="grid-template-columns:280px 1fr;gap:16px;align-items:start">
+        <div class="card card-pad">
+          <div class="section-title" data-i18n="role.title">身份组</div>
+          <div id="roleSideList" style="display:flex;flex-direction:column;gap:6px"></div>
+        </div>
+        <div class="card card-pad" id="roleDetail">
+          <p class="muted small">从左侧选择一个身份组开始编辑。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 成员 -->
+    <section class="tab-panel" id="pane-members">
+      <div class="admin-header">
+        <div><h2>成员与角色分配</h2><p>为频道成员分配身份组、禁言、改名</p></div>
+        <div class="input-icon" style="max-width:240px">
+          <input class="input input-sm" id="memSearch" type="search" placeholder="搜索成员" data-i18n-ph="common.search">
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>成员</th><th>身份组</th><th>加入时间</th><th>状态</th><th></th></tr></thead>
+          <tbody id="memRows"></tbody>
+        </table>
+      </div>
+      <div class="text-center mt-4"><button class="btn btn-sm" id="btnMoreMem" hidden data-i18n="common.loadMore">加载更多</button></div>
+    </section>
+
+    <!-- 举报 -->
+    <section class="tab-panel" id="pane-reports">
+      <div class="admin-header">
+        <div><h2>举报处理</h2><p>处理本频道作用域内的举报</p></div>
+        <select class="select" id="repStatus" style="max-width:180px">
+          <option value="open">待处理</option>
+          <option value="processing">处理中</option>
+          <option value="resolved">已处理</option>
+          <option value="">全部</option>
+        </select>
+      </div>
+      <div id="repList" style="display:flex;flex-direction:column;gap:10px"></div>
+    </section>
+
+    <!-- 危险区域 -->
+    <section class="tab-panel" id="pane-danger">
+      <div class="admin-header"><div><h2>危险区域</h2><p>以下操作不可撤销，请谨慎执行</p></div></div>
+      <div class="card card-pad tip-danger">
+        <h4 style="margin:0 0 6px">删除频道</h4>
+        <p class="small muted">删除后频道内的板块、群组与身份组配置将全部失效，文章会变为无归属状态。仅频道主与超级管理员可执行。</p>
+        <button class="btn btn-danger mt-4" id="btnDeleteChannel">永久删除该频道</button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer id="footer"></footer>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script src="/assets/js/channel_manage.js"></script>
+</body>
+</html>

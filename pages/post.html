@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>文章 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/css/main.css">
+</head>
+<body>
+
+<header id="navbar"></header>
+
+<div class="layout container-mid">
+  <main class="main">
+    <div id="postBox"><div class="card"><div class="card-body">
+      <div class="skeleton sk-line" style="width:60%;height:28px"></div>
+      <div class="skeleton sk-line mt-4"></div>
+      <div class="skeleton sk-line"></div>
+      <div class="skeleton sk-line" style="width:70%"></div>
+    </div></div></div>
+
+    <section class="card" id="comments">
+      <div class="card-head row-between">
+        <h3 class="mb-0"><span data-i18n="comment.title">评论</span>
+          <span class="badge" id="cmtCount">0</span></h3>
+        <button class="btn btn-ghost btn-sm" id="cmtRefresh" data-i18n="common.retry">刷新</button>
+      </div>
+      <div class="card-body">
+        <div id="cmtEditorBox"></div>
+        <div class="comment-list mt-5" id="cmtList"></div>
+        <div id="cmtMore"></div>
+      </div>
+    </section>
+  </main>
+
+  <aside class="aside">
+    <div class="card card-pad" id="authorCard"></div>
+    <div class="card" id="tocCard" style="display:none">
+      <div class="card-head"><h4 class="mb-0">目录</h4></div>
+      <div class="card-body"><div class="side-group" id="toc"></div></div>
+    </div>
+    <div class="card card-pad" id="postMetaCard"></div>
+  </aside>
+</div>
+
+<footer id="footer"></footer>
+<nav id="tabbar"></nav>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script src="/assets/js/feed.js"></script>
+<script>
+(function () {
+  'use strict';
+  const { $, $$, esc, icon, avatar, markdown } = App;
+  const T = (k) => I18N.t(k);
+
+  const postId = new URLSearchParams(location.search).get('id') || '';
+  let post = null;
+  let cmtCursor = null;
+  let cmtItems = [];
+  let replyTo = null;
+
+  /* =========================== 文章主体 =========================== */
+
+  function renderPost() {
+    const p = post;
+    const a = p.author || { displayName: '已注销用户', username: 'ghost', avatar: '' };
+    const c = p.counts || {};
+    document.title = p.title + ' · ' + (App.Site.cfg.siteTitle || 'MarytOpens');
+
+    const canMod = p.canModerate;
+    const menu =
+      '<div class="dropdown" id="ddPost"><button class="icon-btn" aria-label="more">' + icon('layers') + '</button>' +
+      '<div class="dropdown-menu" style="right:0;left:auto">' +
+        (p.canEdit ? '<a class="dropdown-item" href="/editor.html?id=' + encodeURIComponent(p.id) + '">' +
+          icon('edit') + '<span>' + T('post.edit') + '</span></a>' : '') +
+        (canMod ? '<button class="dropdown-item" data-mod="pin">' + icon('pin') + '<span>' +
+          (p.pinned ? T('post.unpin') : T('post.pin')) + '</span></button>' : '') +
+        (canMod ? '<button class="dropdown-item" data-mod="lock">' + icon('lock') + '<span>' +
+          (p.locked ? T('post.unlock') : T('post.lock')) + '</span></button>' : '') +
+        '<button class="dropdown-item" id="btnCopyLink">' + icon('link') + '<span>' + T('post.share') + '</span></button>' +
+        '<button class="dropdown-item" id="btnReport">' + icon('flag') + '<span>' + T('post.report') + '</span></button>' +
+        (p.canDelete ? '<div class="dropdown-sep"></div><button class="dropdown-item danger" id="btnDelete">' +
+          icon('trash') + '<span>' + T('post.delete') + '</span></button>' : '') +
+      '</div></div>';
+
+    $('#postBox').innerHTML =
+      '<article class="card post-article" data-post="' + esc(p.id) + '">' +
+        '<div class="chip-row mb-3">' +
+          (p.pinned ? '<span class="badge badge-accent">' + icon('pin') + ' 置顶</span>' : '') +
+          (p.locked ? '<span class="badge badge-warn">' + icon('lock') + ' 已锁评</span>' : '') +
+          (p.status === 'draft' ? '<span class="badge">草稿</span>' : '') +
+          Feed.visibilityChip(p) +
+          (p.board ? '<span class="chip">' + esc(p.board) + '</span>' : '') +
+        '</div>' +
+        '<h1 class="pa-title">' + esc(p.title) + '</h1>' +
+        '<div class="pa-meta">' +
+          '<a class="row" style="gap:10px;align-items:center" href="/profile.html?u=' + encodeURIComponent(a.username) + '">' +
+            avatar(a, 'md') +
+            '<span><b>' + esc(a.displayName) + '</b>' + App.roleTagsHTML(a.roleTags) +
+            '<br><span class="xsmall muted" data-time="' + p.createdAt + '" data-time-style="abs"></span></span></a>' +
+          '<span class="spacer"></span>' +
+          '<span class="pc-stats">' +
+            '<span>' + icon('eye') + (c.views || 0) + '</span>' +
+            '<span>' + icon('message') + (c.comments || 0) + '</span>' +
+          '</span>' + menu +
+        '</div>' +
+        (p.cover ? '<img src="' + esc(API.fileURL(p.cover)) + '" alt="" style="width:100%;border-radius:12px;margin-bottom:24px">' : '') +
+        '<div class="prose" id="postBody">' + markdown(p.content || '') + '</div>' +
+        ((p.tags || []).length ? '<div class="chip-row mt-6">' + p.tags.map((t) =>
+          '<a class="tag" href="/explore.html?q=' + encodeURIComponent(t) + '">#' + esc(t) + '</a>').join('') + '</div>' : '') +
+        '<div class="post-actions mt-6">' +
+          '<button class="btn ' + (p.liked ? 'btn-primary' : 'btn-outline') + '" data-act="like">' +
+            icon('heart') + '<span data-i18n="post.like">赞</span> <b>' + (c.likes || 0) + '</b></button>' +
+          '<button class="btn ' + (p.favorited ? 'btn-primary' : 'btn-outline') + '" data-act="fav">' +
+            icon('star') + '<span data-i18n="post.favorite">收藏</span> <b>' + (c.favorites || 0) + '</b></button>' +
+          '<button class="btn btn-ghost" id="btnShare2">' + icon('link') + '<span data-i18n="post.share">分享</span></button>' +
+        '</div>' +
+      '</article>';
+
+    bindPostActions();
+    renderAuthorCard(a);
+    renderMetaCard(p);
+    buildTOC();
+    I18N.apply($('#postBox'));
+  }
+
+  function bindPostActions() {
+    const box = $('#postBox');
+    App.renderNavbar && null;
+
+    $$('.dropdown > button', box).forEach((b) => b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const d = b.parentElement;
+      const open = d.classList.contains('open');
+      $$('.dropdown.open').forEach((x) => x.classList.remove('open'));
+      d.classList.toggle('open', !open);
+    }));
+
+    $$('[data-act]', box).forEach((b) => b.onclick = async () => {
+      if (!App.Session.require()) return;
+      b.disabled = true;
+      try {
+        const d = b.dataset.act === 'like' ? await API.Posts.like(post.id) : await API.Posts.favorite(post.id);
+        const on = b.dataset.act === 'like' ? d.liked : d.favorited;
+        b.classList.toggle('btn-primary', !!on);
+        b.classList.toggle('btn-outline', !on);
+        b.querySelector('b').textContent = b.dataset.act === 'like' ? d.likes : d.favorites;
+      } catch (e) { App.toastError(e); }
+      b.disabled = false;
+    });
+
+    const share = () => { App.copy(location.href); App.toast(T('common.copied'), 'success'); };
+    const cl = $('#btnCopyLink'); if (cl) cl.onclick = share;
+    const s2 = $('#btnShare2'); if (s2) s2.onclick = share;
+
+    const rp = $('#btnReport');
+    if (rp) rp.onclick = () => { if (App.Session.require()) App.reportDialog('post', post.id); };
+
+    const del = $('#btnDelete');
+    if (del) del.onclick = async () => {
+      if (!await App.confirmDialog(T('post.deleteConfirm'), { danger: true })) return;
+      try { await API.Posts.remove(post.id); App.toast(T('common.success'), 'success'); location.href = '/home.html'; }
+      catch (e) { App.toastError(e); }
+    };
+
+    $$('[data-mod]', box).forEach((b) => b.onclick = async () => {
+      const k = b.dataset.mod;
+      try {
+        await API.Posts.update(post.id, k === 'pin' ? { pinned: !post.pinned } : { locked: !post.locked });
+        App.toast(T('common.success'), 'success');
+        load();
+      } catch (e) { App.toastError(e); }
+    });
+  }
+
+  function renderAuthorCard(a) {
+    if (!a || !a.id) { $('#authorCard').innerHTML = ''; return; }
+    const me = App.Session.user;
+    $('#authorCard').innerHTML =
+      '<div class="row" style="gap:12px;align-items:center">' + avatar(a, 'lg') +
+        '<div style="min-width:0"><div class="bold truncate">' + esc(a.displayName) + '</div>' +
+        '<div class="xsmall muted truncate">@' + esc(a.username) + '</div></div></div>' +
+      (a.bio ? '<p class="small muted mt-3 clamp-3">' + esc(a.bio) + '</p>' : '') +
+      '<div class="row mt-4" style="gap:8px">' +
+        '<a class="btn btn-soft btn-sm grow" href="/profile.html?u=' + encodeURIComponent(a.username) + '">' + T('user.profile') + '</a>' +
+        (me && me.id !== a.id
+          ? '<a class="btn btn-outline btn-sm grow" href="/messages.html?to=' + encodeURIComponent(a.id) + '">' + T('user.sendDm') + '</a>'
+          : '') +
+      '</div>';
+  }
+
+  function renderMetaCard(p) {
+    $('#postMetaCard').innerHTML =
+      '<h4 style="margin:0 0 10px">文章信息</h4>' +
+      '<div class="kv-list">' +
+        '<div class="kv-row"><span class="muted small">发布</span><span class="small" data-time="' + p.createdAt + '" data-time-style="abs"></span></div>' +
+        (p.updatedAt && p.updatedAt !== p.createdAt
+          ? '<div class="kv-row"><span class="muted small">更新</span><span class="small" data-time="' + p.updatedAt + '" data-time-style="abs"></span></div>' : '') +
+        '<div class="kv-row"><span class="muted small">' + T('post.visibility') + '</span><span class="small">' +
+          T('post.vis.' + (p.visibility === 'members' ? 'unlisted' : p.visibility === 'roles' ? 'role' : p.visibility)) + '</span></div>' +
+        '<div class="kv-row"><span class="muted small">' + T('post.scope') + '</span><span class="small mono">' + esc(p.scope || 'global') + '</span></div>' +
+        '<div class="kv-row"><span class="muted small">字数</span><span class="small">' + String(p.content || '').length + '</span></div>' +
+      '</div>';
+    I18N.apply($('#postMetaCard'));
+  }
+
+  function buildTOC() {
+    const hs = $$('#postBody h2, #postBody h3');
+    if (hs.length < 2) return;
+    $('#tocCard').style.display = '';
+    $('#toc').innerHTML = hs.map((h, i) => {
+      h.id = 'h-' + i;
+      return '<a class="side-item" href="#h-' + i + '" style="' +
+        (h.tagName === 'H3' ? 'padding-left:24px;font-size:13px' : '') + '">' +
+        '<span class="truncate">' + esc(h.textContent) + '</span></a>';
+    }).join('');
+  }
+
+  /* =========================== 评论区 =========================== */
+
+  function commentEditor() {
+    if (!App.Session.isLoggedIn) {
+      return '<div class="banner-tip tip-info">' + icon('info') +
+        '<span>登录后可参与评论 · <a href="/login.html?redirect=' +
+        encodeURIComponent(location.pathname + location.search) + '">' + T('nav.login') + '</a></span></div>';
+    }
+    if (post.locked) {
+      return '<div class="banner-tip tip-warn">' + icon('lock') + '<span data-i18n="comment.locked">该文章已锁定评论</span></div>';
+    }
+    const u = App.Session.user;
+    return '<div class="comment-editor">' + avatar(u, 'md') +
+      '<div class="grow">' +
+        '<div id="replyHint"></div>' +
+        '<textarea class="textarea" id="cmtInput" rows="3" placeholder="' + T('comment.placeholder') +
+          '" data-i18n-ph="comment.placeholder"></textarea>' +
+        '<div class="row-between mt-3">' +
+          '<span class="xsmall muted">支持 Markdown · <span id="cmtLen">0</span>/1000</span>' +
+          '<button class="btn btn-primary btn-sm" id="cmtSubmit" data-i18n="comment.submit">发表评论</button>' +
+        '</div>' +
+      '</div></div>';
+  }
+
+  function bindCommentEditor() {
+    const inp = $('#cmtInput');
+    if (!inp) return;
+    inp.addEventListener('input', () => { $('#cmtLen').textContent = inp.value.length; });
+    inp.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') submitComment();
+    });
+    $('#cmtSubmit').onclick = submitComment;
+  }
+
+  async function submitComment() {
+    const inp = $('#cmtInput');
+    const text = inp.value.trim();
+    if (text.length < 1) { App.toast('评论内容不能为空', 'warn'); return; }
+    const btn = $('#cmtSubmit');
+    App.busy(btn, true);
+    try {
+      await API.Posts.comment(post.id, {
+        content: text,
+        replyTo: replyTo ? replyTo.id : undefined,
+        replyToName: replyTo && replyTo.author ? replyTo.author.displayName : undefined,
+      });
+      inp.value = ''; $('#cmtLen').textContent = '0';
+      cancelReply();
+      App.toast(T('common.success'), 'success');
+      await loadComments(true);
+    } catch (e) { App.toastError(e); }
+    App.busy(btn, false);
+  }
+
+  function setReply(c) {
+    replyTo = c;
+    const hint = $('#replyHint');
+    if (!hint) return;
+    hint.innerHTML = '<div class="chip mb-2">回复 @' +
+      esc(c.author ? c.author.displayName : '匿名') +
+      ' <button class="tag-close" id="cancelReply">×</button></div>';
+    $('#cancelReply').onclick = cancelReply;
+    $('#cmtInput').focus();
+  }
+  function cancelReply() {
+    replyTo = null;
+    const hint = $('#replyHint');
+    if (hint) hint.innerHTML = '';
+  }
+
+  function commentHTML(c, depth) {
+    const a = c.author;
+    const name = a ? a.displayName : '已注销/已删除';
+    return '<div class="comment" id="c-' + esc(c.id) + '" data-cmt="' + esc(c.id) + '"' +
+      (depth ? ' style="margin-left:' + Math.min(depth, 3) * 28 + 'px"' : '') + '>' +
+      (a ? avatar(a, 'sm') : App.avatarFallback('?', 'avatar')) +
+      '<div class="grow" style="min-width:0">' +
+        '<div class="row" style="gap:8px;align-items:baseline;flex-wrap:wrap">' +
+          (a ? '<a class="bold" href="/profile.html?u=' + encodeURIComponent(a.username) + '">' + esc(name) + '</a>'
+             : '<span class="bold muted">' + esc(name) + '</span>') +
+          App.roleTagsHTML(a && a.roleTags) +
+          '<span class="xsmall muted" data-time="' + c.createdAt + '"></span>' +
+          (c.replyToName ? '<span class="xsmall muted">回复 @' + esc(c.replyToName) + '</span>' : '') +
+        '</div>' +
+        '<div class="prose small mt-2">' + markdown(c.content || '') + '</div>' +
+        '<div class="row mt-2" style="gap:12px">' +
+          (post.locked ? '' : '<button class="act-btn" data-reply="' + esc(c.id) + '">' + icon('message') +
+            '<span data-i18n="comment.reply">回复</span></button>') +
+          '<button class="act-btn" data-creport="' + esc(c.id) + '">' + icon('flag') + '</button>' +
+          (c.canDelete ? '<button class="act-btn" data-cdel="' + esc(c.id) + '">' + icon('trash') + '</button>' : '') +
+        '</div>' +
+      '</div></div>';
+  }
+
+  function renderComments() {
+    const box = $('#cmtList');
+    if (!cmtItems.length) {
+      box.innerHTML = App.emptyState(T('comment.empty'), '', 'message');
+      return;
+    }
+    // 两级树：顶层 + 子回复
+    const roots = cmtItems.filter((c) => !c.replyTo);
+    const childrenOf = (id) => cmtItems.filter((c) => c.replyTo === id);
+    let html = '';
+    roots.forEach((r) => {
+      html += commentHTML(r, 0);
+      childrenOf(r.id).forEach((ch) => { html += commentHTML(ch, 1); });
+    });
+    // 孤儿回复（父评论已删/不在本页）
+    cmtItems.filter((c) => c.replyTo && !roots.find((r) => r.id === c.replyTo))
+      .forEach((c) => { html += commentHTML(c, 1); });
+    box.innerHTML = html;
+
+    $$('[data-reply]', box).forEach((b) => b.onclick = () => {
+      if (!App.Session.require()) return;
+      setReply(cmtItems.find((x) => x.id === b.dataset.reply));
+    });
+    $$('[data-creport]', box).forEach((b) => b.onclick = () => {
+      if (App.Session.require()) App.reportDialog('comment', b.dataset.creport);
+    });
+    $$('[data-cdel]', box).forEach((b) => b.onclick = async () => {
+      if (!await App.confirmDialog(T('comment.delete') + '?', { danger: true })) return;
+      try { await API.Posts.deleteComment(post.id, b.dataset.cdel); await loadComments(true); }
+      catch (e) { App.toastError(e); }
+    });
+    I18N.apply(box);
+  }
+
+  async function loadComments(reset) {
+    if (reset) { cmtCursor = null; cmtItems = []; $('#cmtList').innerHTML = App.skeletonList(2, 60); }
+    try {
+      const d = await API.Posts.comments(post.id, Object.assign({ limit: 50 }, cmtCursor ? { cursor: cmtCursor } : {}));
+      cmtItems = reset ? (d.items || []) : cmtItems.concat(d.items || []);
+      cmtCursor = d.cursor || null;
+      $('#cmtCount').textContent = cmtItems.length;
+      renderComments();
+      $('#cmtMore').innerHTML = cmtCursor
+        ? '<button class="btn btn-outline btn-block mt-4" id="cmtMoreBtn">' + T('common.loadMore') + '</button>' : '';
+      const mb = $('#cmtMoreBtn'); if (mb) mb.onclick = () => loadComments(false);
+    } catch (e) {
+      $('#cmtList').innerHTML = App.emptyState(T('common.failed'), e.message, 'alert');
+    }
+  }
+
+  /* =========================== 加载 =========================== */
+
+  async function load() {
+    if (!postId) {
+      $('#postBox').innerHTML = App.emptyState(T('common.notfound'), '缺少文章 ID', 'alert',
+        '<a class="btn btn-primary" href="/home.html">' + T('nav.home') + '</a>');
+      return;
+    }
+    try {
+      const d = await API.Posts.detail(postId);
+      post = d.post;
+      renderPost();
+      $('#cmtEditorBox').innerHTML = commentEditor();
+      bindCommentEditor();
+      I18N.apply($('#cmtEditorBox'));
+      await loadComments(true);
+      if (location.hash === '#comments') $('#comments').scrollIntoView({ behavior: 'smooth' });
+    } catch (e) {
+      const isForbid = e.status === 403;
+      $('#postBox').innerHTML = App.emptyState(
+        isForbid ? T('common.forbidden') : T('common.notfound'),
+        isForbid ? '这篇文章设置了访问限制（私密文章仅作者与超级管理员可见）' : e.message,
+        isForbid ? 'lock' : 'alert',
+        '<a class="btn btn-primary" href="/home.html">' + T('nav.home') + '</a>');
+      document.querySelector('#comments').style.display = 'none';
+    }
+  }
+
+  App.boot({
+    nav: '',
+    onReady: async function () {
+      await load();
+      const r = $('#cmtRefresh');
+      if (r) r.onclick = () => loadComments(true);
+    },
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "name": "marytopens-discord-bot",
+  "version": "1.0.0",
+  "description": "Discord 社区机器人，桥接 MarytOpens 平台（发布 / 通知 / 审核 / 同步）",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.4.5"
+  }
+}

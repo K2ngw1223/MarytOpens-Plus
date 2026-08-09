@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>探索 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/css/main.css">
+</head>
+<body>
+
+<header id="navbar"></header>
+
+<div class="layout container-mid">
+  <main class="main">
+
+    <div class="card card-pad">
+      <div class="input-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input class="input" id="q" type="search" placeholder="搜索文章标题、摘要或标签…" data-i18n-ph="common.search" autofocus>
+      </div>
+      <div class="row-between wrap mt-4" style="gap:10px">
+        <div class="pill-tabs" id="kindTabs">
+          <button class="pill-tab active" data-kind="posts">文章</button>
+          <button class="pill-tab" data-kind="tags">标签</button>
+          <button class="pill-tab" data-kind="channels" data-i18n="ch.title">频道</button>
+        </div>
+        <div class="row" style="gap:8px">
+          <select class="select input-sm" id="sortSel" style="width:auto">
+            <option value="new">最新发布</option>
+            <option value="hot">最多点赞</option>
+            <option value="views">最多浏览</option>
+            <option value="comments">最多评论</option>
+          </select>
+        </div>
+      </div>
+      <div class="chip-row mt-3" id="quickTags"></div>
+    </div>
+
+    <div id="paneposts">
+      <div class="post-list" id="feed"></div>
+      <div id="feedMore"></div>
+    </div>
+
+    <div id="panetags" style="display:none">
+      <div class="card card-pad"><div class="chip-row" id="allTags"></div></div>
+    </div>
+
+    <div id="panechannels" style="display:none">
+      <div class="channel-grid" id="chList"></div>
+    </div>
+  </main>
+
+  <aside class="aside">
+    <div class="card card-pad">
+      <h4 style="margin:0 0 10px">搜索技巧</h4>
+      <ul class="small muted" style="margin:0;padding-left:18px;line-height:1.9">
+        <li>直接输入关键词匹配标题与摘要</li>
+        <li>输入 <code class="mono">#标签</code> 精确过滤标签</li>
+        <li>点击作者名可查看其全部文章</li>
+        <li>排序在服务端拉取后于本页二次排序</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-head"><h4 class="mb-0">活跃作者</h4></div>
+      <div class="card-body col" style="gap:12px" id="topAuthors">
+        <span class="muted small" data-i18n="common.loading">加载中…</span>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<footer id="footer"></footer>
+<nav id="tabbar"></nav>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script src="/assets/js/feed.js"></script>
+<script>
+(function () {
+  'use strict';
+  const { $, $$, esc, icon, avatar } = App;
+  const T = (k) => I18N.t(k);
+
+  const sp = new URLSearchParams(location.search);
+  let keyword = sp.get('q') || '';
+  let kind = sp.get('kind') || 'posts';
+  let sort = 'new';
+  let list = null;
+  let poolCache = [];
+
+  function params() {
+    const p = { limit: 20 };
+    if (keyword) p.q = keyword.replace(/^#/, '');
+    return p;
+  }
+
+  function sortItems(items) {
+    const key = { hot: 'likes', views: 'views', comments: 'comments' }[sort];
+    if (!key) return items.slice().sort((a, b) => (b.pinned - a.pinned) || (b.createdAt - a.createdAt));
+    return items.slice().sort((a, b) => ((b.counts || {})[key] || 0) - ((a.counts || {})[key] || 0));
+  }
+
+  async function fetcher(p) {
+    const d = await API.Posts.list(p);
+    return { items: sortItems(d.items || []), cursor: d.cursor };
+  }
+
+  function setKind(k, silent) {
+    kind = k;
+    $$('#kindTabs .pill-tab').forEach((b) => b.classList.toggle('active', b.dataset.kind === k));
+    ['posts', 'tags', 'channels'].forEach((x) => { $('#pane' + x).style.display = x === k ? '' : 'none'; });
+    if (!silent) syncURL();
+    if (k === 'tags') renderAllTags();
+    if (k === 'channels') loadChannels();
+  }
+
+  function syncURL() {
+    const q = new URLSearchParams();
+    if (keyword) q.set('q', keyword);
+    if (kind !== 'posts') q.set('kind', kind);
+    history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : ''));
+  }
+
+  /* ------------------------- 标签池 ------------------------- */
+  async function loadPool() {
+    if (poolCache.length) return poolCache;
+    try {
+      const d = await API.Posts.list({ limit: 50 });
+      poolCache = d.items || [];
+    } catch (e) { poolCache = []; }
+    return poolCache;
+  }
+
+  function tagCount(items) {
+    const c = {};
+    items.forEach((p) => (p.tags || []).forEach((t) => { c[t] = (c[t] || 0) + 1; }));
+    return Object.entries(c).sort((a, b) => b[1] - a[1]);
+  }
+
+  async function renderQuickTags() {
+    const items = await loadPool();
+    const top = tagCount(items).slice(0, 12);
+    $('#quickTags').innerHTML = top.map(([t]) =>
+      '<button class="chip" data-qt="' + esc(t) + '">#' + esc(t) + '</button>').join('');
+    $$('[data-qt]').forEach((b) => b.onclick = () => {
+      keyword = b.dataset.qt;
+      $('#q').value = keyword;
+      setKind('posts');
+      list.load(true);
+    });
+  }
+
+  async function renderAllTags() {
+    const items = await loadPool();
+    const all = tagCount(items);
+    $('#allTags').innerHTML = all.length ? all.map(([t, n]) =>
+      '<button class="tag" data-qt2="' + esc(t) + '" style="font-size:' + (12 + Math.min(n, 8)) + 'px">#' +
+      esc(t) + ' <span class="muted2">' + n + '</span></button>').join('')
+      : '<span class="muted small">暂无标签</span>';
+    $$('[data-qt2]').forEach((b) => b.onclick = () => {
+      keyword = b.dataset.qt2; $('#q').value = keyword; setKind('posts'); list.load(true);
+    });
+  }
+
+  /* ------------------------- 频道 ------------------------- */
+  async function loadChannels() {
+    const box = $('#chList');
+    box.innerHTML = App.skeletonList(3, 110);
+    try {
+      const d = await API.Channels.list();
+      const items = (d.items || []).filter((c) =>
+        !keyword || (c.name + ' ' + (c.description || '')).toLowerCase().includes(keyword.toLowerCase()));
+      box.innerHTML = items.length
+        ? items.map((c) => Feed.channelCardHTML(c, { footer: '' })).join('')
+        : App.emptyState(T('ch.empty'), T('ch.emptyDesc'), 'hash');
+    } catch (e) { box.innerHTML = App.emptyState(T('common.failed'), e.message, 'alert'); }
+  }
+
+  /* ------------------------- 活跃作者 ------------------------- */
+  async function renderAuthors() {
+    const items = await loadPool();
+    const map = {};
+    items.forEach((p) => {
+      if (!p.author) return;
+      const a = map[p.author.id] || (map[p.author.id] = { u: p.author, n: 0, likes: 0 });
+      a.n++; a.likes += (p.counts || {}).likes || 0;
+    });
+    const top = Object.values(map).sort((a, b) => b.n - a.n || b.likes - a.likes).slice(0, 8);
+    $('#topAuthors').innerHTML = top.length ? top.map((x) =>
+      '<a class="row" style="gap:10px;align-items:center" href="/profile.html?u=' + encodeURIComponent(x.u.username) + '">' +
+      avatar(x.u, 'sm') + '<span style="min-width:0"><b class="truncate" style="display:block">' + esc(x.u.displayName) + '</b>' +
+      '<span class="xsmall muted">' + x.n + ' 篇 · ' + x.likes + ' 赞</span></span></a>').join('')
+      : '<span class="muted small">暂无数据</span>';
+  }
+
+  App.boot({
+    nav: 'explore',
+    onReady: async function () {
+      $('#q').value = keyword;
+
+      list = Feed.createList({ mount: $('#feed'), moreMount: $('#feedMore'), params, fetcher });
+
+      $('#q').addEventListener('input', App.debounce(() => {
+        keyword = $('#q').value.trim();
+        syncURL();
+        if (kind === 'posts') list.load(true);
+        if (kind === 'channels') loadChannels();
+      }, 400));
+
+      $$('#kindTabs .pill-tab').forEach((b) => b.onclick = () => setKind(b.dataset.kind));
+      $('#sortSel').onchange = () => { sort = $('#sortSel').value; list.load(true); };
+
+      setKind(kind, true);
+      await list.load(true);
+      list.autoLoad();
+      renderQuickTags();
+      renderAuthors();
+    },
+  });
+})();
+</script>
+</body>
+</html>

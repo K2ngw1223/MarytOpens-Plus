@@ -1,0 +1,103 @@
+#!/usr/bin/env node
+/**
+ * MarytOpens · 一键部署（Worker 后端 + Pages 前端）
+ *
+ * 前置条件：
+ *   - 已 `wrangler login`，或在环境变量设置 CLOUDFLARE_API_TOKEN 与 CF_ACCOUNT_ID
+ *   - worker/ 下已 `npm install`（安装 wrangler）
+ *   - 仓库根目录 .secrets 已填好（cp ../.secrets.example ../.secrets 后填写）
+ *
+ * 步骤：
+ *   1. wrangler whoami               校验登录
+ *   2. kv namespace create DB        创建 KV（含 preview）并自动回填 wrangler.toml
+ *   3. r2 bucket create              创建 R2 桶 marytopens-media
+ *   4. node scripts/put-secrets.mjs  注入所有密钥
+ *   5. wrangler deploy               部署后端 → api.natrois.top
+ *   6. wrangler pages deploy         部署前端 → natrois.top（Pages 项目 marytopens）
+ *
+ * 用法（在 worker/ 目录）：
+ *   npm run deploy
+ */
+import { spawnSync } from 'node:child_process';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const root = resolve(__dirname, '..'); // worker/
+const projectRoot = resolve(root, '..'); // MarytOpens/
+const wrangler = resolve(root, 'node_modules', 'wrangler', 'bin', 'wrangler.js');
+const pagesDir = resolve(projectRoot, 'pages');
+const tomPath = resolve(root, 'wrangler.toml');
+
+function run(args) {
+  console.log('\n$ wrangler ' + args.join(' '));
+  const r = spawnSync(process.execPath, [wrangler, ...args], { cwd: root, stdio: 'inherit' });
+  if (r.status !== 0) { console.error('✗ 命令失败：wrangler ' + args.join(' ')); process.exit(r.status || 1); }
+  return r;
+}
+function runCapture(args) {
+  const r = spawnSync(process.execPath, [wrangler, ...args], { cwd: root, encoding: 'utf8' });
+  return { status: r.status, out: (r.stdout || '') + (r.stderr || '') };
+}
+
+console.log('=== MarytOpens 部署开始 ===');
+
+// 1. 校验登录
+console.log('\n[1/6] 校验 Cloudflare 登录 ...');
+const who = runCapture(['whoami']);
+if (who.status !== 0) {
+  console.error('✗ 未登录 Cloudflare。请先执行 `wrangler login`，或在环境变量设置 CLOUDFLARE_API_TOKEN 与 CF_ACCOUNT_ID 后重试。');
+  process.exit(1);
+}
+console.log(who.out.trim());
+
+// 2. 创建 KV 命名空间并回填 wrangler.toml
+function kvCreate(name, preview) {
+  const args = ['kv', 'namespace', 'create', name];
+  if (preview) args.push('--preview');
+  const r = runCapture(args);
+  if (r.status !== 0) { console.error('✗ 创建 KV 失败：\n' + r.out); process.exit(1); }
+  const m = r.out.match(/ID:\s*([0-9a-f]+)/i);
+  return m ? m[1] : null;
+}
+console.log('\n[2/6] 创建 KV 命名空间 DB ...');
+let tom = readFileSync(tomPath, 'utf8');
+if (tom.includes('在此填入你的_KV_ID')) {
+  const kvId = kvCreate('DB');
+  const kvPreviewId = kvCreate('DB', true);
+  tom = tom
+    .replace(/id = "在此填入你的_KV_ID"/, `id = "${kvId}"`)
+    .replace(/preview_id = "在此填入你的_KV_PREVIEW_ID"/, `preview_id = "${kvPreviewId}"`);
+  writeFileSync(tomPath, tom);
+  console.log(`  ✓ KV id=${kvId} preview=${kvPreviewId}（已写回 wrangler.toml）`);
+} else {
+  console.log('  · wrangler.toml 中已有 KV ID，跳过创建');
+}
+
+// 3. 创建 R2 桶
+console.log('\n[3/6] 创建 R2 存储桶 marytopens-media ...');
+const r2 = runCapture(['r2', 'bucket', 'create', 'marytopens-media']);
+if (r2.status === 0) console.log('  ✓ 已创建（或已存在）');
+else console.warn('  ! r2 创建返回：' + r2.out.trim() + '\n    若已存在可忽略；否则请在控制台手动创建 marytopens-media');
+
+// 4. 注入密钥
+console.log('\n[4/6] 注入密钥 ...');
+const sec = spawnSync(process.execPath, [resolve(__dirname, 'put-secrets.mjs')], { cwd: root, stdio: 'inherit' });
+if (sec.status !== 0) process.exit(sec.status || 1);
+
+// 5. 部署后端
+console.log('\n[5/6] 部署 Worker 后端 → api.natrois.top ...');
+run(['deploy']);
+
+// 6. 部署前端
+console.log('\n[6/6] 部署 Pages 前端 → natrois.top ...');
+run(['pages', 'deploy', pagesDir, '--project-name', 'marytopens', '--branch', 'main']);
+
+console.log('\n=== 部署完成 ===');
+console.log('请到 Cloudflare 控制台完成收尾：');
+console.log('  1. Workers → marytopens-api → Settings → 自定义域：绑定 api.natrois.top（路由已在 wrangler.toml，等待 DNS 生效）');
+console.log('  2. Pages → marytopens → 自定义域：绑定 natrois.top（根域）');
+console.log('  3. 公开 Client ID 仍占位：GITHUB_CLIENT_ID / DISCORD_CLIENT_ID / TURNSTILE_SITE_KEY / CF_OAUTH_CLIENT_ID');
+console.log('     请在 worker/wrangler.toml 的 [vars] 填入真实值后重新 `npm run deploy`');
+console.log('  4. 验证：curl https://api.natrois.top/api/meta');

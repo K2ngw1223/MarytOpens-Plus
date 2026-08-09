@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>重置密码 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/css/main.css">
+<script>(function(){var t=localStorage.getItem('mo_theme');var d=t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light');})();</script>
+</head>
+<body>
+<div class="auth-page">
+  <div class="auth-bg gradient" id="authBg"></div>
+  <div class="auth-side">
+    <h1 data-i18n="auth.reset.title">重置密码</h1>
+    <p data-i18n="auth.reset.sub">通过邮箱验证码设置新密码</p>
+    <div class="feat"><div id="f1"></div><div id="f2"></div></div>
+  </div>
+  <div class="auth-panel">
+    <div class="auth-box">
+      <a class="a-logo" href="/index.html"><img src="/assets/img/logo.svg" alt=""><span id="siteName">MarytOpens</span></a>
+      <h2 data-i18n="auth.reset.title">重置密码</h2>
+      <p class="a-sub" data-i18n="auth.reset.sub">通过邮箱验证码设置新密码</p>
+
+      <form id="resetForm" novalidate>
+        <div class="field">
+          <label class="label" for="email" data-i18n="auth.email">邮箱地址</label>
+          <input class="input" id="email" type="email" required maxlength="120" placeholder="you@example.com" autocomplete="email">
+        </div>
+        <div class="field">
+          <label class="label" for="code" data-i18n="auth.code">邮箱验证码</label>
+          <div class="input-group">
+            <input class="input" id="code" type="text" inputmode="numeric" maxlength="6" placeholder="6 位数字" autocomplete="one-time-code">
+            <button class="btn" type="button" id="sendCodeBtn" data-i18n="auth.sendCode">发送验证码</button>
+          </div>
+          <div class="hint">若该邮箱已注册，验证码会立即发出；请同时检查垃圾箱。</div>
+        </div>
+        <div class="field">
+          <label class="label" for="password" data-i18n="auth.newPassword">新密码</label>
+          <input class="input" id="password" type="password" required maxlength="128" placeholder="••••••••" autocomplete="new-password">
+          <div class="pwd-meter" id="meter"><i></i><i></i><i></i><i></i></div>
+        </div>
+        <div class="field">
+          <label class="label" for="password2" data-i18n="auth.password2">确认密码</label>
+          <input class="input" id="password2" type="password" required maxlength="128" placeholder="••••••••" autocomplete="new-password">
+        </div>
+        <button class="btn btn-primary btn-lg btn-block" type="submit" id="submitBtn" data-i18n="common.confirm">确定</button>
+      </form>
+
+      <div class="auth-foot"><a href="/login.html" data-i18n="auth.backLogin">返回登录</a></div>
+    </div>
+  </div>
+</div>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script>
+(function () {
+  const { $, icon, Theme, toast, toastError, busy, passwordStrength } = App;
+  Theme.init();
+  $('#f1').innerHTML = icon('key') + '<span>验证码 10 分钟内有效</span>';
+  $('#f2').innerHTML = icon('shield') + '<span>重置后其它设备将自动下线</span>';
+
+  API.meta().then((m) => {
+    const cfg = (m && m.site) || {};
+    if (cfg.siteTitle) $('#siteName').textContent = cfg.siteTitle;
+    if (cfg.accent) App.applyAccent(cfg.accent);
+    if (cfg.loginBackground) {
+      const bg = $('#authBg'); bg.classList.remove('gradient');
+      bg.style.backgroundImage = 'url("' + App.safeURL(API.fileURL(cfg.loginBackground)) + '")';
+    }
+  }).catch(() => {});
+
+  App.bindCodeButton($('#sendCodeBtn'), () => $('#email').value, 'reset');
+  $('#password').addEventListener('input', () => { $('#meter').className = 'pwd-meter s' + passwordStrength($('#password').value); });
+
+  $('#resetForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = $('#email').value.trim(), code = $('#code').value.trim();
+    const p1 = $('#password').value, p2 = $('#password2').value;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { toast.warn('请输入有效邮箱'); return; }
+    if (!/^\d{4,8}$/.test(code)) { toast.warn('请输入验证码'); return; }
+    if (p1.length < 8) { toast.warn('密码至少 8 位'); return; }
+    if (p1 !== p2) { toast.warn(I18N.t('auth.mismatch')); return; }
+
+    const btn = $('#submitBtn'); busy(btn, true);
+    try {
+      await API.Auth.resetPassword(email, code, p1);
+      toast.success('密码已重置，请重新登录');
+      setTimeout(() => location.href = '/login.html', 800);
+    } catch (err) { toastError(err); } finally { busy(btn, false); }
+  });
+  I18N.apply();
+})();
+</script>
+</body>
+</html>

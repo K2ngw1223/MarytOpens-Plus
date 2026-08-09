@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>登录 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/css/main.css">
+<script>(function(){var t=localStorage.getItem('mo_theme');var d=t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light');})();</script>
+</head>
+<body>
+
+<div class="auth-page">
+  <div class="auth-bg gradient" id="authBg"></div>
+
+  <div class="auth-side">
+    <h1 id="sideTitle">MarytOpens</h1>
+    <p id="sideSub">Modern community governance, local models, and developer workflows.</p>
+    <div class="feat">
+      <div id="f1"></div><div id="f2"></div><div id="f3"></div><div id="f4"></div>
+    </div>
+  </div>
+
+  <div class="auth-panel">
+    <div class="auth-box">
+      <a class="a-logo" href="/index.html">
+        <img src="/assets/img/logo.svg" alt="" id="logo">
+        <span id="siteName">MarytOpens</span>
+      </a>
+
+      <h2 data-i18n="auth.login.title">欢迎回来</h2>
+      <p class="a-sub" data-i18n="auth.login.sub">登录后进入社区主界面</p>
+
+      <form id="loginForm" novalidate>
+        <div class="field">
+          <label class="label" for="identifier" data-i18n="auth.identifier">用户名或邮箱</label>
+          <div class="input-icon">
+            <span id="iconUser"></span>
+            <input class="input" id="identifier" name="identifier" type="text" autocomplete="username"
+                   required maxlength="64" data-i18n-ph="auth.identifier" placeholder="用户名或邮箱">
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="row-between">
+            <label class="label" for="password" data-i18n="auth.password">密码</label>
+            <a class="xsmall" href="/reset.html" data-i18n="auth.forgot">忘记密码？</a>
+          </div>
+          <div class="input-icon">
+            <span id="iconLock"></span>
+            <input class="input" id="password" name="password" type="password" autocomplete="current-password"
+                   required maxlength="128" placeholder="••••••••" style="padding-right:40px">
+            <button type="button" class="icon-btn" id="togglePwd"
+                    style="position:absolute;right:2px;top:50%;transform:translateY(-50%);width:34px;height:34px"
+                    aria-label="show password"></button>
+          </div>
+        </div>
+
+        <label class="check mb-4">
+          <input type="checkbox" id="remember" checked>
+          <span data-i18n="auth.remember">记住我</span>
+        </label>
+
+        <div class="cf-turnstile" id="tsBox" style="display:none"></div>
+
+        <button class="btn btn-primary btn-lg btn-block" type="submit" id="submitBtn"
+                data-i18n="auth.submit.login">登录</button>
+      </form>
+
+      <div id="oauthWrap" class="hidden">
+        <div class="auth-sep"><span data-i18n="auth.or">或使用以下方式</span></div>
+        <div class="col" style="gap:10px">
+          <button class="btn btn-oauth btn-github btn-block hidden" id="btnGithub">
+            <span id="ghIcon"></span><span data-i18n="auth.github">使用 GitHub 登录</span>
+          </button>
+          <button class="btn btn-oauth btn-discord btn-block hidden" id="btnDiscord">
+            <span id="dcIcon"></span><span data-i18n="auth.discord">使用 Discord 登录</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="auth-foot">
+        <span data-i18n="auth.noAccount">还没有账号？</span>
+        <a href="/register.html" id="toRegister" data-i18n="nav.register">注册</a>
+      </div>
+
+      <div class="row-center mt-6" style="justify-content:center;gap:8px">
+        <div class="seg" id="themeSeg"></div>
+        <select class="select input-sm" id="langSel" style="width:auto;height:32px"></select>
+      </div>
+
+      <div class="text-center mt-4">
+        <a class="link-muted xsmall" href="/index.html">← <span data-i18n="common.back">返回</span></a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script>
+(function () {
+  const { $, icon, Theme, Site, Session, toast, toastError, busy } = App;
+  const params = new URLSearchParams(location.search);
+  const redirect = params.get('redirect') || '/home.html';
+  let getToken = () => '';
+
+  function paintIcons() {
+    $('#iconUser').outerHTML = icon('user');
+    $('#iconLock').outerHTML = icon('lock');
+    $('#ghIcon').outerHTML = icon('github');
+    $('#dcIcon').outerHTML = icon('discord');
+    $('#togglePwd').innerHTML = icon('eye');
+    const feats = [
+      ['shield', '细粒度权限体系与作用域隔离'],
+      ['hash', 'Discord 式频道与群组管理'],
+      ['lock', '私密文章 · 端到端安全传输'],
+      ['zap', 'Cloudflare 边缘部署 · 全球加速'],
+    ];
+    feats.forEach((f, i) => { $('#f' + (i + 1)).innerHTML = icon(f[0]) + '<span>' + App.esc(f[1]) + '</span>'; });
+  }
+
+  function paintChrome() {
+    const seg = $('#themeSeg');
+    seg.innerHTML = [['auto', 'monitor'], ['light', 'sun'], ['dark', 'moon']].map(([k, ic]) =>
+      '<button data-th="' + k + '" class="' + (Theme.pref === k ? 'active' : '') + '">' + icon(ic) + '</button>').join('');
+    seg.querySelectorAll('[data-th]').forEach((b) => b.onclick = () => {
+      Theme.set(b.dataset.th, true);
+      seg.querySelectorAll('button').forEach((x) => x.classList.toggle('active', x === b));
+    });
+
+    const sel = $('#langSel');
+    sel.innerHTML = '<option value="auto">Auto</option>' +
+      I18N.SUPPORTED.map((l) => '<option value="' + l + '"' + (I18N.locale === l && !I18N.auto ? ' selected' : '') + '>' +
+        I18N.LOCALE_META[l].flag + ' ' + I18N.LOCALE_META[l].name + '</option>').join('');
+    sel.onchange = () => { I18N.setLocale(sel.value); location.reload(); };
+  }
+
+  async function init() {
+    Theme.init();
+    paintIcons(); paintChrome();
+
+    let m = null;
+    try { m = await API.meta(); } catch (e) { toast.warn('无法连接后端 API'); }
+    const cfg = (m && m.site) || {};
+
+    if (cfg.siteTitle) { $('#siteName').textContent = cfg.siteTitle; $('#sideTitle').textContent = cfg.siteTitle; document.title = I18N.t('nav.login') + ' · ' + cfg.siteTitle; }
+    if (cfg.siteSubtitle) $('#sideSub').textContent = cfg.siteSubtitle;
+    if (cfg.logo) $('#logo').src = API.fileURL(cfg.logo);
+    if (cfg.accent) App.applyAccent(cfg.accent);
+    if (!cfg.registerOpen) $('#toRegister').parentElement.style.display = 'none';
+
+    // 超管可设置登录页背景图
+    if (cfg.loginBackground) {
+      const bg = $('#authBg');
+      bg.classList.remove('gradient');
+      bg.style.backgroundImage = 'url("' + App.safeURL(API.fileURL(cfg.loginBackground)) + '")';
+      if (cfg.loginBackgroundBlur) bg.style.filter = 'blur(' + Math.min(20, cfg.loginBackgroundBlur) + 'px) saturate(1.1)';
+    }
+
+    // 已登录直接进社区
+    await Session.load();
+    if (Session.isLoggedIn) { location.replace(redirect); return; }
+
+    // 人机验证
+    const ts = (m && m.turnstile) || {};
+    if (ts.enabled && ts.login) {
+      App.Turnstile.siteKey = m.turnstileSiteKey;
+      getToken = await App.Turnstile.render('#tsBox', 'login');
+    }
+
+    // OAuth
+    const o = (m && m.oauth) || {};
+    if (o.github || o.discord) $('#oauthWrap').classList.remove('hidden');
+    if (o.github) { const b = $('#btnGithub'); b.classList.remove('hidden'); b.onclick = () => API.Auth.oauthStart('github', location.origin + '/oauth_callback.html?redirect=' + encodeURIComponent(redirect)); }
+    if (o.discord) { const b = $('#btnDiscord'); b.classList.remove('hidden'); b.onclick = () => API.Auth.oauthStart('discord', location.origin + '/oauth_callback.html?redirect=' + encodeURIComponent(redirect)); }
+
+    I18N.apply();
+  }
+
+  $('#togglePwd').onclick = () => {
+    const p = $('#password');
+    const show = p.type === 'password';
+    p.type = show ? 'text' : 'password';
+    $('#togglePwd').innerHTML = icon(show ? 'eyeOff' : 'eye');
+  };
+
+  $('#loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const identifier = $('#identifier').value.trim();
+    const password = $('#password').value;
+    if (!identifier || !password) { toast.warn(I18N.t('common.required')); return; }
+
+    const tk = getToken();
+    if (App.Turnstile.siteKey && $('#tsBox').style.display !== 'none' && !tk) {
+      toast.warn(I18N.t('auth.verifyHuman')); return;
+    }
+
+    const btn = $('#submitBtn');
+    busy(btn, true);
+    try {
+      await API.Auth.login({ identifier, password, turnstileToken: tk });
+      if (!$('#remember').checked) sessionStorage.setItem('mo_session_only', '1');
+      toast.success(I18N.t('common.success'));
+      location.href = redirect;
+    } catch (err) {
+      toastError(err);
+      App.Turnstile.reset('login');
+      $('#password').value = '';
+      $('#password').focus();
+    } finally { busy(btn, false); }
+  });
+
+  init();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>写文章 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/css/main.css">
+<style>
+  .ed-grid { display: grid; grid-template-columns: 1fr 340px; gap: 20px; align-items: start; }
+  .ed-toolbar { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px 10px; border-bottom: 1px solid var(--border); background: var(--surface-2); border-radius: 12px 12px 0 0; }
+  .ed-toolbar button { width: 32px; height: 30px; display: inline-flex; align-items: center; justify-content: center;
+    border: none; background: none; border-radius: 6px; cursor: pointer; color: var(--text-3); font-size: 13px; font-weight: 700; font-family: inherit; }
+  .ed-toolbar button:hover { background: var(--surface-hover); color: var(--text); }
+  .ed-toolbar .sep { width: 1px; height: 20px; background: var(--border); margin: 5px 4px; }
+  #edContent { border: none; border-radius: 0 0 12px 12px; min-height: 480px; resize: vertical;
+    font-family: var(--font-mono); font-size: 14px; line-height: 1.75; }
+  #edContent:focus { box-shadow: none; }
+  #edPreview { min-height: 480px; padding: 24px; }
+  #edTitle { font-size: 22px; font-weight: 700; border: none; padding: 18px 20px; background: transparent; }
+  #edTitle:focus { box-shadow: none; }
+  @media (max-width: 1024px) { .ed-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header id="navbar"></header>
+
+<div class="container" style="padding:20px 20px 60px">
+  <div class="row-between wrap mb-4" style="gap:12px">
+    <div>
+      <h2 class="mb-0" id="edHeading" data-i18n="post.write">写文章</h2>
+      <p class="small muted mb-0" id="edSubtitle">支持 Markdown · Ctrl/⌘ + S 保存草稿</p>
+    </div>
+    <div class="row" style="gap:8px">
+      <span class="small muted" id="edStatus"></span>
+      <button class="btn btn-ghost btn-sm" id="btnBack" data-i18n="common.back">返回</button>
+      <button class="btn btn-outline btn-sm" id="btnDraft" data-i18n="post.saveDraft">存草稿</button>
+      <button class="btn btn-primary btn-sm" id="btnPublish" data-i18n="post.publish">发布</button>
+    </div>
+  </div>
+
+  <div class="ed-grid">
+    <!-- ======================= 左：编辑区 ======================= -->
+    <div>
+      <div class="card" style="overflow:hidden">
+        <input class="input" id="edTitle" maxlength="200" placeholder="请输入标题…" data-i18n-ph="post.titlePh">
+        <div class="pill-tabs" style="margin:0 10px 8px">
+          <button class="pill-tab active" data-mode="write" data-i18n="post.markdown">编辑</button>
+          <button class="pill-tab" data-mode="preview" data-i18n="post.preview">预览</button>
+          <button class="pill-tab" data-mode="split">分栏</button>
+        </div>
+
+        <div id="paneWrite">
+          <div class="ed-toolbar" id="edToolbar">
+            <button data-md="h2" title="标题">H2</button>
+            <button data-md="h3" title="小标题">H3</button>
+            <div class="sep"></div>
+            <button data-md="bold" title="加粗"><b>B</b></button>
+            <button data-md="italic" title="斜体"><i>I</i></button>
+            <button data-md="strike" title="删除线"><s>S</s></button>
+            <div class="sep"></div>
+            <button data-md="quote" title="引用">❝</button>
+            <button data-md="ul" title="无序列表">•</button>
+            <button data-md="ol" title="有序列表">1.</button>
+            <button data-md="task" title="任务列表">☑</button>
+            <div class="sep"></div>
+            <button data-md="code" title="行内代码">&lt;/&gt;</button>
+            <button data-md="pre" title="代码块">{ }</button>
+            <button data-md="link" title="链接">🔗</button>
+            <button data-md="table" title="表格">▦</button>
+            <button data-md="hr" title="分割线">—</button>
+            <div class="sep"></div>
+            <button id="btnInsertImg" title="插入图片">🖼</button>
+            <span class="spacer"></span>
+            <span class="xsmall muted" id="edCount" style="align-self:center;padding-right:6px">0 字</span>
+          </div>
+          <textarea class="textarea" id="edContent" placeholder="在这里书写你的内容…" data-i18n-ph="post.contentPh"></textarea>
+        </div>
+
+        <div id="panePreview" style="display:none">
+          <div class="prose" id="edPreview"></div>
+        </div>
+      </div>
+      <input type="file" id="imgPicker" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
+    </div>
+
+    <!-- ======================= 右：设置区 ======================= -->
+    <div class="col" style="gap:16px">
+
+      <div class="card">
+        <div class="card-head"><h4 class="mb-0" data-i18n="post.visibility">可见性</h4></div>
+        <div class="card-body col" style="gap:10px">
+          <label class="check"><input type="radio" name="vis" value="public" checked>
+            <span><b data-i18n="post.vis.public">公开</b><br><span class="xsmall muted">所有访客均可阅读</span></span></label>
+          <label class="check"><input type="radio" name="vis" value="members">
+            <span><b data-i18n="post.vis.unlisted">仅登录可见</b><br><span class="xsmall muted">未登录访客不可见</span></span></label>
+          <label class="check"><input type="radio" name="vis" value="roles">
+            <span><b data-i18n="post.vis.role">指定身份组</b><br><span class="xsmall muted">仅所选身份组成员可见</span></span></label>
+          <label class="check"><input type="radio" name="vis" value="private">
+            <span><b data-i18n="post.vis.private">私密</b><br><span class="xsmall muted" data-i18n="post.visHint.private">仅自己与超级管理员可见</span></span></label>
+
+          <div id="roleSelectBox" style="display:none" class="mt-2">
+            <label class="label">可见身份组</label>
+            <div class="perm-grid" id="roleSelect"><span class="muted small" data-i18n="common.loading">加载中…</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h4 class="mb-0">发布位置</h4></div>
+        <div class="card-body col" style="gap:12px">
+          <div class="field">
+            <label class="label" data-i18n="post.scope">作用域</label>
+            <select class="select" id="edScope"><option value="global">全站（global）</option></select>
+          </div>
+          <div class="field">
+            <label class="label">版块</label>
+            <select class="select" id="edBoard"><option value="general">综合讨论</option></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h4 class="mb-0" data-i18n="post.tags">标签</h4></div>
+        <div class="card-body">
+          <div class="chip-row mb-3" id="tagList"></div>
+          <input class="input input-sm" id="tagInput" placeholder="回车添加，最多 8 个" data-i18n-ph="post.tagsPh">
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h4 class="mb-0" data-i18n="post.cover">封面</h4></div>
+        <div class="card-body">
+          <div class="upload-zone" id="coverZone">
+            <div id="coverEmpty"><span class="muted small">点击或拖拽上传封面（≤5MB）</span></div>
+            <img id="coverImg" style="display:none;width:100%;border-radius:8px" alt="">
+          </div>
+          <button class="btn btn-ghost btn-sm btn-block mt-2" id="coverClear" style="display:none"
+            data-i18n="common.delete">移除</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h4 class="mb-0">摘要</h4></div>
+        <div class="card-body">
+          <textarea class="textarea" id="edExcerpt" rows="3" maxlength="200"
+            placeholder="留空则自动截取正文前 200 字"></textarea>
+        </div>
+      </div>
+
+      <div id="tsBox"></div>
+    </div>
+  </div>
+</div>
+
+<footer id="footer"></footer>
+<nav id="tabbar"></nav>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script>
+(function () {
+  'use strict';
+  const { $, $$, esc, icon, markdown } = App;
+  const T = (k) => I18N.t(k);
+
+  const editId = new URLSearchParams(location.search).get('id') || '';
+  const presetScope = new URLSearchParams(location.search).get('scope') || 'global';
+  let tags = [];
+  let cover = '';
+  let visibleRoles = [];
+  let dirty = false;
+  let original = null;
+  let tsToken = null;              // Turnstile token getter
+  const LS_DRAFT = 'mo_editor_draft';
+
+  /* ------------------------- Markdown 工具条 ------------------------- */
+  const SNIPPETS = {
+    h2: ['## ', ''], h3: ['### ', ''],
+    bold: ['**', '**'], italic: ['*', '*'], strike: ['~~', '~~'],
+    quote: ['> ', ''], ul: ['- ', ''], ol: ['1. ', ''], task: ['- [ ] ', ''],
+    code: ['`', '`'], pre: ['```js\n', '\n```'], link: ['[', '](https://)'],
+    table: ['\n| 列 A | 列 B |\n| --- | --- |\n| 内容 | 内容 |\n', ''],
+    hr: ['\n---\n', ''],
+  };
+
+  function wrap(key) {
+    const ta = $('#edContent');
+    const [a, b] = SNIPPETS[key] || ['', ''];
+    const s = ta.selectionStart, e = ta.selectionEnd;
+    const sel = ta.value.slice(s, e);
+    ta.value = ta.value.slice(0, s) + a + sel + b + ta.value.slice(e);
+    ta.focus();
+    ta.selectionStart = s + a.length;
+    ta.selectionEnd = s + a.length + sel.length;
+    onInput();
+  }
+
+  /* ------------------------- 输入与预览 ------------------------- */
+  function onInput() {
+    dirty = true;
+    const v = $('#edContent').value;
+    $('#edCount').textContent = v.length + ' 字';
+    if ($('#panePreview').style.display !== 'none') $('#edPreview').innerHTML = markdown(v);
+    saveLocal();
+  }
+
+  function setMode(m) {
+    $$('[data-mode]').forEach((b) => b.classList.toggle('active', b.dataset.mode === m));
+    const w = $('#paneWrite'), p = $('#panePreview');
+    if (m === 'write') { w.style.display = ''; p.style.display = 'none'; }
+    else if (m === 'preview') { w.style.display = 'none'; p.style.display = ''; $('#edPreview').innerHTML = markdown($('#edContent').value); }
+    else {
+      w.style.display = ''; p.style.display = '';
+      $('#edPreview').innerHTML = markdown($('#edContent').value);
+      $('#panePreview').style.borderTop = '1px solid var(--border)';
+    }
+  }
+
+  /* ------------------------- 标签 ------------------------- */
+  function renderTags() {
+    $('#tagList').innerHTML = tags.map((t, i) =>
+      '<span class="tag">#' + esc(t) + '<button class="tag-close" data-ti="' + i + '">×</button></span>').join('')
+      || '<span class="xsmall muted">还没有标签</span>';
+    $$('[data-ti]').forEach((b) => b.onclick = () => { tags.splice(+b.dataset.ti, 1); renderTags(); dirty = true; });
+  }
+
+  /* ------------------------- 本地草稿自动保存 ------------------------- */
+  function saveLocal() {
+    if (editId) return;
+    try {
+      localStorage.setItem(LS_DRAFT, JSON.stringify({
+        title: $('#edTitle').value, content: $('#edContent').value,
+        tags, cover, excerpt: $('#edExcerpt').value, t: Date.now(),
+      }));
+    } catch (e) { /* ignore */ }
+  }
+  function restoreLocal() {
+    if (editId) return;
+    try {
+      const d = JSON.parse(localStorage.getItem(LS_DRAFT) || 'null');
+      if (!d || (!d.title && !d.content)) return;
+      if (Date.now() - d.t > 7 * 86400000) return;
+      $('#edTitle').value = d.title || '';
+      $('#edContent').value = d.content || '';
+      $('#edExcerpt').value = d.excerpt || '';
+      tags = d.tags || []; cover = d.cover || '';
+      renderTags(); renderCover();
+      $('#edStatus').textContent = '已恢复本地草稿';
+    } catch (e) { /* ignore */ }
+  }
+
+  /* ------------------------- 封面 ------------------------- */
+  function renderCover() {
+    if (cover) {
+      $('#coverImg').src = API.fileURL(cover);
+      $('#coverImg').style.display = '';
+      $('#coverEmpty').style.display = 'none';
+      $('#coverClear').style.display = '';
+    } else {
+      $('#coverImg').style.display = 'none';
+      $('#coverEmpty').style.display = '';
+      $('#coverClear').style.display = 'none';
+    }
+  }
+
+  /* ------------------------- 作用域 / 版块 ------------------------- */
+  async function loadScopes() {
+    try {
+      const d = await API.Channels.list();
+      const sc = $('#edScope');
+      (d.items || []).forEach((c) => {
+        const o = document.createElement('option');
+        o.value = 'channel:' + c.id;
+        o.textContent = (c.icon || '#') + ' ' + c.name;
+        sc.appendChild(o);
+      });
+      sc.value = presetScope;
+      sc.onchange = () => { fillBoards(d.items || []); loadRoles(); dirty = true; };
+      fillBoards(d.items || []);
+    } catch (e) { /* 忽略 */ }
+  }
+
+  function fillBoards(channels) {
+    const scope = $('#edScope').value;
+    const bd = $('#edBoard');
+    bd.innerHTML = '<option value="general">综合讨论</option>';
+    if (scope.startsWith('channel:')) {
+      const c = channels.find((x) => 'channel:' + x.id === scope);
+      (c && c.boards || []).forEach((b) => {
+        const o = document.createElement('option');
+        o.value = b.id; o.textContent = (b.icon || '•') + ' ' + b.name;
+        bd.appendChild(o);
+      });
+    }
+  }
+
+  /* ------------------------- 身份组可见性 ------------------------- */
+  async function loadRoles() {
+    const box = $('#roleSelect');
+    try {
+      const d = await API.Roles.list($('#edScope').value);
+      const roles = d.roles || [];
+      box.innerHTML = roles.length ? roles.map((r) =>
+        '<label class="perm-item"><input type="checkbox" data-role="' + esc(r.id) + '"' +
+        (visibleRoles.find((x) => x.roleId === r.id) ? ' checked' : '') + '>' +
+        '<span class="role-tag" style="--rc:' + esc(r.color || '#888') + '">' + esc(r.name) + '</span></label>').join('')
+        : '<span class="muted small">该作用域暂无身份组</span>';
+      $$('[data-role]', box).forEach((c) => c.onchange = () => {
+        visibleRoles = $$('[data-role]:checked', box).map((x) => ({ scope: $('#edScope').value, roleId: x.dataset.role }));
+        dirty = true;
+      });
+    } catch (e) { box.innerHTML = '<span class="muted small">加载失败</span>'; }
+  }
+
+  /* ------------------------- 保存 ------------------------- */
+  function payload(status) {
+    return {
+      title: $('#edTitle').value.trim(),
+      content: $('#edContent').value,
+      excerpt: $('#edExcerpt').value.trim(),
+      cover, tags,
+      board: $('#edBoard').value,
+      scope: $('#edScope').value,
+      visibility: (document.querySelector('input[name="vis"]:checked') || {}).value || 'public',
+      visibleRoles,
+      status,
+      turnstileToken: tsToken ? tsToken() : undefined,
+    };
+  }
+
+  async function save(status) {
+    const body = payload(status);
+    if (body.title.length < 2) { App.toast('标题至少 2 个字符', 'warn'); $('#edTitle').focus(); return; }
+    if (status === 'published' && body.content.trim().length < 1) { App.toast('正文不能为空', 'warn'); return; }
+    if (body.visibility === 'roles' && !visibleRoles.length) { App.toast('请至少选择一个可见身份组', 'warn'); return; }
+
+    const btn = status === 'draft' ? $('#btnDraft') : $('#btnPublish');
+    App.busy(btn, true);
+    try {
+      let d;
+      if (editId) d = await API.Posts.update(editId, body);
+      else d = await API.Posts.create(body);
+      dirty = false;
+      localStorage.removeItem(LS_DRAFT);
+      App.toast(status === 'draft' ? '草稿已保存' : T('common.success'), 'success');
+      const id = editId || (d.post && d.post.id);
+      if (status === 'published' && id) setTimeout(() => { location.href = '/post.html?id=' + encodeURIComponent(id); }, 400);
+      else $('#edStatus').textContent = '已保存 ' + I18N.formatDate(Date.now(), 'time');
+    } catch (e) { App.toastError(e); }
+    App.busy(btn, false);
+  }
+
+  /* ------------------------- 载入待编辑文章 ------------------------- */
+  async function loadForEdit() {
+    if (!editId) return;
+    try {
+      const d = await API.Posts.detail(editId);
+      const p = d.post;
+      original = p;
+      if (!p.canEdit) { App.toast(T('common.forbidden'), 'error'); return; }
+      $('#edHeading').textContent = T('post.edit');
+      $('#edTitle').value = p.title || '';
+      $('#edContent').value = p.content || '';
+      $('#edExcerpt').value = p.excerpt || '';
+      tags = p.tags || []; cover = p.cover || '';
+      visibleRoles = p.visibleRoles || [];
+      const vis = document.querySelector('input[name="vis"][value="' + p.visibility + '"]');
+      if (vis) { vis.checked = true; vis.dispatchEvent(new Event('change', { bubbles: true })); }
+      $('#edScope').value = p.scope || 'global';
+      setTimeout(() => { $('#edBoard').value = p.board || 'general'; }, 300);
+      renderTags(); renderCover(); onInput();
+      dirty = false;
+      $('#edStatus').textContent = p.status === 'draft' ? '草稿' : '已发布';
+    } catch (e) { App.toastError(e); }
+  }
+
+  /* ------------------------------ 启动 ------------------------------ */
+  App.boot({
+    nav: 'editor',
+    requireAuth: true,
+    onReady: async function () {
+      // 工具条
+      $$('#edToolbar [data-md]').forEach((b) => b.onclick = () => wrap(b.dataset.md));
+      $$('[data-mode]').forEach((b) => b.onclick = () => setMode(b.dataset.mode));
+      $('#edContent').addEventListener('input', App.debounce(onInput, 120));
+      $('#edExcerpt').addEventListener('input', () => { dirty = true; saveLocal(); });
+      $('#edTitle').addEventListener('input', () => { dirty = true; saveLocal(); });
+
+      // 标签
+      $('#tagInput').addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter' && e.key !== ',') return;
+        e.preventDefault();
+        const v = e.target.value.trim().replace(/^#/, '');
+        if (!v) return;
+        if (tags.length >= 8) { App.toast('最多 8 个标签', 'warn'); return; }
+        if (!tags.includes(v)) tags.push(v);
+        e.target.value = ''; renderTags(); dirty = true;
+      });
+      renderTags();
+
+      // 可见性联动
+      $$('input[name="vis"]').forEach((r) => r.addEventListener('change', () => {
+        const on = r.value === 'roles' && r.checked;
+        $('#roleSelectBox').style.display = on ? '' : 'none';
+        if (on) loadRoles();
+        dirty = true;
+      }));
+
+      // 封面上传
+      App.uploadZone($('#coverZone'), 'image', (url) => { cover = url; renderCover(); dirty = true; });
+      $('#coverClear').onclick = () => { cover = ''; renderCover(); dirty = true; };
+
+      // 正文插图
+      $('#btnInsertImg').onclick = () => $('#imgPicker').click();
+      $('#imgPicker').onchange = async (e) => {
+        const f = e.target.files[0];
+        if (!f) return;
+        const err = App.validateImage(f);
+        if (err) { App.toast(err, 'warn'); return; }
+        App.toast('上传中…');
+        try {
+          const d = await API.upload('image', f);
+          const ta = $('#edContent');
+          const md = '\n![' + (f.name || 'image') + '](' + d.url + ')\n';
+          ta.value = ta.value.slice(0, ta.selectionStart) + md + ta.value.slice(ta.selectionStart);
+          onInput();
+          App.toast(T('common.success'), 'success');
+        } catch (err2) { App.toastError(err2); }
+        e.target.value = '';
+      };
+
+      // 按钮
+      $('#btnDraft').onclick = () => save('draft');
+      $('#btnPublish').onclick = () => save('published');
+      $('#btnBack').onclick = async () => {
+        if (dirty && !await App.confirmDialog('有未保存的修改，确定离开？', { danger: true })) return;
+        history.length > 1 ? history.back() : (location.href = '/home.html');
+      };
+
+      // 快捷键
+      document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); save('draft'); }
+      });
+      window.addEventListener('beforeunload', (e) => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+
+      // Turnstile（若站点要求发帖验证）
+      const meta = App.Site.meta || {};
+      if (meta.turnstile && meta.turnstile.enabled && meta.turnstile.post) {
+        $('#tsBox').innerHTML = '<div class="card card-pad"><label class="label" data-i18n="auth.verifyHuman">人机验证</label>' +
+          '<div class="cf-turnstile" id="tsPost"></div></div>';
+        tsToken = await App.Turnstile.render('#tsPost', 'post');
+      }
+
+      await loadScopes();
+      await loadForEdit();
+      restoreLocal();
+    },
+  });
+})();
+</script>
+</body>
+</html>

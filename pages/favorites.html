@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>我的收藏 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/css/main.css">
+</head>
+<body>
+
+<header id="navbar"></header>
+
+<div class="layout container-mid">
+  <main class="main">
+    <div class="card card-pad row-between wrap" style="gap:10px">
+      <div>
+        <h2 class="mb-0" data-i18n="nav.favorites">我的收藏</h2>
+        <p class="small muted mb-0" id="favHint">收藏的文章会保存在这里，随时回看</p>
+      </div>
+      <div class="input-icon" style="max-width:240px">
+        <input class="input input-sm" id="favSearch" type="search" placeholder="在收藏中搜索" data-i18n-ph="common.search">
+      </div>
+    </div>
+
+    <div class="post-list" id="feed"></div>
+  </main>
+
+  <aside class="aside">
+    <div class="card card-pad">
+      <h4 style="margin:0 0 10px">收藏统计</h4>
+      <div class="kv-list">
+        <div class="kv-row"><span class="muted small">总数</span><b id="favTotal">—</b></div>
+        <div class="kv-row"><span class="muted small">标签种类</span><b id="favTags">—</b></div>
+        <div class="kv-row"><span class="muted small">作者数</span><b id="favAuthors">—</b></div>
+      </div>
+    </div>
+    <div class="card card-pad">
+      <h4 style="margin:0 0 10px">按标签筛选</h4>
+      <div class="chip-row" id="favTagCloud"><span class="muted small">—</span></div>
+    </div>
+  </aside>
+</div>
+
+<footer id="footer"></footer>
+<nav id="tabbar"></nav>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script src="/assets/js/feed.js"></script>
+<script>
+(function () {
+  'use strict';
+  const { $, $$, esc } = App;
+  const T = (k) => I18N.t(k);
+
+  let all = [];
+  let filterTag = '';
+  let keyword = '';
+
+  function render() {
+    const box = $('#feed');
+    let items = all;
+    if (filterTag) items = items.filter((p) => (p.tags || []).includes(filterTag));
+    if (keyword) {
+      const k = keyword.toLowerCase();
+      items = items.filter((p) => (p.title + ' ' + (p.excerpt || '')).toLowerCase().includes(k));
+    }
+    box.innerHTML = items.length
+      ? items.map((p) => Feed.cardHTML(p)).join('')
+      : App.emptyState('还没有收藏', '在文章页点击收藏，稍后即可在这里找到它们', 'star',
+          '<a class="btn btn-primary" href="/explore.html">' + T('nav.explore') + '</a>');
+    Feed.bindActions(box);
+    I18N.apply(box);
+    $('#favHint').textContent = '共 ' + items.length + ' 篇' + (filterTag ? ' · 标签 #' + filterTag : '');
+  }
+
+  function renderSide() {
+    const tags = {};
+    const authors = new Set();
+    all.forEach((p) => {
+      (p.tags || []).forEach((t) => { tags[t] = (tags[t] || 0) + 1; });
+      if (p.author) authors.add(p.author.id);
+    });
+    $('#favTotal').textContent = all.length;
+    $('#favTags').textContent = Object.keys(tags).length;
+    $('#favAuthors').textContent = authors.size;
+
+    const entries = Object.entries(tags).sort((a, b) => b[1] - a[1]);
+    $('#favTagCloud').innerHTML = entries.length
+      ? '<button class="chip' + (filterTag ? '' : ' active') + '" data-ft="">' + T('common.all') + '</button>' +
+        entries.map(([t, n]) => '<button class="chip' + (filterTag === t ? ' active' : '') +
+          '" data-ft="' + esc(t) + '">#' + esc(t) + ' ' + n + '</button>').join('')
+      : '<span class="muted small">暂无标签</span>';
+    $$('[data-ft]').forEach((b) => b.onclick = () => { filterTag = b.dataset.ft; render(); renderSide(); });
+  }
+
+  App.boot({
+    nav: 'favorites',
+    requireAuth: true,
+    onReady: async function () {
+      $('#feed').innerHTML = App.skeletonList(4);
+      try {
+        const d = await API.Posts.favorites();
+        all = (d.items || []).sort((a, b) => b.createdAt - a.createdAt);
+        render(); renderSide();
+      } catch (e) {
+        $('#feed').innerHTML = App.emptyState(T('common.failed'), e.message, 'alert');
+      }
+      $('#favSearch').addEventListener('input', App.debounce(() => {
+        keyword = $('#favSearch').value.trim(); render();
+      }, 300));
+    },
+  });
+})();
+</script>
+</body>
+</html>

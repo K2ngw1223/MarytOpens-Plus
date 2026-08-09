@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "description": "Discord 角色 → MarytOpens 机器人操作权限映射。只有当命令发起者拥有所列 Discord 角色之一时，对应操作才会被放行。修改后重启机器人即可生效。",
+  "mappings": {
+    "post.create": {
+      "discordRoles": ["Admin", "版主", "Bot Commander"],
+      "defaultAuthorId": "REPLACE_WITH_AUTHOR_USER_ID"
+    },
+    "post.delete.any": {
+      "discordRoles": ["Admin", "版主"]
+    },
+    "notify": {
+      "discordRoles": ["Admin", "版主", "Bot Commander"]
+    }
+  },
+  "defaultBoard": "general",
+  "rateLimit": {
+    "publishPerUser": 10,
+    "windowMs": 60000
+  }
+}

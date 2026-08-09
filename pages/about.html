@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>关于我们 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/css/main.css">
+</head>
+<body>
+
+<header id="navbar"></header>
+
+<div class="layout container-mid">
+  <main class="main">
+    <div class="card card-pad">
+      <h2 class="mb-0" data-i18n="about.title">关于我们</h2>
+      <p class="small muted" id="aboutSub">了解这个社区，以及它背后的故事</p>
+    </div>
+
+    <article class="card card-pad markdown-body" id="aboutBody">
+      <div class="loading-block">加载中…</div>
+    </article>
+
+    <article class="card card-pad" id="contributorsCard" hidden>
+      <h3 class="section-head-sm" data-i18n="about.contributors">贡献者</h3>
+      <p class="small muted mb-0" data-i18n="about.contributorsDesc">感谢以下为项目做出贡献的人。</p>
+      <div class="contrib-grid mt-3" id="contribList"></div>
+    </article>
+
+    <article class="card card-pad" id="bansCard" hidden>
+      <h3 class="section-head-sm" data-i18n="about.bans">封禁公示</h3>
+      <p class="small muted mb-0" data-i18n="about.bansDesc">为维护社区秩序，以下账号或 IP 已被封禁。</p>
+      <div id="bansList" class="mt-3"></div>
+    </article>
+  </main>
+
+  <aside class="aside">
+    <!-- 个人资料卡 -->
+    <div class="card card-pad" id="personalCard" hidden>
+      <div class="row gap-12" style="align-items:center">
+        <span id="pAvatar"></span>
+        <div style="min-width:0">
+          <div class="fw-600" id="pName" style="line-height:1.2"></div>
+          <div class="small muted" id="pTagline" style="line-height:1.3"></div>
+        </div>
+      </div>
+      <p class="small" id="pBio" style="margin:12px 0 0"></p>
+      <div class="chip-row" id="pSocials" style="margin-top:12px"></div>
+    </div>
+
+    <!-- 项目卡 -->
+    <div class="card card-pad" id="projectsCard" hidden>
+      <h4 style="margin:0 0 10px">精选项目</h4>
+      <div class="stack gap-10" id="projectsList"></div>
+    </div>
+
+    <!-- 站点快速链接 -->
+    <div class="card card-pad">
+      <h4 style="margin:0 0 10px" data-i18n="about.links">站点导航</h4>
+      <div class="footer-links" id="siteLinks"></div>
+    </div>
+  </aside>
+</div>
+
+<footer id="footer"></footer>
+<nav id="tabbar"></nav>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script>
+(function () {
+  'use strict';
+  const { $, $$, esc, icon } = App;
+  const T = (k) => I18N.t(k);
+
+  // 站点快速链接（取自导航项，过滤掉当前页）
+  function renderSiteLinks() {
+    const items = (App.NAV_ITEMS || []).filter((n) => n.href && n.href !== '/about.html' && !n.hidden);
+    $('#siteLinks').innerHTML = items.map((n) =>
+      '<a href="' + esc(n.href) + '">' + esc(T(n.i18n) || n.i18n || n.key) + '</a>'
+    ).join('');
+  }
+
+  function renderPersonal(cfg) {
+    const p = (cfg && cfg.personal) || {};
+    if (!p.displayName && !p.tagline && !p.bio && !(p.socials && p.socials.length)) return;
+    $('#personalCard').hidden = false;
+    $('#pAvatar').innerHTML = App.avatar({ displayName: p.displayName || 'M', avatar: p.avatar }, 'lg');
+    $('#pName').textContent = p.displayName || T('about.title');
+    $('#pTagline').textContent = p.tagline || '';
+    $('#pBio').textContent = p.bio || '';
+
+    const socials = (p.socials || []).filter((s) => s && s.url);
+    $('#pSocials').innerHTML = socials.length
+      ? socials.map((s) =>
+          '<a class="chip" href="' + esc(App.safeURL(s.url) || '#') + '" target="_blank" rel="noopener noreferrer">' +
+          (s.icon ? icon(s.icon) : '') + esc(s.label || s.url) + '</a>'
+        ).join('')
+      : '';
+  }
+
+  function renderProjects(cfg) {
+    const projects = (cfg && cfg.personal && cfg.personal.projects) || [];
+    if (!projects.length) return;
+    $('#projectsCard').hidden = false;
+    $('#projectsList').innerHTML = projects.map((pr) => {
+      const url = App.safeURL(pr.url);
+      const inner = '<div class="fw-600">' + esc(pr.name || '') + '</div>' +
+        (pr.desc ? '<div class="small muted">' + esc(pr.desc) + '</div>' : '');
+      return url
+        ? '<a class="proj-item" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' + inner + '</a>'
+        : '<div class="proj-item">' + inner + '</div>';
+    }).join('');
+  }
+
+  function extractProfileUsername(u) {
+    if (!u) return null;
+    try {
+      const url = new URL(u, location.origin);
+      const sp = new URLSearchParams(url.search);
+      if (sp.get('u') || sp.get('username')) return sp.get('u') || sp.get('username');
+      const last = url.pathname.split('/').filter(Boolean).pop();
+      if (url.pathname.includes('/profile') || url.pathname.includes('/user')) return last;
+    } catch (e) { /* ignore */ }
+    return null;
+  }
+
+  async function resolveContributor(c) {
+    const url = c.url || '';
+    let avatar = '', display = c.name || '';
+    const gh = url.match(/github\.com\/([A-Za-z0-9-]+)/i);
+    if (gh) { avatar = 'https://github.com/' + gh[1] + '.png?size=96'; display = c.name || gh[1]; }
+    const uname = extractProfileUsername(url);
+    if (uname && (url.includes('profile.html') || url.includes('user.html') || /^\/(u|users)\//.test(url))) {
+      try {
+        const r = await API.get('/api/users/lookup?username=' + encodeURIComponent(uname));
+        if (r && r.user) {
+          avatar = r.user.avatar || avatar;
+          display = r.user.displayName || r.user.username || display;
+        }
+      } catch (e) { /* fallback to name */ }
+    }
+    const qq = url.match(/(?:qq\.com|qzone\.qq\.com|[?&]uin=)([0-9]{4,})/i);
+    if (qq) { display = c.name || ('QQ:' + qq[1]); }
+    return { ...c, avatar, display };
+  }
+
+  async function renderContributors(cfg) {
+    const list = (cfg && cfg.contributors) || [];
+    const card = $('#contributorsCard');
+    if (!list.length) { card.hidden = true; return; }
+    card.hidden = false;
+    const resolved = await Promise.all(list.map(resolveContributor));
+    $('#contribList').innerHTML = resolved.map((c) => {
+      const av = c.avatar
+        ? '<img class="avatar" style="width:48px;height:48px" src="' + esc(c.avatar) + '" alt="">'
+        : '<div class="avatar" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;font-weight:700">' + esc((c.display || '?').slice(0, 1)) + '</div>';
+      return '<a class="contrib-item" href="' + esc(App.safeURL(c.url || '#')) + '" target="_blank" rel="noopener noreferrer">' +
+        av +
+        '<div class="ci-body"><div class="ci-name">' + esc(c.display) + '</div>' +
+        (c.role ? '<div class="small muted">' + esc(c.role) + '</div>' : '') + '</div>' +
+        (c.note ? '<div class="small muted ci-note">' + esc(c.note) + '</div>' : '') + '</a>';
+    }).join('');
+  }
+
+  function fmtUntil(ts) {
+    if (!ts) return T('bans.permanent');
+    const d = new Date(Number(ts));
+    if (d <= new Date()) return T('bans.permanent');
+    try { return new Intl.DateTimeFormat(I18N.locale, { year: 'numeric', month: 'short', day: 'numeric' }).format(d); } catch (e) { return d.toLocaleDateString(); }
+  }
+
+  async function renderBans() {
+    const card = $('#bansCard');
+    let data = null;
+    try { data = await API.get('/api/bans'); } catch (e) { card.hidden = true; return; }
+    const userBans = (data && data.userBans) || [];
+    const ipBans = (data && data.ipBans) || [];
+    if (!userBans.length && !ipBans.length) { card.hidden = true; return; }
+    card.hidden = false;
+    const rows = [];
+    userBans.forEach((b) => {
+      rows.push('<div class="ban-row"><div class="ban-avatar" title="头像已打码"></div>' +
+        '<div class="ban-body"><div class="ban-name">' + esc(b.displayName || b.username) + '</div>' +
+        '<div class="small muted">✉ ' + esc(b.emailMasked || '') + '</div></div>' +
+        '<div class="ban-meta"><div>' + esc(T('bans.reason')) + '：' + esc(b.reason || '—') + '</div>' +
+        '<div>' + esc(T('bans.until')) + '：' + fmtUntil(b.until) + '</div></div></div>');
+    });
+    ipBans.forEach((b) => {
+      rows.push('<div class="ban-row"><div class="ban-avatar ban-ip" title="IP">🌐</div>' +
+        '<div class="ban-body"><div class="ban-name">' + esc(b.ipMasked || 'IP') + '</div></div>' +
+        '<div class="ban-meta"><div>' + esc(T('bans.reason')) + '：' + esc(b.reason || '—') + '</div>' +
+        '<div>' + esc(T('bans.until')) + '：' + fmtUntil(b.until) + '</div></div></div>');
+    });
+    $('#bansList').innerHTML = rows.join('') +
+      '<div class="small muted mt-3">' + T('bans.count', { n: userBans.length + ipBans.length }) + '</div>';
+  }
+
+  App.boot({
+    nav: 'about',
+    onReady: async function () {
+      const cfg = App.Site.cfg || {};
+      renderContributors(cfg);
+      renderBans();
+      renderSiteLinks();
+      renderPersonal(cfg);
+      renderProjects(cfg);
+
+      const box = $('#aboutBody');
+      box.innerHTML = '<div class="loading-block">加载中…</div>';
+      try {
+        // about 通常是纯 Markdown 字符串；兼容将来 {zh,en} 对象形态，按当前语言择优
+        let body = cfg.about;
+        if (body && typeof body === 'object') body = body[I18N.locale] || body.zh || body.en || '';
+        if (!body) {
+          box.innerHTML = App.emptyState('还没有关于内容', '站点管理员尚未填写「关于我们」页面', 'info');
+          return;
+        }
+        box.innerHTML = App.markdown(body);
+        I18N.apply(box);
+      } catch (e) {
+        box.innerHTML = App.emptyState(T('common.failed'), (e && e.message) || '', 'alert');
+      }
+    },
+  });
+})();
+</script>
+</body>
+</html>

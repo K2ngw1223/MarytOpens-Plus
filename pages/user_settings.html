@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>用户设置 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/css/main.css">
+</head>
+<body>
+
+<header id="navbar"></header>
+
+<div class="admin-layout">
+
+  <!-- ============================== 左侧导航 ============================== -->
+  <aside class="admin-side" id="setSide">
+    <div class="side-group">
+      <div class="section-title" data-i18n="settings.title">用户设置</div>
+      <button class="side-item active" data-pane="profile" data-i18n="settings.profile">资料</button>
+      <button class="side-item" data-pane="account" data-i18n="settings.account">账号</button>
+      <button class="side-item" data-pane="security" data-i18n="settings.security">安全</button>
+      <button class="side-item" data-pane="appearance" data-i18n="settings.appearance">外观</button>
+      <button class="side-item" data-pane="notify" data-i18n="settings.notify">通知</button>
+      <button class="side-item" data-pane="connections" data-i18n="settings.connections">第三方关联</button>
+      <button class="side-item" data-pane="privacy" data-i18n="settings.privacy">隐私</button>
+      <button class="side-item" data-pane="danger" data-i18n="settings.danger">危险区域</button>
+    </div>
+    <div class="side-group">
+      <div class="section-title" data-i18n="common.back">返回</div>
+      <a class="side-item" id="linkMyProfile" href="/profile.html" data-i18n="nav.profile">我的主页</a>
+      <a class="side-item" href="/home.html" data-i18n="nav.home">首页</a>
+    </div>
+  </aside>
+
+  <!-- ================================ 主区 ================================ -->
+  <main class="admin-main">
+
+    <!-- ------------------------------ 资料 ------------------------------ -->
+    <section class="tab-panel active" id="pane-profile">
+      <div class="admin-header">
+        <div>
+          <h2 data-i18n="settings.profile">资料</h2>
+          <p>这些信息会展示在你的个人主页与所有发言处</p>
+        </div>
+        <button class="btn btn-primary" id="btnSaveProfile" data-i18n="common.save">保存</button>
+      </div>
+
+      <div class="card card-pad">
+        <div class="row" style="gap:18px;align-items:flex-start;flex-wrap:wrap">
+          <div style="flex:0 0 120px;text-align:center">
+            <div class="label" data-i18n="user.avatar">头像</div>
+            <div id="avatarPreview" style="margin:6px auto 8px"></div>
+            <button class="btn btn-sm btn-soft" id="btnAvatar" data-i18n="common.upload">上传</button>
+            <input type="file" id="avatarFile" accept="image/*" hidden>
+          </div>
+
+          <div class="grow" style="min-width:240px">
+            <div class="field">
+              <label class="label" data-i18n="user.displayName">昵称</label>
+              <input class="input" id="pfDisplayName" maxlength="40" placeholder="展示给其他人的名字">
+            </div>
+            <div class="field">
+              <label class="label" data-i18n="auth.username">用户名</label>
+              <input class="input" id="pfUsername" maxlength="20">
+              <div class="hint">2-20 位字母、数字、下划线、连字符或中文；7 天内最多修改 2 次，修改后旧链接失效</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="label" data-i18n="user.bio">个人简介</label>
+          <textarea class="textarea" id="pfBio" rows="3" maxlength="500" placeholder="介绍一下自己…"></textarea>
+          <div class="hint"><span id="bioCount">0</span> / 500</div>
+        </div>
+
+        <div class="field">
+          <label class="label" data-i18n="user.banner">主页横幅</label>
+          <div class="upload-zone" id="bannerZone">
+            <p>点击或拖拽上传横幅图（建议 1500×500，≤5MB）</p>
+          </div>
+          <div class="row mt-2" style="gap:8px;align-items:center">
+            <img id="bannerPreview" alt="" style="max-height:70px;border-radius:8px;display:none">
+            <button class="btn btn-sm btn-ghost" id="bannerClear" hidden>移除横幅</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card card-pad mt-4">
+        <div class="row-between" style="margin-bottom:10px">
+          <h4 class="mb-0" data-i18n="user.links">关联账号</h4>
+          <button class="btn btn-sm btn-soft" id="btnAddLink">添加链接</button>
+        </div>
+        <p class="small muted">最多 12 条，会以图标形式展示在你的个人主页。</p>
+        <div id="linkEditor" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+    </section>
+
+    <!-- ------------------------------ 账号 ------------------------------ -->
+    <section class="tab-panel" id="pane-account">
+      <div class="admin-header">
+        <div><h2 data-i18n="settings.account">账号</h2><p>邮箱、账号标识与登录记录</p></div>
+      </div>
+
+      <div class="card card-pad">
+        <h4 style="margin:0 0 10px" data-i18n="settings.changeEmail">更换邮箱</h4>
+        <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+          <span class="muted small">当前邮箱</span>
+          <b id="acEmail" class="mono">—</b>
+          <span class="badge" id="acEmailState">—</span>
+        </div>
+        <div class="field">
+          <label class="label" data-i18n="auth.email">新邮箱地址</label>
+          <input class="input" id="acNewEmail" type="email" placeholder="you@example.com" autocomplete="email">
+        </div>
+        <div class="field">
+          <label class="label" data-i18n="auth.code">邮箱验证码</label>
+          <div class="row" style="gap:8px">
+            <input class="input grow" id="acCode" maxlength="6" inputmode="numeric" placeholder="6 位数字">
+            <button class="btn btn-soft" id="btnSendCode" data-i18n="auth.sendCode">发送验证码</button>
+          </div>
+          <div class="hint">验证码会发送到上方填写的新邮箱，10 分钟内有效</div>
+        </div>
+        <button class="btn btn-primary" id="btnChangeEmail" data-i18n="common.confirm">确定更换</button>
+      </div>
+
+      <div class="card card-pad mt-4">
+        <h4 style="margin:0 0 10px">账号信息</h4>
+        <div class="kv-list">
+          <div class="kv-row"><span class="muted small">用户 ID</span><code class="mono" id="acId">—</code></div>
+          <div class="kv-row"><span class="muted small">注册时间</span><b id="acCreated">—</b></div>
+          <div class="kv-row"><span class="muted small" data-i18n="role.title">身份组</span><span id="acRoles">—</span></div>
+          <div class="kv-row"><span class="muted small">账号状态</span><span id="acStatus">—</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ------------------------------ 安全 ------------------------------ -->
+    <section class="tab-panel" id="pane-security">
+      <div class="admin-header">
+        <div><h2 data-i18n="settings.security">安全</h2><p>密码与登录会话管理</p></div>
+      </div>
+
+      <div class="card card-pad">
+        <h4 style="margin:0 0 4px" data-i18n="settings.changePwd">修改密码</h4>
+        <p class="small muted">密码在浏览器内先做 SHA-256 预哈希后再传输，服务端只保存 PBKDF2 派生值。</p>
+        <div class="field">
+          <label class="label" data-i18n="auth.oldPassword">当前密码</label>
+          <input class="input" id="secOld" type="password" autocomplete="current-password">
+          <div class="hint" id="secOldHint" hidden>你的账号通过第三方登录创建，尚未设置密码，可留空直接设置新密码。</div>
+        </div>
+        <div class="field">
+          <label class="label" data-i18n="auth.newPassword">新密码</label>
+          <input class="input" id="secNew" type="password" autocomplete="new-password">
+          <div class="pwd-meter" id="secMeter"><i></i><i></i><i></i><i></i></div>
+          <div class="hint" id="secStrength" data-i18n="auth.pwdRule">至少 8 位，建议包含大小写字母与数字</div>
+        </div>
+        <div class="field">
+          <label class="label" data-i18n="auth.password2">确认新密码</label>
+          <input class="input" id="secNew2" type="password" autocomplete="new-password">
+          <div class="error-text" id="secErr" hidden data-i18n="auth.mismatch">两次输入的密码不一致</div>
+        </div>
+        <button class="btn btn-primary" id="btnChangePwd" data-i18n="common.save">保存新密码</button>
+        <div class="hint mt-2">修改密码后，其他设备上的登录会立即失效。</div>
+      </div>
+
+      <div class="card card-pad mt-4">
+        <h4 style="margin:0 0 10px">登录记录</h4>
+        <div class="kv-list">
+          <div class="kv-row"><span class="muted small">上次登录</span><b id="secLastLogin">—</b></div>
+          <div class="kv-row"><span class="muted small">上次登录 IP</span><code class="mono" id="secLastIP">—</code></div>
+          <div class="kv-row"><span class="muted small">令牌有效期</span><b id="secTokenExp">—</b></div>
+        </div>
+        <button class="btn btn-soft mt-4" id="btnLogout" data-i18n="nav.logout">退出登录</button>
+      </div>
+    </section>
+
+    <!-- ------------------------------ 外观 ------------------------------ -->
+    <section class="tab-panel" id="pane-appearance">
+      <div class="admin-header">
+        <div><h2 data-i18n="settings.appearance">外观</h2><p>主题、语言与时间格式。语言与时间默认根据浏览器自动识别</p></div>
+      </div>
+
+      <div class="card card-pad">
+        <div class="field">
+          <label class="label" data-i18n="settings.theme">主题</label>
+          <div class="pill-tabs" id="themePicker">
+            <button class="pill-tab" data-theme="auto" data-i18n="settings.theme.auto">跟随系统</button>
+            <button class="pill-tab" data-theme="light" data-i18n="settings.theme.light">浅色</button>
+            <button class="pill-tab" data-theme="dark" data-i18n="settings.theme.dark">深色</button>
+          </div>
+        </div>
+
+        <div class="row" style="gap:16px;flex-wrap:wrap">
+          <div class="field grow" style="min-width:200px">
+            <label class="label" data-i18n="settings.language">界面语言</label>
+            <select class="select" id="apLocale"></select>
+            <div class="hint" id="apLocaleHint">当前为自动识别</div>
+          </div>
+          <div class="field grow" style="min-width:200px">
+            <label class="label" data-i18n="settings.timeFormat">时间格式</label>
+            <select class="select" id="apTimeFormat">
+              <option value="auto" data-i18n="settings.tf.auto">自动（跟随地区）</option>
+              <option value="12h" data-i18n="settings.tf.12">12 小时制</option>
+              <option value="24h" data-i18n="settings.tf.24">24 小时制</option>
+            </select>
+            <div class="hint" id="apTimeHint">—</div>
+          </div>
+        </div>
+
+        <div class="kv-list mt-4">
+          <div class="kv-row"><span class="muted small">检测到的时区</span><b id="apTz">—</b></div>
+          <div class="kv-row"><span class="muted small">当前时间预览</span><b id="apPreview">—</b></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ------------------------------ 通知 ------------------------------ -->
+    <section class="tab-panel" id="pane-notify">
+      <div class="admin-header">
+        <div><h2 data-i18n="settings.notify">通知</h2><p>控制站内通知与邮件推送</p></div>
+        <button class="btn btn-primary" id="btnSaveNotify" data-i18n="common.save">保存</button>
+      </div>
+      <div class="card card-pad" id="notifyBox"></div>
+    </section>
+
+    <!-- --------------------------- 第三方关联 --------------------------- -->
+    <section class="tab-panel" id="pane-connections">
+      <div class="admin-header">
+        <div><h2 data-i18n="settings.connections">第三方关联</h2><p>绑定后可用第三方账号一键登录</p></div>
+      </div>
+      <div class="card card-pad" id="oauthBox"></div>
+      <div class="card card-pad mt-4">
+        <h4 style="margin:0 0 6px">机器人与开发者</h4>
+        <p class="small muted">如果你拥有机器人管理权限，可在管理后台创建 Bot Token 并调用 <code class="mono">/api/bot/*</code> 接口。</p>
+        <a class="btn btn-soft btn-sm" href="/admin_dashboard.html?tab=bots" id="linkBots" hidden>前往机器人管理</a>
+      </div>
+    </section>
+
+    <!-- ------------------------------ 隐私 ------------------------------ -->
+    <section class="tab-panel" id="pane-privacy">
+      <div class="admin-header">
+        <div><h2 data-i18n="settings.privacy">隐私</h2><p>控制他人能看到什么</p></div>
+        <button class="btn btn-primary" id="btnSavePrivacy" data-i18n="common.save">保存</button>
+      </div>
+      <div class="card card-pad" id="privacyBox"></div>
+      <div class="card card-pad mt-4">
+        <h4 style="margin:0 0 6px">数据导出</h4>
+        <p class="small muted">导出你在本站的公开资料与设置副本（JSON）。文章与评论请在对应页面自行备份。</p>
+        <button class="btn btn-soft btn-sm mt-2" id="btnExport">导出我的数据</button>
+      </div>
+    </section>
+
+    <!-- ---------------------------- 危险区域 ---------------------------- -->
+    <section class="tab-panel" id="pane-danger">
+      <div class="admin-header">
+        <div><h2 data-i18n="settings.danger">危险区域</h2><p>以下操作不可撤销</p></div>
+      </div>
+      <div class="card card-pad tip-danger">
+        <h4 style="margin:0 0 6px" data-i18n="settings.deleteAccount">注销账号</h4>
+        <p class="small muted" data-i18n="settings.deleteWarn">注销后所有数据将被匿名化，且无法恢复。</p>
+        <ul class="small muted" style="padding-left:18px;line-height:1.9">
+          <li>邮箱、头像、简介、关联链接会被清空，用户名保留占位以免链接失效</li>
+          <li>已发布的文章与评论会显示为「已注销用户」</li>
+          <li>所有设备立即下线，且无法再次登录</li>
+        </ul>
+        <button class="btn btn-danger mt-4" id="btnDeleteAccount" data-i18n="settings.deleteAccount">注销账号</button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer id="footer"></footer>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script>
+(function () {
+  'use strict';
+  const { $, $$, esc, el, toast, toastError, busy } = App;
+  const T = (k) => I18N.t(k);
+
+  /* 后端允许的关联平台，需与 worker 中 LINK_PLATFORMS 保持一致 */
+  const LINK_PLATFORMS = ['github', 'discord', 'twitter', 'x', 'telegram', 'bilibili', 'zhihu', 'weibo',
+    'youtube', 'mastodon', 'steam', 'email', 'website', 'blog', 'qq', 'wechat', 'linkedin', 'instagram'];
+
+  /* 通知项定义：key 与后端 user.notifySettings 对应 */
+  const NOTIFY_ITEMS = [
+    { key: 'like', title: '点赞提醒', desc: '有人赞了你的文章或评论', def: true },
+    { key: 'comment', title: '评论提醒', desc: '有人评论了你的文章或回复了你', def: true },
+    { key: 'follow', title: '关注提醒', desc: '有新用户关注了你', def: true },
+    { key: 'dm', title: '私信提醒', desc: '收到新的站内私信', def: true },
+    { key: 'mention', title: '提及提醒', desc: '有人在文章或评论中 @ 了你', def: true },
+    { key: 'system', title: '系统与公告', desc: '站点公告、审核结果、处罚通知（不可关闭）', def: true, locked: true },
+    { key: 'mail', title: '邮件推送', desc: '重要通知同时发送到你的邮箱', def: false },
+  ];
+
+  const PRIVACY_ITEMS = [
+    { key: 'showEmail', title: '公开邮箱', desc: '在个人主页展示邮箱地址', def: false },
+    { key: 'showFollowing', title: '公开关注列表', desc: '允许他人查看你关注了谁', def: true },
+    { key: 'showFavorites', title: '公开收藏', desc: '允许他人查看你的收藏夹', def: false },
+    { key: 'allowDm', title: '允许陌生人私信', desc: '关闭后仅互相关注的用户可以给你发私信', def: true },
+    { key: 'indexable', title: '允许搜索引擎收录', desc: '关闭后个人主页添加 noindex 标记', def: true },
+  ];
+
+  const state = {
+    user: null,
+    links: [],
+    avatar: '',
+    banner: '',
+    notify: {},
+    privacy: {},
+  };
+
+  /* ======================== 面板切换 ======================== */
+
+  function bindPanes() {
+    const items = $$('.admin-side .side-item[data-pane]');
+    items.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const pane = btn.dataset.pane;
+        items.forEach((b) => b.classList.toggle('active', b === btn));
+        $$('.tab-panel').forEach((p) => p.classList.toggle('active', p.id === 'pane-' + pane));
+        history.replaceState(null, '', '?tab=' + pane);
+        $('#setSide').classList.remove('open');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+    const want = new URLSearchParams(location.search).get('tab');
+    if (want) {
+      const hit = items.find((b) => b.dataset.pane === want);
+      if (hit) hit.click();
+    }
+  }
+
+  /* ======================== 资料 ======================== */
+
+  function renderAvatar() {
+    $('#avatarPreview').innerHTML = App.avatar(
+      { displayName: state.user.displayName, username: state.user.username, avatar: state.avatar }, 'xl');
+  }
+
+  function renderBanner() {
+    const img = $('#bannerPreview');
+    if (state.banner) {
+      img.src = API.fileURL(state.banner);
+      img.style.display = '';
+      $('#bannerClear').hidden = false;
+    } else {
+      img.style.display = 'none';
+      $('#bannerClear').hidden = true;
+    }
+  }
+
+  function linkRowHTML(l, i) {
+    return '<div class="row" style="gap:8px;align-items:center" data-link="' + i + '">' +
+      '<select class="select" style="flex:0 0 130px" data-lk="platform">' +
+        LINK_PLATFORMS.map((p) => '<option value="' + p + '"' + (l.platform === p ? ' selected' : '') + '>' + p + '</option>').join('') +
+      '</select>' +
+      '<input class="input" style="flex:0 0 130px" data-lk="label" maxlength="40" placeholder="显示名称" value="' + esc(l.label || '') + '">' +
+      '<input class="input grow" data-lk="url" maxlength="300" placeholder="https://…" value="' + esc(l.url || '') + '">' +
+      '<button class="icon-btn" data-rm="' + i + '" aria-label="remove">' + App.icon('trash') + '</button>' +
+    '</div>';
+  }
+
+  function renderLinks() {
+    const box = $('#linkEditor');
+    box.innerHTML = state.links.length
+      ? state.links.map(linkRowHTML).join('')
+      : '<p class="muted small mb-0">还没有添加任何链接。</p>';
+    box.querySelectorAll('[data-rm]').forEach((b) => {
+      b.onclick = () => { state.links.splice(Number(b.dataset.rm), 1); renderLinks(); };
+    });
+  }
+
+  function collectLinks() {
+    const rows = $$('#linkEditor [data-link]');
+    return rows.map((r) => ({
+      platform: r.querySelector('[data-lk="platform"]').value,
+      label: r.querySelector('[data-lk="label"]').value.trim(),
+      url: r.querySelector('[data-lk="url"]').value.trim(),
+    })).filter((l) => l.url);
+  }
+
+  function fillProfile() {
+    const u = state.user;
+    $('#pfDisplayName').value = u.displayName || '';
+    $('#pfUsername').value = u.username || '';
+    $('#pfBio').value = u.bio || '';
+    $('#bioCount').textContent = (u.bio || '').length;
+    state.avatar = u.avatar || '';
+    state.banner = u.banner || '';
+    state.links = (u.links || []).slice();
+    renderAvatar(); renderBanner(); renderLinks();
+
+    $('#pfBio').addEventListener('input', () => { $('#bioCount').textContent = $('#pfBio').value.length; });
+    $('#btnAddLink').onclick = () => {
+      if (state.links.length >= 12) { toast.warn('最多 12 条链接'); return; }
+      state.links = collectLinks();
+      state.links.push({ platform: 'website', label: '', url: '' });
+      renderLinks();
+    };
+
+    /* 头像：裁剪后上传 */
+    $('#btnAvatar').onclick = () => $('#avatarFile').click();
+    $('#avatarFile').addEventListener('change', (e) => {
+      const f = e.target.files[0];
+      if (!f) return;
+      App.cropAvatar(f, (url) => { state.avatar = url; renderAvatar(); });
+      e.target.value = '';
+    });
+
+    /* 横幅：拖拽上传 */
+    App.uploadZone($('#bannerZone'), 'banner', (url) => { state.banner = url; renderBanner(); });
+    $('#bannerClear').onclick = () => { state.banner = ''; renderBanner(); };
+
+    $('#btnSaveProfile').onclick = saveProfile;
+  }
+
+  async function saveProfile() {
+    const btn = $('#btnSaveProfile');
+    busy(btn, true);
+    try {
+      const payload = {
+        displayName: $('#pfDisplayName').value.trim(),
+        bio: $('#pfBio').value,
+        avatar: state.avatar,
+        banner: state.banner,
+        links: collectLinks(),
+      };
+      const nu = $('#pfUsername').value.trim();
+      if (nu && nu !== state.user.username) payload.username = nu;
+
+      const d = await API.Users.updateProfile(payload);
+      state.user = d.user;
+      App.Session.user = d.user;
+      API.setCachedUser(d.user);
+      state.links = d.user.links || [];
+      renderLinks();
+      App.renderNavbar('settings');
+      toast.success(T('settings.saved'));
+    } catch (e) { toastError(e); }
+    finally { busy(btn, false); }
+  }
+
+  /* ======================== 账号 ======================== */
+
+  function fillAccount() {
+    const u = state.user;
+    $('#acEmail').textContent = u.email || '未绑定';
+    const st = $('#acEmailState');
+    st.textContent = u.emailVerified ? '已验证' : '未验证';
+    st.className = 'badge ' + (u.emailVerified ? 'badge-ok' : 'badge-warn');
+    $('#acId').textContent = u.id;
+    $('#acCreated').textContent = u.createdAt ? I18N.formatDate(u.createdAt) : '—';
+    $('#acRoles').innerHTML = App.roleTagsHTML(App.Session.roleTags) || '<span class="muted small">—</span>';
+    $('#acStatus').innerHTML = u.banned
+      ? '<span class="badge badge-danger">已封禁</span>'
+      : (u.mutedUntil && u.mutedUntil > Date.now()
+          ? '<span class="badge badge-warn">禁言至 ' + I18N.formatDate(u.mutedUntil) + '</span>'
+          : '<span class="badge badge-ok">正常</span>');
+
+    App.bindCodeButton($('#btnSendCode'), () => $('#acNewEmail').value, 'bind');
+
+    $('#btnChangeEmail').onclick = async () => {
+      const btn = $('#btnChangeEmail');
+      const email = $('#acNewEmail').value.trim();
+      const code = $('#acCode').value.trim();
+      if (!email || !code) { toast.warn('请填写新邮箱与验证码'); return; }
+      busy(btn, true);
+      try {
+        const d = await API.Users.changeEmail(email, code);
+        state.user.email = d.email;
+        state.user.emailVerified = true;
+        $('#acNewEmail').value = ''; $('#acCode').value = '';
+        fillAccount();
+        toast.success('邮箱已更换');
+      } catch (e) { toastError(e); }
+      finally { busy(btn, false); }
+    };
+  }
+
+  /* ======================== 安全 ======================== */
+
+  function fillSecurity() {
+    const u = state.user;
+    const noPwd = u.oauth && (u.oauth.github || u.oauth.discord) && !u.email;
+    if (noPwd) $('#secOldHint').hidden = false;
+
+    $('#secLastLogin').textContent = u.lastLoginAt ? I18N.formatDate(u.lastLoginAt) : '—';
+    $('#secLastIP').textContent = u.lastIP || '—';
+    const p = API.decodeToken();
+    $('#secTokenExp').textContent = p && p.exp ? I18N.formatDate(p.exp * 1000) : '—';
+
+    $('#secNew').addEventListener('input', () => {
+      const v = $('#secNew').value;
+      const score = App.passwordStrength(v);           // 0-4
+      $('#secMeter').className = 'pwd-meter' + (v ? ' s' + score : '');
+      $('#secStrength').textContent = !v ? T('auth.pwdRule')
+        : score >= 3 ? T('auth.pwdStrong') : score === 2 ? T('auth.pwdMid') : T('auth.pwdWeak');
+    });
+    $('#secNew2').addEventListener('input', () => {
+      $('#secErr').hidden = !$('#secNew2').value || $('#secNew2').value === $('#secNew').value;
+    });
+
+    $('#btnChangePwd').onclick = async () => {
+      const btn = $('#btnChangePwd');
+      const oldP = $('#secOld').value;
+      const n1 = $('#secNew').value;
+      const n2 = $('#secNew2').value;
+      if (n1.length < 8) { toast.warn(T('auth.pwdRule')); return; }
+      if (n1 !== n2) { $('#secErr').hidden = false; return; }
+      busy(btn, true);
+      try {
+        await API.Auth.changePassword(oldP, n1);
+        $('#secOld').value = $('#secNew').value = $('#secNew2').value = '';
+          $('#secMeter').className = 'pwd-meter';
+        toast.success('密码已更新，其他设备已下线');
+      } catch (e) { toastError(e); }
+      finally { busy(btn, false); }
+    };
+
+    $('#btnLogout').onclick = async () => {
+      if (await App.confirmDialog('确定退出当前登录吗？', { danger: true })) App.Session.logout();
+    };
+  }
+
+  /* ======================== 外观 ======================== */
+
+  function fillAppearance() {
+    /* 主题 */
+    const pick = () => {
+      $$('#themePicker .pill-tab').forEach((b) => b.classList.toggle('active', b.dataset.theme === App.Theme.pref));
+    };
+    $$('#themePicker .pill-tab').forEach((b) => {
+      b.onclick = () => { App.Theme.set(b.dataset.theme); pick(); };
+    });
+    pick();
+
+    /* 语言 */
+    const sel = $('#apLocale');
+    sel.innerHTML = '<option value="auto">自动识别（' + (I18N.LOCALE_META[I18N.locale] || {}).name + '）</option>' +
+      I18N.SUPPORTED.map((l) => {
+        const m = I18N.LOCALE_META[l] || {};
+        return '<option value="' + l + '">' + (m.flag || '') + ' ' + (m.name || l) + '</option>';
+      }).join('');
+    sel.value = I18N.auto ? 'auto' : I18N.locale;
+    sel.onchange = () => {
+      I18N.setLocale(sel.value);
+      $('#apLocaleHint').textContent = sel.value === 'auto' ? '当前为自动识别' : '已锁定为 ' + sel.value;
+      updatePreview();
+    };
+    $('#apLocaleHint').textContent = I18N.auto ? '当前为自动识别' : '已锁定为 ' + I18N.locale;
+
+    /* 时间格式：前端用 12/24，后端字段用 12h/24h */
+    const tf = $('#apTimeFormat');
+    tf.value = state.user.timeFormat || 'auto';
+    tf.onchange = () => {
+      const v = tf.value;
+      I18N.setTimeFormat(v === '12h' ? '12' : v === '24h' ? '24' : 'auto');
+      API.Users.updateProfile({ timeFormat: v }).catch(() => {});
+      updatePreview();
+    };
+
+    $('#apTz').textContent = I18N.timeZone || '—';
+    updatePreview();
+
+    function updatePreview() {
+      $('#apPreview').textContent = I18N.formatDate(Date.now(), 'full');
+      $('#apTimeHint').textContent = '当前生效：' + I18N.hourCycle + ' 小时制';
+    }
+  }
+
+  /* ======================== 通知 / 隐私 ======================== */
+
+  function switchRowHTML(it, checked) {
+    return '<div class="switch-row">' +
+      '<div><div class="sr-title">' + esc(it.title) + '</div><div class="sr-desc">' + esc(it.desc) + '</div></div>' +
+      '<label class="switch"><input type="checkbox" data-sw="' + it.key + '"' +
+        (checked ? ' checked' : '') + (it.locked ? ' disabled' : '') + '><span class="track"></span></label>' +
+    '</div>';
+  }
+
+  function fillNotify() {
+    const ns = state.user.notifySettings || {};
+    state.notify = {};
+    NOTIFY_ITEMS.forEach((it) => { state.notify[it.key] = ns[it.key] !== undefined ? !!ns[it.key] : it.def; });
+    $('#notifyBox').innerHTML = NOTIFY_ITEMS.map((it) => switchRowHTML(it, state.notify[it.key])).join('');
+
+    $('#btnSaveNotify').onclick = async () => {
+      const btn = $('#btnSaveNotify');
+      busy(btn, true);
+      try {
+        const next = {};
+        $$('#notifyBox [data-sw]').forEach((i) => { next[i.dataset.sw] = i.checked; });
+        next.system = true;
+        const d = await API.Users.updateProfile({ notifySettings: next });
+        state.user = d.user;
+        toast.success(T('settings.saved'));
+      } catch (e) { toastError(e); }
+      finally { busy(btn, false); }
+    };
+  }
+
+  function fillPrivacy() {
+    const ns = state.user.notifySettings || {};
+    $('#privacyBox').innerHTML = PRIVACY_ITEMS
+      .map((it) => switchRowHTML(it, ns[it.key] !== undefined ? !!ns[it.key] : it.def)).join('');
+
+    $('#btnSavePrivacy').onclick = async () => {
+      const btn = $('#btnSavePrivacy');
+      busy(btn, true);
+      try {
+        const next = {};
+        $$('#privacyBox [data-sw]').forEach((i) => { next[i.dataset.sw] = i.checked; });
+        const d = await API.Users.updateProfile({ notifySettings: next });
+        state.user = d.user;
+        toast.success(T('settings.saved'));
+      } catch (e) { toastError(e); }
+      finally { busy(btn, false); }
+    };
+
+    $('#btnExport').onclick = () => {
+      const blob = new Blob([JSON.stringify({
+        exportedAt: new Date().toISOString(),
+        site: 'MarytOpens',
+        user: state.user,
+        preferences: { locale: I18N.locale, theme: App.Theme.pref, timeFormat: state.user.timeFormat || 'auto' },
+      }, null, 2)], { type: 'application/json' });
+      const a = el('a', { href: URL.createObjectURL(blob), download: 'marytopens-' + state.user.username + '.json' });
+      document.body.appendChild(a); a.click(); a.remove();
+      toast.success('已生成导出文件');
+    };
+  }
+
+  /* ======================== 第三方关联 ======================== */
+
+  const PROVIDERS = [
+    { key: 'github', name: 'GitHub', icon: 'github', desc: '绑定后可使用 GitHub 一键登录' },
+    { key: 'discord', name: 'Discord', icon: 'discord', desc: '绑定后可使用 Discord 一键登录，并接收机器人联动通知' },
+  ];
+
+  function fillConnections() {
+    const oauth = state.user.oauth || {};
+    const meta = (App.Site.meta && App.Site.meta.oauth) || {};
+    $('#oauthBox').innerHTML = PROVIDERS.map((p) => {
+      const bound = !!oauth[p.key];
+      const disabled = meta[p.key] === false;
+      return '<div class="switch-row">' +
+        '<div class="row" style="gap:12px;align-items:center">' +
+          '<span class="icon-btn" style="pointer-events:none">' + App.icon(p.icon) + '</span>' +
+          '<div><div class="sr-title">' + p.name +
+            (bound ? ' <span class="badge badge-ok">' + T('settings.bound') + '</span>' : '') +
+            (disabled ? ' <span class="badge">' + T('common.disabled') + '</span>' : '') +
+          '</div><div class="sr-desc">' + esc(p.desc) + '</div></div>' +
+        '</div>' +
+        '<button class="btn btn-sm ' + (bound ? 'btn-ghost' : 'btn-soft') + '" data-oa="' + p.key + '"' +
+          (disabled && !bound ? ' disabled' : '') + '>' +
+          (bound ? T('settings.unbind') : T('settings.bind')) + '</button>' +
+      '</div>';
+    }).join('');
+
+    $$('#oauthBox [data-oa]').forEach((b) => {
+      b.onclick = async () => {
+        const key = b.dataset.oa;
+        if (state.user.oauth && state.user.oauth[key]) {
+          if (!(await App.confirmDialog('确定解绑 ' + key + ' 吗？解绑后将无法用它登录。', { danger: true }))) return;
+          busy(b, true);
+          try {
+            await API.Auth.unbind(key);
+            state.user.oauth[key] = false;
+            fillConnections();
+            toast.success('已解绑');
+          } catch (e) { toastError(e); }
+          finally { busy(b, false); }
+        } else {
+          API.Auth.oauthStart(key, {
+            mode: 'bind',
+            next: '/oauth_callback.html?redirect=' + encodeURIComponent('/user_settings.html?tab=connections'),
+          });
+        }
+      };
+    });
+
+    if (App.Session.can('site.bot')) $('#linkBots').hidden = false;
+  }
+
+  /* ======================== 危险区域 ======================== */
+
+  function fillDanger() {
+    $('#btnDeleteAccount').onclick = async () => {
+      const name = await App.promptDialog('输入你的用户名 “' + state.user.username + '” 以确认注销', {
+        title: T('settings.deleteAccount'),
+        placeholder: state.user.username,
+        required: true,
+        okText: T('settings.deleteAccount'),
+        danger: true,
+        hint: T('settings.deleteWarn'),
+      });
+      if (!name) return;
+      if (name !== state.user.username) { toast.error('用户名不匹配，已取消'); return; }
+      try {
+        await API.Users.deleteAccount(name);
+        API.clearSession();
+        toast.success('账号已注销');
+        setTimeout(() => { location.href = '/index.html'; }, 900);
+      } catch (e) { toastError(e); }
+    };
+  }
+
+  /* ======================== 引导 ======================== */
+
+  App.boot({
+    nav: 'settings',
+    requireAuth: true,
+    onReady: async function () {
+      state.user = App.Session.user;
+      if (!state.user) return;
+      $('#linkMyProfile').href = '/profile.html?u=' + encodeURIComponent(state.user.username);
+
+      bindPanes();
+      fillProfile();
+      fillAccount();
+      fillSecurity();
+      fillAppearance();
+      fillNotify();
+      fillPrivacy();
+      fillConnections();
+      fillDanger();
+
+      I18N.apply(document.body);
+    },
+  });
+})();
+</script>
+</body>
+</html>

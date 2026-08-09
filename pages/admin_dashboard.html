@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>管理后台 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/css/main.css">
+</head>
+<body>
+
+<header id="navbar"></header>
+
+<div class="admin-layout">
+
+  <!-- ============================== 左侧导航 ============================== -->
+  <aside class="admin-side" id="adminSide">
+    <div class="side-group">
+      <div class="section-title" data-i18n="admin.title">管理后台</div>
+      <button class="side-item active" data-pane="overview" data-perm="site.logs" data-i18n="admin.overview">总览</button>
+      <button class="side-item" data-pane="users" data-perm="user.ban" data-i18n="admin.users">用户管理</button>
+      <button class="side-item" data-pane="posts" data-perm="post.delete.any" data-i18n="admin.posts">内容管理</button>
+      <button class="side-item" data-pane="channels" data-perm="channel.manage" data-i18n="admin.channels">频道管理</button>
+      <button class="side-item" data-pane="roles" data-perm="role.manage" data-i18n="admin.roles">权限组</button>
+      <button class="side-item" data-pane="reports" data-perm="report.handle" data-i18n="admin.reports">举报处理</button>
+    </div>
+    <div class="side-group">
+      <div class="section-title">站点治理</div>
+      <button class="side-item" data-pane="site" data-perm="site.config" data-i18n="admin.site">站点设置</button>
+      <button class="side-item" data-pane="nav" data-perm="site.config" data-i18n="admin.nav">导航与按钮</button>
+      <button class="side-item" data-pane="ipbans" data-perm="ip.ban" data-i18n="admin.ipbans">IP 封禁</button>
+      <button class="side-item" data-pane="logs" data-perm="site.logs" data-i18n="admin.logs">访问日志</button>
+    </div>
+    <div class="side-group">
+      <div class="section-title">集成</div>
+      <button class="side-item" data-pane="mail" data-perm="site.mail" data-i18n="admin.mail">邮件系统</button>
+      <button class="side-item" data-pane="bots" data-perm="site.bot" data-i18n="admin.bots">机器人</button>
+      <button class="side-item" data-pane="cloudflare" data-perm="site.cloudflare" data-i18n="admin.cloudflare">Cloudflare</button>
+    </div>
+    <div class="side-group">
+      <div class="section-title" data-i18n="common.back">返回</div>
+      <a class="side-item" href="/home.html" data-i18n="nav.home">返回社区</a>
+    </div>
+  </aside>
+
+  <!-- ================================ 主区 ================================ -->
+  <main class="admin-main">
+
+    <!-- ------------------------------ 总览 ------------------------------ -->
+    <section class="tab-panel active" id="pane-overview">
+      <div class="admin-header">
+        <div><h2 data-i18n="admin.overview">总览</h2><p>站点核心指标与近 7 日访问趋势</p></div>
+        <button class="btn btn-soft btn-sm" id="btnRefreshOverview" data-i18n="common.retry">刷新</button>
+      </div>
+      <div class="grid grid-4" id="ovStats"></div>
+      <div class="card card-pad mt-4">
+        <div class="row-between mb-4">
+          <h4 class="mb-0">近 7 日页面访问量</h4>
+          <span class="muted small" id="ovPvTotal">—</span>
+        </div>
+        <div id="ovChart"></div>
+      </div>
+      <div class="card card-pad mt-4">
+        <h4 style="margin:0 0 10px">运行时</h4>
+        <div class="kv-list" id="ovRuntime"></div>
+      </div>
+    </section>
+
+    <!-- ---------------------------- 用户管理 ---------------------------- -->
+    <section class="tab-panel" id="pane-users">
+      <div class="admin-header">
+        <div><h2 data-i18n="admin.users">用户管理</h2><p>封禁、禁言、改名、分配身份组与强制下线</p></div>
+        <div class="input-icon" style="max-width:260px">
+          <input class="input input-sm" id="usSearch" type="search" placeholder="搜索用户名 / 邮箱 / ID" data-i18n-ph="common.search">
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>用户</th><th>邮箱</th><th data-i18n="role.title">身份组</th><th>注册</th><th>状态</th><th></th></tr></thead>
+          <tbody id="usRows"></tbody>
+        </table>
+      </div>
+      <div class="text-center mt-4"><button class="btn btn-sm" id="btnMoreUsers" hidden data-i18n="common.loadMore">加载更多</button></div>
+    </section>
+
+    <!-- ---------------------------- 内容管理 ---------------------------- -->
+    <section class="tab-panel" id="pane-posts">
+      <div class="admin-header">
+        <div><h2 data-i18n="admin.posts">内容管理</h2><p>检索全站文章，处理违规内容</p></div>
+        <div class="row" style="gap:8px">
+          <div class="input-icon" style="max-width:220px">
+            <input class="input input-sm" id="poSearch" type="search" placeholder="搜索标题 / 标签" data-i18n-ph="common.search">
+          </div>
+          <a class="btn btn-primary btn-sm" href="/editor.html" data-i18n="nav.write">写文章</a>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>标题</th><th>作者</th><th>作用域</th><th>数据</th><th>发布时间</th><th></th></tr></thead>
+          <tbody id="poRows"></tbody>
+        </table>
+      </div>
+      <div class="text-center mt-4"><button class="btn btn-sm" id="btnMorePosts" hidden data-i18n="common.loadMore">加载更多</button></div>
+    </section>
+
+    <!-- ---------------------------- 频道管理 ---------------------------- -->
+    <section class="tab-panel" id="pane-channels">
+      <div class="admin-header">
+        <div><h2 data-i18n="admin.channels">频道管理</h2><p>全站频道一览，进入任意频道的独立管理面板</p></div>
+        <a class="btn btn-primary btn-sm" href="/channels.html" data-i18n="ch.create">创建频道</a>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>频道</th><th>可见性</th><th>板块</th><th>成员</th><th></th></tr></thead>
+          <tbody id="chRows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ----------------------------- 权限组 ----------------------------- -->
+    <section class="tab-panel" id="pane-roles">
+      <div class="admin-header">
+        <div><h2 data-i18n="admin.roles">权限组</h2><p id="roScopeHint">全局作用域身份组，决定用户在站点范围内的能力</p></div>
+        <div class="row" style="gap:8px">
+          <input class="input input-sm" id="roScope" value="global" style="max-width:220px" placeholder="global / channel:ID / group:CID:GID">
+          <button class="btn btn-soft btn-sm" id="btnLoadScope" data-i18n="common.apply">应用</button>
+          <button class="btn btn-primary btn-sm" id="btnNewRole" data-i18n="role.create">创建身份组</button>
+        </div>
+      </div>
+      <div class="grid" style="grid-template-columns:280px 1fr;gap:16px;align-items:start">
+        <div class="card card-pad">
+          <div class="section-title" data-i18n="role.title">身份组</div>
+          <div id="roList" style="display:flex;flex-direction:column;gap:6px"></div>
+        </div>
+        <div class="card card-pad" id="roDetail">
+          <p class="muted small mb-0">从左侧选择一个身份组开始编辑。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------------------------- 举报处理 ---------------------------- -->
+    <section class="tab-panel" id="pane-reports">
+      <div class="admin-header">
+        <div><h2 data-i18n="admin.reports">举报处理</h2><p>全站举报队列，处理结果会通知举报人</p></div>
+        <select class="select" id="rpStatus" style="max-width:180px">
+          <option value="open">待处理</option>
+          <option value="processing">处理中</option>
+          <option value="resolved">已处理</option>
+          <option value="rejected">已驳回</option>
+          <option value="">全部</option>
+        </select>
+      </div>
+      <div id="rpList" style="display:flex;flex-direction:column;gap:10px"></div>
+    </section>
+
+    <!-- ---------------------------- 站点设置 ---------------------------- -->
+    <section class="tab-panel" id="pane-site">
+      <div class="admin-header">
+        <div><h2 data-i18n="admin.site">站点设置</h2><p>品牌、首页模式、注册策略与人机验证</p></div>
+        <button class="btn btn-primary" id="btnSaveSite" data-i18n="common.save">保存</button>
+      </div>
+
+      <div class="card card-pad">
+        <div class="section-title" data-i18n="admin.appearance">外观与品牌</div>
+        <div class="row" style="gap:16px;flex-wrap:wrap">
+          <div class="field grow" style="min-width:220px">
+            <label class="label">站点标题</label>
+            <input class="input" id="stTitle" maxlength="40">
+          </div>
+          <div class="field grow" style="min-width:220px">
+            <label class="label">副标题</label>
+            <input class="input" id="stSubtitle" maxlength="80">
+          </div>
+        </div>
+        <div class="row" style="gap:16px;flex-wrap:wrap">
+          <div class="field grow" style="min-width:220px">
+            <label class="label">Logo 地址</label>
+            <input class="input" id="stLogo" placeholder="/assets/img/logo.svg">
+            <div class="upload-zone mt-2" id="stLogoZone"><p>点击或拖拽上传 Logo</p></div>
+          </div>
+          <div class="field grow" style="min-width:220px">
+            <label class="label">Favicon 地址</label>
+            <input class="input" id="stFavicon" placeholder="/assets/img/favicon.svg">
+            <div class="upload-zone mt-2" id="stFaviconZone"><p>点击或拖拽上传 Favicon</p></div>
+          </div>
+        </div>
+        <div class="row" style="gap:16px;flex-wrap:wrap">
+          <div class="field" style="flex:0 0 180px">
+            <label class="label">主题色</label>
+            <div class="row" style="gap:8px;align-items:center">
+              <input class="color-input" type="color" id="stAccent">
+              <input class="input input-sm grow mono" id="stAccentHex" maxlength="7">
+            </div>
+          </div>
+          <div class="field grow" style="min-width:180px">
+            <label class="label">默认主题</label>
+            <select class="select" id="stTheme">
+              <option value="auto" data-i18n="settings.theme.auto">跟随系统</option>
+              <option value="light" data-i18n="settings.theme.light">浅色</option>
+              <option value="dark" data-i18n="settings.theme.dark">深色</option>
+            </select>
+          </div>
+          <div class="field grow" style="min-width:180px">
+            <label class="label" data-i18n="admin.landing">首页模式</label>
+            <select class="select" id="stLanding">
+              <option value="personal">个人主页（未登录访客先看个人页）</option>
+              <option value="community">社区首页（直接展示社区）</option>
+            </select>
+          </div>
+        </div>
+        <div class="row" style="gap:16px;flex-wrap:wrap">
+          <div class="field grow" style="min-width:240px">
+            <label class="label">登录页背景图</label>
+            <input class="input" id="stLoginBg" placeholder="留空使用渐变背景">
+            <div class="upload-zone mt-2" id="stLoginBgZone"><p>点击或拖拽上传背景图</p></div>
+          </div>
+          <div class="field" style="flex:0 0 180px">
+            <label class="label">背景模糊度</label>
+            <input class="input" id="stLoginBlur" type="number" min="0" max="40">
+            <div class="hint">单位 px，0 为不模糊</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card card-pad mt-4">
+        <div class="section-title">注册与安全</div>
+        <div id="stSwitches"></div>
+      </div>
+
+      <div class="card card-pad mt-4">
+        <div class="section-title">Turnstile 人机验证</div>
+        <p class="hint">在 Cloudflare 控制台获取 Site Key 与 Secret Key。填入并保存后，登录、注册等场景即按下方开关启用验证。Secret Key 仅保存在服务端，绝不会下发给浏览器。</p>
+        <div class="field">
+          <label class="label">启用 Turnstile</label>
+          <label class="switch-row" style="margin:0">
+            <span class="sr-title">总开关（关闭后所有场景都不校验）</span>
+            <span class="switch"><input type="checkbox" id="tsEnabled"><span class="track"></span></span>
+          </label>
+        </div>
+        <div class="field">
+          <label class="label">Site Key（公开）</label>
+          <input class="input mono" id="tsSiteKey" placeholder="0x4AAAAAAA..." autocomplete="off" spellcheck="false">
+        </div>
+        <div class="field">
+          <label class="label">Secret Key（服务端）</label>
+          <input class="input mono" id="tsSecret" type="password" placeholder="留空表示保留当前已存储的值" autocomplete="new-password" spellcheck="false">
+          <div class="hint">仅在需要更换时填写；保存时留空则不修改已存储的 Secret。</div>
+          <span id="tsSecretState" class="hint" style="color:var(--accent)"></span>
+        </div>
+      </div>
+
+      <div class="card card-pad mt-4">
+        <div class="section-title">公告与文案</div>
+        <div class="field">
+          <label class="label">站顶公告</label>
+          <input class="input" id="stAnnouncement" maxlength="200" placeholder="留空则不显示公告条">
+        </div>
+        <div class="field">
+          <label class="label">页脚版权文本</label>
+          <textarea class="textarea mono" id="stFooter" rows="4"></textarea>
+          <div class="hint">该文本会展示在全站页脚，修改需谨慎</div>
+        </div>
+        <div class="field">
+          <label class="label">关于页内容（Markdown）</label>
+          <textarea class="textarea" id="stAbout" rows="8"></textarea>
+        </div>
+        <div class="row" style="gap:16px;flex-wrap:wrap">
+          <div class="field grow" style="min-width:240px">
+            <label class="label">SEO 描述</label>
+            <input class="input" id="stSeoDesc" maxlength="200">
+          </div>
+          <div class="field grow" style="min-width:240px">
+            <label class="label">SEO 关键词</label>
+            <input class="input" id="stSeoKw" maxlength="200" placeholder="用英文逗号分隔">
+          </div>
+        </div>
+
+        <div class="section-title mt-4">外部链接（落地页 / 页脚图标与下载入口）</div>
+        <div class="row" style="gap:16px;flex-wrap:wrap">
+          <div class="field grow" style="min-width:240px">
+            <label class="label">Discord 服务器 / 邀请 URL</label>
+            <input class="input" id="stDiscord" placeholder="https://discord.gg/xxxx">
+          </div>
+          <div class="field grow" style="min-width:240px">
+            <label class="label">GitHub 组织 / 仓库 URL</label>
+            <input class="input" id="stGithub" placeholder="https://github.com/xxxx">
+          </div>
+          <div class="field grow" style="min-width:240px">
+            <label class="label">Telegram 频道 / 群组 / 个人主页 URL</label>
+            <input class="input" id="stTelegram" placeholder="https://t.me/xxxx">
+            <div class="hint">保存后自动解析头像与名称并替换落地页图标。</div>
+          </div>
+        </div>
+        <div class="row" style="gap:16px;flex-wrap:wrap">
+          <div class="field grow" style="min-width:240px">
+            <label class="label">客户端下载页 URL（本网站下载）</label>
+            <input class="input" id="stDownload" placeholder="https://natrois.top/downloads/files">
+            <div class="hint">留空则不显示「本网站下载」入口。该地址指向独立部署的客户端下载站。</div>
+          </div>
+          <div class="field grow" style="min-width:240px">
+            <label class="label">GitHub 下载 URL（Release / 仓库）</label>
+            <input class="input" id="stGithubDownload" placeholder="https://github.com/xxxx/xxxx/releases">
+            <div class="hint">落地页「前往 GitHub 下载」按钮目标。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card card-pad mt-4">
+        <div class="section-title">个人主页（landingMode = personal 时展示）</div>
+        <div class="row" style="gap:16px;flex-wrap:wrap">
+          <div class="field grow" style="min-width:220px">
+            <label class="label">展示名</label>
+            <input class="input" id="pnName" maxlength="40">
+          </div>
+          <div class="field grow" style="min-width:220px">
+            <label class="label">一句话标语</label>
+            <input class="input" id="pnTagline" maxlength="120">
+          </div>
+        </div>
+        <div class="field">
+          <label class="label">头像地址</label>
+          <input class="input" id="pnAvatar">
+          <div class="upload-zone mt-2" id="pnAvatarZone"><p>点击或拖拽上传头像</p></div>
+        </div>
+        <div class="field">
+          <label class="label">简介</label>
+          <textarea class="textarea" id="pnBio" rows="3" maxlength="500"></textarea>
+        </div>
+        <div class="field">
+          <label class="label">技能标签</label>
+          <input class="input" id="pnSkills" placeholder="用英文逗号分隔">
+        </div>
+        <div class="field">
+          <div class="row-between" style="margin-bottom:6px">
+            <label class="label mb-0">项目展示</label>
+            <button class="btn btn-sm btn-soft" id="btnAddProject">添加项目</button>
+          </div>
+          <div id="pnProjects" style="display:flex;flex-direction:column;gap:8px"></div>
+        </div>
+        <div class="field">
+          <div class="row-between" style="margin-bottom:6px">
+            <label class="label mb-0">社交链接</label>
+            <button class="btn btn-sm btn-soft" id="btnAddSocial">添加链接</button>
+          </div>
+          <div id="pnSocials" style="display:flex;flex-direction:column;gap:8px"></div>
+        </div>
+      </div>
+
+      <div class="card card-pad mt-4">
+        <div class="row-between" style="margin-bottom:6px">
+          <div class="section-title mb-0">贡献者公示</div>
+          <button class="btn btn-sm btn-soft" id="btnAddContributor">添加贡献者</button>
+        </div>
+        <p class="hint" style="margin-top:0">指向用户主页的链接（本网站 / GitHub / QQ）会自动捕获头像与用户名；也可手动填写名称。</p>
+        <div id="contribEditor" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+
+      <div class="card card-pad mt-4">
+        <div class="row-between" style="margin-bottom:6px">
+          <div class="section-title mb-0">官方公告（社区公告）</div>
+          <button class="btn btn-sm btn-soft" id="btnAddAnn">发布公告</button>
+        </div>
+        <p class="hint" style="margin-top:0">公告会展示在搜索的「官方公告」分类与社区公告区，可置顶。</p>
+        <div id="annEditor" style="display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+    </section>
+
+    <!-- --------------------------- 导航与按钮 --------------------------- -->
+    <section class="tab-panel" id="pane-nav">
+      <div class="admin-header">
+        <div><h2 data-i18n="admin.nav">导航与按钮</h2><p>自定义顶栏、侧栏、页脚与首页的自定义入口</p></div>
+        <div class="row" style="gap:8px">
+          <button class="btn btn-soft" id="btnAddNav">新增入口</button>
+          <button class="btn btn-primary" id="btnSaveNav" data-i18n="common.save">保存</button>
+        </div>
+      </div>
+      <div class="card card-pad" id="navEditor"></div>
+      <p class="hint mt-2">position 决定入口出现的位置；visibleTo 控制可见人群（all / guest / member / admin）；order 数值越大越靠前。</p>
+    </section>
+
+    <!-- ---------------------------- IP 封禁 ----------------------------- -->
+    <section class="tab-panel" id="pane-ipbans">
+      <div class="admin-header">
+        <div><h2 data-i18n="admin.ipbans">IP 封禁</h2><p>被封禁的 IP 将无法访问任何 API（/api/meta 与健康检查除外）</p></div>
+        <button class="btn btn-primary" id="btnAddIpBan">新增封禁</button>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>IP</th><th>原因</th><th>到期</th><th>操作人</th><th></th></tr></thead>
+          <tbody id="ipRows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ---------------------------- 访问日志 ---------------------------- -->
+    <section class="tab-panel" id="pane-logs">
+      <div class="admin-header">
+        <div><h2 data-i18n="admin.logs">访问日志</h2><p>最近的请求记录，可按 IP 与路径过滤</p></div>
+        <div class="row" style="gap:8px">
+          <input class="input input-sm" id="lgIp" placeholder="按 IP 过滤" style="max-width:150px">
+          <input class="input input-sm" id="lgPath" placeholder="按路径过滤" style="max-width:170px">
+          <button class="btn btn-soft btn-sm" id="btnLoadLogs" data-i18n="common.search">搜索</button>
+        </div>
+      </div>
+      <div class="card card-pad" id="logBox" style="max-height:60vh;overflow:auto"></div>
+      <div class="text-center mt-4"><button class="btn btn-sm" id="btnMoreLogs" hidden data-i18n="common.loadMore">加载更多</button></div>
+    </section>
+
+    <!-- ---------------------------- 邮件系统 ---------------------------- -->
+    <section class="tab-panel" id="pane-mail">
+      <div class="admin-header">
+        <div><h2 data-i18n="admin.mail">邮件系统</h2><p>基于 Cloud Mail / MailChannels 的站内发信</p></div>
+      </div>
+      <div class="grid" style="grid-template-columns:1fr 1fr;gap:16px;align-items:start" id="mailGrid">
+        <div class="card card-pad">
+          <h4 style="margin:0 0 10px">发送单封邮件</h4>
+          <div class="field"><label class="label">收件人</label><input class="input" id="mlTo" type="email" placeholder="user@example.com"></div>
+          <div class="field"><label class="label">主题</label><input class="input" id="mlSubject" maxlength="200"></div>
+          <div class="field"><label class="label">正文（支持 HTML）</label><textarea class="textarea" id="mlBody" rows="8"></textarea></div>
+          <label class="switch-row" style="border:none;padding:0 0 10px">
+            <span class="sr-title">原样发送（不套用站点模板）</span>
+            <span class="switch"><input type="checkbox" id="mlRaw"><span class="track"></span></span>
+          </label>
+          <button class="btn btn-primary" id="btnSendMail">发送</button>
+        </div>
+        <div class="card card-pad">
+          <h4 style="margin:0 0 10px">全站广播</h4>
+          <p class="small muted">将向所有已验证邮箱、未关闭邮件推送、未被封禁的用户群发，单次最多 500 人。</p>
+          <div class="field"><label class="label">主题</label><input class="input" id="bcSubject" maxlength="200"></div>
+          <div class="field"><label class="label">正文（HTML）</label><textarea class="textarea" id="bcBody" rows="8"></textarea></div>
+          <div class="field"><label class="label">站内通知摘要</label><input class="input" id="bcText" maxlength="200" placeholder="同时推送一条站内通知"></div>
+          <label class="switch-row" style="border:none;padding:0 0 10px">
+            <span class="sr-title">同时发送站内通知</span>
+            <span class="switch"><input type="checkbox" id="bcNotify" checked><span class="track"></span></span>
+          </label>
+          <button class="btn btn-danger" id="btnBroadcast">确认群发</button>
+          <div class="hint mt-2" id="bcResult"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ----------------------------- 机器人 ----------------------------- -->
+    <section class="tab-panel" id="pane-bots">
+      <div class="admin-header">
+        <div><h2 data-i18n="admin.bots">机器人</h2><p>为 Discord 机器人或自动化脚本签发访问令牌</p></div>
+        <button class="btn btn-primary" id="btnNewBot">创建机器人</button>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>名称</th><th>令牌</th><th>权限</th><th>作用域</th><th>调用次数</th><th></th></tr></thead>
+          <tbody id="botRows"></tbody>
+        </table>
+      </div>
+      <div class="card card-pad mt-4">
+        <h4 style="margin:0 0 6px">接入说明</h4>
+        <p class="small muted">所有机器人接口通过请求头 <code class="mono">X-Bot-Token</code> 鉴权，基址为 <code class="mono" id="botBase">—</code>。</p>
+        <div class="copy-box mt-2"><code id="botCurl">—</code><button class="icon-btn" id="btnCopyCurl" aria-label="copy"></button></div>
+      </div>
+    </section>
+
+    <!-- ---------------------------- Cloudflare --------------------------- -->
+    <section class="tab-panel" id="pane-cloudflare">
+      <div class="admin-header">
+        <div><h2 data-i18n="admin.cloudflare">Cloudflare</h2><p>需在 Worker 中配置 CF_API_TOKEN / CF_ZONE_ID</p></div>
+        <button class="btn btn-soft btn-sm" id="btnCfRefresh" data-i18n="common.retry">刷新</button>
+      </div>
+      <div class="card card-pad">
+        <h4 style="margin:0 0 10px">Zone 状态</h4>
+        <div class="kv-list" id="cfStatus"><p class="muted small mb-0">加载中…</p></div>
+      </div>
+      <div class="grid mt-4" style="grid-template-columns:1fr 1fr;gap:16px;align-items:start" id="cfGrid">
+        <div class="card card-pad">
+          <h4 style="margin:0 0 10px">缓存清理</h4>
+          <div class="field">
+            <label class="label">指定 URL（每行一个，留空则清空全部）</label>
+            <textarea class="textarea mono" id="cfFiles" rows="4" placeholder="https://natrois.top/assets/css/main.css"></textarea>
+          </div>
+          <button class="btn btn-danger" id="btnCfPurge">执行清理</button>
+        </div>
+        <div class="card card-pad">
+          <h4 style="margin:0 0 10px">近 24 小时流量</h4>
+          <div class="kv-list" id="cfAnalytics"><p class="muted small mb-0">点击下方按钮加载</p></div>
+          <button class="btn btn-soft mt-4" id="btnCfAnalytics">加载统计</button>
+        </div>
+      </div>
+      <div class="card card-pad mt-4">
+        <div class="row-between mb-4">
+          <h4 class="mb-0">DNS 记录</h4>
+          <div class="row" style="gap:8px">
+            <button class="btn btn-soft btn-sm" id="btnCfDnsList">加载记录</button>
+            <button class="btn btn-primary btn-sm" id="btnCfDnsNew">新增记录</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>类型</th><th>名称</th><th>内容</th><th>代理</th><th>TTL</th></tr></thead>
+            <tbody id="cfDnsRows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer id="footer"></footer>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script src="/assets/js/admin.js"></script>
+</body>
+</html>

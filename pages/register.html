@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>注册 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/css/main.css">
+<script>(function(){var t=localStorage.getItem('mo_theme');var d=t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light');})();</script>
+</head>
+<body>
+
+<div class="auth-page">
+  <div class="auth-bg gradient" id="authBg"></div>
+
+  <div class="auth-side">
+    <h1 id="sideTitle">加入社区</h1>
+    <p id="sideSub">发布文章、加入频道、参与治理 —— 一个账号全部搞定。</p>
+    <div class="feat"><div id="f1"></div><div id="f2"></div><div id="f3"></div><div id="f4"></div></div>
+  </div>
+
+  <div class="auth-panel">
+    <div class="auth-box">
+      <a class="a-logo" href="/index.html">
+        <img src="/assets/img/logo.svg" alt="" id="logo"><span id="siteName">MarytOpens</span>
+      </a>
+
+      <h2 data-i18n="auth.register.title">创建账号</h2>
+      <p class="a-sub" data-i18n="auth.register.sub">加入 MarytOpens 社区</p>
+
+      <div id="closedTip" class="banner-tip tip-warn hidden mb-4">
+        <span id="warnIcon"></span><span>站点当前已关闭注册，请联系管理员。</span>
+      </div>
+
+      <form id="regForm" novalidate>
+        <div class="field">
+          <label class="label" for="username"><span data-i18n="auth.username">用户名</span><span class="req">*</span></label>
+          <input class="input" id="username" type="text" autocomplete="username" required maxlength="20"
+                 placeholder="2-20 位字母/数字/下划线/中文">
+          <div class="hint" id="uHint">登录名，注册后可在设置中修改昵称</div>
+        </div>
+
+        <div class="field">
+          <label class="label" for="email"><span data-i18n="auth.email">邮箱地址</span><span class="req">*</span></label>
+          <input class="input" id="email" type="email" autocomplete="email" required maxlength="120"
+                 placeholder="you@example.com">
+        </div>
+
+        <div class="field" id="codeField">
+          <label class="label" for="code"><span data-i18n="auth.code">邮箱验证码</span><span class="req">*</span></label>
+          <div class="input-group">
+            <input class="input" id="code" type="text" inputmode="numeric" maxlength="6" placeholder="6 位数字" autocomplete="one-time-code">
+            <button class="btn" type="button" id="sendCodeBtn" data-i18n="auth.sendCode">发送验证码</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="label" for="password"><span data-i18n="auth.password">密码</span><span class="req">*</span></label>
+          <input class="input" id="password" type="password" autocomplete="new-password" required maxlength="128" placeholder="••••••••">
+          <div class="pwd-meter" id="meter"><i></i><i></i><i></i><i></i></div>
+          <div class="hint" id="pwdHint" data-i18n="auth.pwdRule">至少 8 位，建议包含大小写字母与数字</div>
+        </div>
+
+        <div class="field">
+          <label class="label" for="password2"><span data-i18n="auth.password2">确认密码</span><span class="req">*</span></label>
+          <input class="input" id="password2" type="password" autocomplete="new-password" required maxlength="128" placeholder="••••••••">
+          <div class="error-text hidden" id="mismatch" data-i18n="auth.mismatch">两次输入的密码不一致</div>
+        </div>
+
+        <label class="check mb-4">
+          <input type="checkbox" id="agree" required>
+          <span class="small" data-i18n="auth.agree">注册即表示同意社区规则与隐私政策</span>
+        </label>
+
+        <div class="cf-turnstile" id="tsBox" style="display:none"></div>
+
+        <button class="btn btn-primary btn-lg btn-block" type="submit" id="submitBtn" data-i18n="auth.submit.register">注册账号</button>
+      </form>
+
+      <div id="oauthWrap" class="hidden">
+        <div class="auth-sep"><span data-i18n="auth.or">或使用以下方式</span></div>
+        <div class="col" style="gap:10px">
+          <button class="btn btn-oauth btn-github btn-block hidden" id="btnGithub"><span id="ghIcon"></span><span data-i18n="auth.github">使用 GitHub 登录</span></button>
+          <button class="btn btn-oauth btn-discord btn-block hidden" id="btnDiscord"><span id="dcIcon"></span><span data-i18n="auth.discord">使用 Discord 登录</span></button>
+        </div>
+      </div>
+
+      <div class="auth-foot">
+        <span data-i18n="auth.hasAccount">已有账号？</span>
+        <a href="/login.html" data-i18n="nav.login">登录</a>
+      </div>
+
+      <div class="text-center mt-4">
+        <a class="link-muted xsmall" href="/index.html">← <span data-i18n="common.back">返回</span></a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script>
+(function () {
+  const { $, icon, Theme, Session, toast, toastError, busy, passwordStrength } = App;
+  const redirect = new URLSearchParams(location.search).get('redirect') || '/home.html';
+  let getToken = () => '';
+  let needCode = true;
+
+  function paintIcons() {
+    $('#ghIcon').outerHTML = icon('github');
+    $('#dcIcon').outerHTML = icon('discord');
+    $('#warnIcon').outerHTML = icon('alert');
+    [['userPlus', '免费注册，立即发布文章'],
+     ['users', '加入频道，参与社区治理'],
+     ['bell', '通知、私信、点赞收藏全都有'],
+     ['lock', '密码永不明文传输']].forEach((f, i) =>
+      $('#f' + (i + 1)).innerHTML = icon(f[0]) + '<span>' + App.esc(f[1]) + '</span>');
+  }
+
+  async function init() {
+    Theme.init(); paintIcons();
+
+    await Session.load();
+    if (Session.isLoggedIn) { location.replace(redirect); return; }
+
+    let m = null;
+    try { m = await API.meta(); } catch (e) { toast.warn('无法连接后端 API'); }
+    const cfg = (m && m.site) || {};
+
+    if (cfg.siteTitle) { $('#siteName').textContent = cfg.siteTitle; document.title = I18N.t('nav.register') + ' · ' + cfg.siteTitle; }
+    if (cfg.logo) $('#logo').src = API.fileURL(cfg.logo);
+    if (cfg.accent) App.applyAccent(cfg.accent);
+    if (cfg.loginBackground) {
+      const bg = $('#authBg'); bg.classList.remove('gradient');
+      bg.style.backgroundImage = 'url("' + App.safeURL(API.fileURL(cfg.loginBackground)) + '")';
+      if (cfg.loginBackgroundBlur) bg.style.filter = 'blur(' + Math.min(20, cfg.loginBackgroundBlur) + 'px)';
+    }
+
+    if (cfg.registerOpen === false) {
+      $('#closedTip').classList.remove('hidden');
+      $('#regForm').querySelectorAll('input,button').forEach((x) => x.disabled = true);
+    }
+
+    const ts = (m && m.turnstile) || {};
+    if (ts.enabled && ts.register) {
+      App.Turnstile.siteKey = m.turnstileSiteKey;
+      getToken = await App.Turnstile.render('#tsBox', 'register');
+    }
+
+    const o = (m && m.oauth) || {};
+    if (o.github || o.discord) $('#oauthWrap').classList.remove('hidden');
+    if (o.github) { const b = $('#btnGithub'); b.classList.remove('hidden'); b.onclick = () => API.Auth.oauthStart('github', location.origin + '/oauth_callback.html?redirect=' + encodeURIComponent(redirect)); }
+    if (o.discord) { const b = $('#btnDiscord'); b.classList.remove('hidden'); b.onclick = () => API.Auth.oauthStart('discord', location.origin + '/oauth_callback.html?redirect=' + encodeURIComponent(redirect)); }
+
+    App.bindCodeButton($('#sendCodeBtn'), () => $('#email').value, 'register');
+    I18N.apply();
+  }
+
+  // 密码强度
+  $('#password').addEventListener('input', () => {
+    const s = passwordStrength($('#password').value);
+    $('#meter').className = 'pwd-meter s' + s;
+    const map = ['', 'auth.pwdWeak', 'auth.pwdMid', 'auth.pwdMid', 'auth.pwdStrong'];
+    $('#pwdHint').textContent = s ? I18N.t(map[s]) : I18N.t('auth.pwdRule');
+  });
+
+  $('#password2').addEventListener('input', () => {
+    const bad = $('#password2').value && $('#password').value !== $('#password2').value;
+    $('#mismatch').classList.toggle('hidden', !bad);
+    $('#password2').classList.toggle('is-error', !!bad);
+  });
+
+  $('#regForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const username = $('#username').value.trim();
+    const email = $('#email').value.trim();
+    const code = $('#code').value.trim();
+    const password = $('#password').value;
+    const password2 = $('#password2').value;
+
+    if (!/^[A-Za-z0-9_\u4e00-\u9fa5-]{2,20}$/.test(username)) { toast.warn('用户名需为 2-20 位字母、数字、下划线、连字符或中文'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { toast.warn('请输入有效的邮箱地址'); return; }
+    if (password.length < 8) { toast.warn('密码至少 8 位'); return; }
+    if (password !== password2) { toast.warn(I18N.t('auth.mismatch')); return; }
+    if (!$('#agree').checked) { toast.warn('请先同意社区规则'); return; }
+    if (needCode && !/^\d{4,8}$/.test(code)) { toast.warn('请输入邮箱验证码'); return; }
+
+    const tk = getToken();
+    if (App.Turnstile.siteKey && $('#tsBox').style.display !== 'none' && !tk) { toast.warn(I18N.t('auth.verifyHuman')); return; }
+
+    const btn = $('#submitBtn');
+    busy(btn, true);
+    try {
+      await API.Auth.register({ username, email, code, password, turnstileToken: tk });
+      toast.success('注册成功，正在进入社区…');
+      setTimeout(() => location.href = redirect, 500);
+    } catch (err) {
+      toastError(err);
+      App.Turnstile.reset('register');
+    } finally { busy(btn, false); }
+  });
+
+  init();
+})();
+</script>
+</body>
+</html>

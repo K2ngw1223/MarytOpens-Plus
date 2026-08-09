@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>封禁公示 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/css/main.css">
+<script>(function(){var t=localStorage.getItem('mo_theme');var d=t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light');})();</script>
+</head>
+<body>
+
+<header id="navbar"></header>
+
+<main class="container container-mid py-6">
+  <div class="page-head">
+    <h1 data-i18n="bans.title">封禁公示</h1>
+    <p class="muted" data-i18n="about.bansDesc">为维护社区秩序，以下账号或 IP 已被封禁。</p>
+  </div>
+
+  <div id="bansList" class="mt-4"></div>
+
+  <div class="mt-6 text-center">
+    <a class="btn btn-ghost" href="/about.html" data-i18n="nav.about">关于我们</a>
+  </div>
+</main>
+
+<footer id="footer"></footer>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script>
+App.boot({ nav: 'about', requireAuth: false, onReady: async () => {
+  const T = (k, v) => I18N.t(k, v);
+  const box = $('#bansList');
+  const fmtUntil = (ts) => {
+    if (!ts) return T('bans.permanent');
+    const d = new Date(Number(ts));
+    if (d <= new Date()) return T('bans.permanent');
+    try { return new Intl.DateTimeFormat(I18N.locale, { year:'numeric', month:'short', day:'numeric' }).format(d); } catch (e) { return d.toLocaleDateString(); }
+  };
+  box.innerHTML = '<div class="loading-block">' + T('common.loading') + '</div>';
+  let data;
+  try { data = await API.get('/api/bans'); } catch (e) { box.innerHTML = App.emptyState(T('common.failed'), '', 'alert'); return; }
+  const userBans = (data && data.userBans) || [];
+  const ipBans = (data && data.ipBans) || [];
+  if (!userBans.length && !ipBans.length) {
+    box.innerHTML = App.emptyState(T('bans.empty'), '', 'info');
+    return;
+  }
+  const rows = [];
+  userBans.forEach((b) => {
+    rows.push('<div class="ban-row"><div class="ban-avatar" title="头像已打码"></div>' +
+      '<div class="ban-body"><div class="ban-name">' + App.esc(b.displayName || b.username) + '</div>' +
+      '<div class="small muted">✉ ' + App.esc(b.emailMasked || '') + '</div></div>' +
+      '<div class="ban-meta"><div>' + T('bans.reason') + '：' + App.esc(b.reason || '—') + '</div>' +
+      '<div>' + T('bans.until') + '：' + fmtUntil(b.until) + '</div></div></div>');
+  });
+  ipBans.forEach((b) => {
+    rows.push('<div class="ban-row"><div class="ban-avatar ban-ip">🌐</div>' +
+      '<div class="ban-body"><div class="ban-name">' + App.esc(b.ipMasked || 'IP') + '</div></div>' +
+      '<div class="ban-meta"><div>' + T('bans.reason') + '：' + App.esc(b.reason || '—') + '</div>' +
+      '<div>' + T('bans.until') + '：' + fmtUntil(b.until) + '</div></div></div>');
+  });
+  box.innerHTML = rows.join('') +
+    '<div class="small muted mt-3">' + T('bans.count', { n: userBans.length + ipBans.length }) + '</div>';
+  I18N.apply(box);
+}});
+</script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>我的文件 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/css/main.css">
+<script>(function(){var t=localStorage.getItem('mo_theme');var d=t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light');})();</script>
+</head>
+<body>
+
+<header id="navbar"></header>
+
+<main class="container container-mid py-6">
+  <div class="page-head">
+    <h1 data-i18n="nav.files">我的文件</h1>
+    <p class="muted" data-i18n="files.pageSub">绑定 Cloudflare 后，文件存于你自己的账户；未绑定则仅保存在本机。</p>
+  </div>
+
+  <div id="bindCard"></div>
+
+  <div id="warnLocal" class="warn-banner hidden">
+    <span id="warnIco"></span>
+    <span data-i18n="files.localWarn">你尚未绑定 Cloudflare 账号，文件仅保存在本机浏览器，更换设备或清除缓存可能丢失。绑定后可生成分享链接并永久存储。</span>
+  </div>
+
+  <div class="card card-pad mt-4">
+    <div class="section-head-sm" data-i18n="files.upload">上传文件</div>
+    <div id="dropZone" class="drop-zone">
+      <div class="dz-ico" id="dzIco"></div>
+      <div class="dz-text" data-i18n="files.drop">点击或拖拽文件到此处</div>
+      <div class="dz-hint muted xsmall" data-i18n="files.dropHint">支持任意类型文件</div>
+    </div>
+    <div class="row" style="gap:12px;margin-top:14px;flex-wrap:wrap">
+      <div class="field" style="flex:1;min-width:200px">
+        <label class="label" for="previewCode" data-i18n="files.previewCode">预览码（可选）</label>
+        <input class="input" id="previewCode" maxlength="64" placeholder="设置后他人需凭码访问" data-i18n-ph="files.codePlaceholder">
+      </div>
+      <div class="field" style="width:170px">
+        <label class="label" for="expireDays" data-i18n="files.expire">有效期（天）</label>
+        <input class="input" id="expireDays" type="number" min="0" max="3650" value="0" data-i18n-ph="files.expirePh">
+      </div>
+    </div>
+    <p class="muted xsmall mt-2" data-i18n="files.limit">绑定 Cloudflare 后单文件上限约 25MB；未绑定时仅建议小于 3MB 的小文件存于本地。</p>
+  </div>
+
+  <div id="fileList" class="mt-4"></div>
+</main>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script src="/assets/js/storage.js"></script>
+<script>
+App.boot({ nav: 'files', requireAuth: true, onReady: () => {
+  const { icon } = App;
+  $('#dzIco').innerHTML = icon('upload');
+  $('#warnIco').innerHTML = icon('alert');
+  I18N.apply();
+  StorageUI.init();
+}});
+</script>
+</body>
+</html>

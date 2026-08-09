@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>通知 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/css/main.css">
+</head>
+<body>
+
+<header id="navbar"></header>
+
+<div class="layout container-narrow">
+  <main class="main">
+    <div class="card">
+      <div class="card-head row-between wrap" style="gap:10px">
+        <h2 class="mb-0"><span data-i18n="notif.title">通知</span>
+          <span class="badge badge-danger" id="unreadBadge" style="display:none">0</span></h2>
+        <div class="row" style="gap:8px">
+          <button class="btn btn-ghost btn-sm" id="btnRefresh">刷新</button>
+          <button class="btn btn-outline btn-sm" id="btnReadAll" data-i18n="notif.markAll">全部已读</button>
+        </div>
+      </div>
+
+      <div class="card-body" style="padding:0">
+        <div class="pill-tabs" style="margin:12px 16px">
+          <button class="pill-tab active" data-nt="" data-i18n="common.all">全部</button>
+          <button class="pill-tab" data-nt="unread">未读</button>
+          <button class="pill-tab" data-nt="comment" data-i18n="notif.type.comment">评论</button>
+          <button class="pill-tab" data-nt="like" data-i18n="notif.type.like">点赞</button>
+          <button class="pill-tab" data-nt="follow" data-i18n="notif.type.follow">关注</button>
+          <button class="pill-tab" data-nt="system" data-i18n="notif.type.system">系统</button>
+        </div>
+        <div id="notifList"></div>
+        <div id="notifMore" style="padding:12px 16px"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<footer id="footer"></footer>
+<nav id="tabbar"></nav>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script>
+(function () {
+  'use strict';
+  const { $, $$, esc, icon, avatar } = App;
+  const T = (k) => I18N.t(k);
+
+  let items = [];
+  let cursor = null;
+  let filter = '';
+
+  const TYPE_ICON = {
+    comment: 'message', reply: 'message', like: 'heart', follow: 'userPlus',
+    dm: 'mail', mention: 'at', report: 'flag', system: 'info',
+    newpost: 'file', role: 'shield', mute: 'volumeX', ban: 'ban', moderate: 'shield',
+  };
+  const TYPE_COLOR = {
+    like: 'var(--danger)', follow: 'var(--accent)', comment: 'var(--info)',
+    reply: 'var(--info)', system: 'var(--warn)', report: 'var(--warn)',
+    ban: 'var(--danger)', mute: 'var(--warn)',
+  };
+
+  function itemHTML(n) {
+    const ic = TYPE_ICON[n.type] || 'bell';
+    const color = TYPE_COLOR[n.type] || 'var(--text-3)';
+    const actor = n.actor;
+    return '<div class="notif-item' + (n.read ? '' : ' unread') + '" data-nid="' + esc(n.id) + '">' +
+      (actor && actor.avatar
+        ? avatar({ displayName: actor.name, avatar: actor.avatar }, 'sm')
+        : '<span class="ni-icon" style="color:' + color + '">' + icon(ic) + '</span>') +
+      '<div class="ni-body">' +
+        '<div class="ni-title">' + esc(n.title || '') + '</div>' +
+        (n.body ? '<div class="small muted clamp-2">' + esc(n.body) + '</div>' : '') +
+        '<div class="xsmall muted mt-1" data-time="' + n.createdAt + '"></div>' +
+      '</div>' +
+      '<div class="row" style="gap:4px;align-items:flex-start">' +
+        (n.link ? '<a class="icon-btn" href="' + esc(App.safeURL(n.link) || '#') + '" data-open="' + esc(n.id) +
+          '" title="查看">' + icon('arrowRight') + '</a>' : '') +
+        '<button class="icon-btn" data-ndel="' + esc(n.id) + '" title="' + T('common.delete') + '">' + icon('trash') + '</button>' +
+      '</div></div>';
+  }
+
+  function render() {
+    let list = items;
+    if (filter === 'unread') list = list.filter((n) => !n.read);
+    else if (filter) list = list.filter((n) => n.type === filter ||
+      (filter === 'comment' && n.type === 'reply') ||
+      (filter === 'system' && ['system', 'role', 'ban', 'mute', 'moderate'].includes(n.type)));
+
+    const box = $('#notifList');
+    box.innerHTML = list.length ? list.map(itemHTML).join('')
+      : App.emptyState(T('notif.empty'), '这里会显示评论、点赞、关注、系统消息等提醒', 'bell');
+
+    $$('[data-ndel]', box).forEach((b) => b.onclick = async (e) => {
+      e.stopPropagation();
+      try {
+        await API.Notify.remove(b.dataset.ndel);
+        items = items.filter((x) => x.id !== b.dataset.ndel);
+        render(); updateBadge();
+      } catch (err) { App.toastError(err); }
+    });
+
+    $$('[data-open]', box).forEach((a) => a.onclick = async () => {
+      const n = items.find((x) => x.id === a.dataset.open);
+      if (n && !n.read) { try { await API.Notify.read(n.id); } catch (e) { /* ignore */ } }
+    });
+
+    $$('.notif-item', box).forEach((el) => el.onclick = async (e) => {
+      if (e.target.closest('button') || e.target.closest('a')) return;
+      const id = el.dataset.nid;
+      const n = items.find((x) => x.id === id);
+      if (!n) return;
+      if (!n.read) {
+        try { await API.Notify.read(id); n.read = true; render(); updateBadge(); } catch (err) { /* ignore */ }
+      }
+      if (n.link) location.href = App.safeURL(n.link) || '#';
+    });
+
+    I18N.apply(box);
+  }
+
+  function updateBadge() {
+    const n = items.filter((x) => !x.read).length;
+    const b = $('#unreadBadge');
+    b.style.display = n ? '' : 'none';
+    b.textContent = n;
+  }
+
+  async function load(reset) {
+    if (reset) { cursor = null; items = []; $('#notifList').innerHTML = App.skeletonList(4, 64); }
+    try {
+      const d = await API.Notify.list(Object.assign({ limit: 30 }, cursor ? { cursor } : {}));
+      items = reset ? (d.items || []) : items.concat(d.items || []);
+      items.sort((a, b) => b.createdAt - a.createdAt);
+      cursor = d.cursor || null;
+      render(); updateBadge();
+      $('#notifMore').innerHTML = cursor
+        ? '<button class="btn btn-outline btn-block" id="nMore">' + T('common.loadMore') + '</button>' : '';
+      const m = $('#nMore'); if (m) m.onclick = () => load(false);
+    } catch (e) {
+      $('#notifList').innerHTML = App.emptyState(T('common.failed'), e.message, 'alert');
+    }
+  }
+
+  App.boot({
+    nav: 'notifications',
+    requireAuth: true,
+    onReady: async function () {
+      $$('[data-nt]').forEach((b) => b.onclick = () => {
+        filter = b.dataset.nt;
+        $$('[data-nt]').forEach((x) => x.classList.toggle('active', x === b));
+        render();
+      });
+      $('#btnRefresh').onclick = () => load(true);
+      $('#btnReadAll').onclick = async () => {
+        try {
+          await API.Notify.readAll();
+          items.forEach((n) => { n.read = true; });
+          render(); updateBadge();
+          App.toast(T('common.success'), 'success');
+        } catch (e) { App.toastError(e); }
+      };
+      await load(true);
+    },
+  });
+})();
+</script>
+</body>
+</html>

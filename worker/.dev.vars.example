@@ -1,0 +1,40 @@
+# ============================================================
+# 本地开发用密钥文件：复制为 .dev.vars（该文件已被 .gitignore 忽略）
+# 生产环境请改用： wrangler secret put <NAME>
+# ============================================================
+
+# 32 位以上随机字符串，用于 JWT 签名。生成： openssl rand -hex 32
+JWT_SECRET=change_me_to_a_64_char_random_hex_string
+
+# 超级管理员初始密码（首次启动自动写入 KV，之后可在后台修改）
+SUPER_ADMIN_PASSWORD=ChangeMe_Str0ng!2026
+
+# Cloudflare Turnstile 服务端密钥
+TURNSTILE_SECRET=0x4AAAAAAA_secret_here
+
+# GitHub OAuth App
+GITHUB_CLIENT_SECRET=github_client_secret_here
+
+# Discord OAuth App
+DISCORD_CLIENT_SECRET=discord_client_secret_here
+
+# Cloud Mail / Resend 发信 Token（发件地址在 wrangler.toml 的 MAIL_FROM 设置，
+# 已默认为 MarytOpens <no-reply@natrois.top>，即你部署在 Cloudflare 的 cloud-mail）
+MAIL_API_TOKEN=mail_api_token_here
+
+# 用户绑定「自己的 Cloudflare 账号」所需的 OAuth 应用密钥
+# 在 dash.cloudflare.com 个人资料 → OAuth 应用中创建，回调填
+# https://api.natrois.top/api/cf/bind/callback
+CF_OAUTH_CLIENT_SECRET=cf_oauth_client_secret_here
+
+# 用户令牌加密密钥（AES-GCM）。用于加密存储用户绑定后拿到的 CF OAuth 令牌，
+# 未设置时回退到 JWT_SECRET。请用 `openssl rand -hex 32` 生成一个独立值。
+ENCRYPTION_SECRET=change_me_to_a_64_char_random_hex_string
+
+# Cloudflare 账号 API（用于后台"接入 Cloudflare API"面板：查缓存/清缓存/看分析）
+CF_API_TOKEN=cloudflare_api_token_here
+CF_ACCOUNT_ID=cloudflare_account_id_here
+CF_ZONE_ID=cloudflare_zone_id_here
+
+# 机器人主控令牌（可在后台再单独签发子机器人 Token）
+BOT_MASTER_TOKEN=bot_master_token_here

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>私信 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/css/main.css">
+</head>
+<body>
+
+<header id="navbar"></header>
+
+<div class="container" style="padding:20px 20px 40px">
+  <div class="card dm-layout" id="dmRoot">
+
+    <!-- ========================= 会话列表 ========================= -->
+    <div class="dm-threads" id="dmThreads">
+      <div class="dm-threads-head row-between" style="gap:8px">
+        <b data-i18n="dm.title">私信</b>
+        <button class="icon-btn" id="btnNewDm" title="发起新会话" data-i18n-title="dm.new">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M12 5v14M5 12h14"/></svg>
+        </button>
+      </div>
+      <div style="padding:8px 12px">
+        <input class="input input-sm" id="threadSearch" placeholder="搜索会话" data-i18n-ph="common.search">
+      </div>
+      <div class="dm-threads-list" id="threadList"></div>
+    </div>
+
+    <!-- ========================== 聊天窗 ========================== -->
+    <div class="dm-main" id="dmMain">
+      <div class="dm-head" id="dmHead">
+        <button class="icon-btn menu-toggle" id="dmBack" data-i18n-title="dm.back" title="返回">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </button>
+        <span class="muted" data-i18n="dm.selectThread">选择一个会话开始聊天</span>
+      </div>
+      <div class="dm-body" id="dmBody">
+        <div class="loading-center" style="height:100%"><span class="muted small" data-i18n="dm.emptyDesc">
+          还没有会话，去看看社区里的朋友吧</span></div>
+      </div>
+      <div class="dm-foot" id="dmFoot" style="display:none">
+        <textarea class="textarea" id="dmInput" rows="1" placeholder="输入消息，Enter 发送 / Shift+Enter 换行"
+          data-i18n-ph="dm.placeholder"></textarea>
+        <button class="btn btn-primary" id="dmSend" data-i18n="dm.send">发送</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer id="footer"></footer>
+<nav id="tabbar"></nav>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script>
+(function () {
+  'use strict';
+  const { $, $$, esc, icon, avatar } = App;
+  const T = (k) => I18N.t(k);
+
+  let threads = [];
+  let current = null;      // { id, username, displayName, avatar }
+  let messages = [];
+  let poll = null;
+  let searchKey = '';
+
+  /* ------------------------- 会话列表 ------------------------- */
+  function renderThreads() {
+    const box = $('#threadList');
+    let list = threads;
+    if (searchKey) {
+      const k = searchKey.toLowerCase();
+      list = list.filter((t) => t.peer && (t.peer.displayName + t.peer.username).toLowerCase().includes(k));
+    }
+    box.innerHTML = list.length ? list.map((t) => {
+      const p = t.peer || { displayName: '未知用户', username: '', avatar: '' };
+      return '<div class="dm-thread' + (current && current.id === p.id ? ' active' : '') +
+        '" data-peer="' + esc(p.id) + '">' + avatar(p, 'md') +
+        '<div class="dt-main">' +
+          '<div class="dt-name"><span class="truncate">' + esc(p.displayName) + '</span>' +
+            '<span class="dt-time" data-time="' + t.lastAt + '"></span></div>' +
+          '<div class="row" style="gap:6px;align-items:center">' +
+            '<span class="dt-last grow">' + esc(t.lastText || '（无内容）') + '</span>' +
+            (t.unread ? '<span class="dt-unread">' + (t.unread > 99 ? '99+' : t.unread) + '</span>' : '') +
+          '</div>' +
+        '</div></div>';
+    }).join('') : '<div class="empty" style="padding:36px 16px"><p class="small" data-i18n="dm.empty">暂无会话</p></div>';
+
+    $$('[data-peer]', box).forEach((n) => n.onclick = () => {
+      const t = threads.find((x) => x.peer && x.peer.id === n.dataset.peer);
+      openThread(t ? t.peer : { id: n.dataset.peer, displayName: '用户', username: '', avatar: '' });
+    });
+    I18N.apply(box);
+  }
+
+  async function loadThreads(silent) {
+    try {
+      const d = await API.DM.threads();
+      threads = d.items || [];
+      renderThreads();
+    } catch (e) { if (!silent) App.toastError(e); }
+  }
+
+  /* --------------------------- 聊天 --------------------------- */
+  function dateSep(ts) {
+    return '<div class="dm-date-sep">' + I18N.formatDate(ts, 'date') + '</div>';
+  }
+
+  function renderMessages() {
+    const me = App.Session.user;
+    const box = $('#dmBody');
+    if (!messages.length) {
+      box.innerHTML = '<div class="empty" style="margin:auto"><p class="small">还没有消息，打个招呼吧 👋</p></div>';
+      return;
+    }
+    let html = '';
+    let lastDay = '';
+    messages.forEach((m) => {
+      const day = new Date(m.createdAt).toDateString();
+      if (day !== lastDay) { html += dateSep(m.createdAt); lastDay = day; }
+      const mine = m.senderId === me.id;
+      html += '<div class="bubble ' + (mine ? 'me' : 'you') + '">' +
+        '<div class="b-text">' + esc(m.text || m.content || '') + '</div>' +
+        '<div class="b-time" data-time="' + m.createdAt + '"></div></div>';
+    });
+    box.innerHTML = html;
+    I18N.apply(box);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  async function openThread(peer) {
+    current = peer;
+    $('#dmRoot').classList.add('show-main');
+    $('#dmHead').innerHTML =
+      '<button class="icon-btn menu-toggle" id="dmBack">' + icon('arrowLeft') + '</button>' +
+      avatar(peer, 'md') +
+      '<div style="min-width:0"><div class="bold truncate">' + esc(peer.displayName) + '</div>' +
+      '<div class="xsmall muted truncate">@' + esc(peer.username || peer.id) + '</div></div>' +
+      '<span class="spacer"></span>' +
+      '<a class="icon-btn" href="/profile.html?u=' + encodeURIComponent(peer.username || peer.id) +
+        '" title="' + T('user.profile') + '">' + icon('user') + '</a>' +
+      '<button class="icon-btn" id="dmReport" title="' + T('report.title') + '">' + icon('flag') + '</button>';
+    $('#dmBack').onclick = () => { $('#dmRoot').classList.remove('show-main'); current = null; };
+    $('#dmReport').onclick = () => App.reportDialog('user', peer.id);
+    $('#dmFoot').style.display = '';
+    $('#dmBody').innerHTML = App.loadingBlock();
+
+    try {
+      const d = await API.DM.history(peer.id, { limit: 60 });
+      messages = d.items || [];
+      if (d.peer) { current = d.peer; }
+      renderMessages();
+      const t = threads.find((x) => x.peer && x.peer.id === peer.id);
+      if (t) { t.unread = 0; renderThreads(); }
+    } catch (e) {
+      $('#dmBody').innerHTML = App.emptyState(T('common.failed'), e.message, 'alert');
+    }
+    $('#dmInput').focus();
+    history.replaceState(null, '', '/messages.html?to=' + encodeURIComponent(peer.id));
+  }
+
+  async function send() {
+    const inp = $('#dmInput');
+    const text = inp.value.trim();
+    if (!text || !current) return;
+    inp.value = ''; autoGrow();
+    const optimistic = { id: 'tmp' + Date.now(), senderId: App.Session.user.id, text, createdAt: Date.now() };
+    messages.push(optimistic); renderMessages();
+    try {
+      await API.DM.send(current.id, text);
+      const d = await API.DM.history(current.id, { limit: 60 });
+      messages = d.items || messages;
+      renderMessages();
+      loadThreads(true);
+    } catch (e) {
+      App.toastError(e);
+      messages = messages.filter((m) => m.id !== optimistic.id);
+      renderMessages();
+      inp.value = text;
+    }
+  }
+
+  function autoGrow() {
+    const t = $('#dmInput');
+    t.style.height = 'auto';
+    t.style.height = Math.min(t.scrollHeight, 140) + 'px';
+  }
+
+  /* ------------------------- 新建会话 ------------------------- */
+  async function newDialog() {
+    const v = await App.promptDialog('对方的用户名或用户 ID', { title: T('dm.new'), required: true });
+    if (!v) return;
+    try {
+      const d = await API.Users.detail(v);
+      openThread({ id: d.user.id, username: d.user.username, displayName: d.user.displayName, avatar: d.user.avatar });
+    } catch (e) { App.toastError(e); }
+  }
+
+  /* ------------------------------ 启动 ------------------------------ */
+  App.boot({
+    nav: 'messages',
+    requireAuth: true,
+    onReady: async function () {
+      $('#btnNewDm').onclick = newDialog;
+      $('#threadSearch').addEventListener('input', App.debounce(() => {
+        searchKey = $('#threadSearch').value.trim(); renderThreads();
+      }, 250));
+      $('#dmSend').onclick = send;
+      $('#dmInput').addEventListener('input', autoGrow);
+      $('#dmInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+      });
+
+      await loadThreads();
+
+      const to = new URLSearchParams(location.search).get('to');
+      if (to) {
+        const t = threads.find((x) => x.peer && x.peer.id === to);
+        if (t) openThread(t.peer);
+        else {
+          try {
+            const d = await API.Users.detail(to);
+            openThread({ id: d.user.id, username: d.user.username, displayName: d.user.displayName, avatar: d.user.avatar });
+          } catch (e) { App.toastError(e); }
+        }
+      }
+
+      // 轻量轮询：仅在页面可见时刷新
+      poll = setInterval(async () => {
+        if (document.hidden) return;
+        await loadThreads(true);
+        if (current) {
+          try {
+            const d = await API.DM.history(current.id, { limit: 60 });
+            if ((d.items || []).length !== messages.length) { messages = d.items; renderMessages(); }
+          } catch (e) { /* ignore */ }
+        }
+      }, 15000);
+      window.addEventListener('beforeunload', () => clearInterval(poll));
+    },
+  });
+})();
+</script>
+</body>
+</html>

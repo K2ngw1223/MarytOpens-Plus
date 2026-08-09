@@ -1,0 +1,89 @@
+####################################################################
+# MarytOpens · Cloudflare Worker 生产配置
+# 后端固定域名: https://api.natrois.top
+# 前端主站:     https://natrois.top
+####################################################################
+
+name = "marytopens-api"
+main = "src/index.js"
+compatibility_date = "2026-01-01"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = false
+
+# ----------------------------- 自定义域名 -----------------------------
+# 需要 natrois.top 已托管在同一个 Cloudflare 账号下
+routes = [
+  { pattern = "api.natrois.top", custom_domain = true }
+]
+
+# ----------------------------- KV 命名空间 ----------------------------
+# 创建命令：
+#   wrangler kv namespace create DB
+#   wrangler kv namespace create DB --preview
+# 然后把返回的 id 填到下面
+[[kv_namespaces]]
+binding = "DB"
+id = "在此填入你的_KV_ID"
+preview_id = "在此填入你的_KV_PREVIEW_ID"
+
+# ----------------------------- R2 对象存储 ----------------------------
+# 创建命令： wrangler r2 bucket create marytopens-media
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "marytopens-media"
+preview_bucket_name = "marytopens-media"
+
+# ------------------------- 非敏感环境变量 ----------------------------
+# 敏感变量（JWT_SECRET / TURNSTILE_SECRET / OAuth Secret / MAIL_API_TOKEN /
+# SUPER_ADMIN_PASSWORD / CF_OAUTH_CLIENT_SECRET / ENCRYPTION_SECRET）请一律使用
+# `wrangler secret put` 或 Cloudflare 控制台 → Workers → Settings → Variables → Encrypt 添加。
+[vars]
+SITE_NAME              = "MarytOpens"
+FRONTEND_ORIGIN        = "https://natrois.top"
+API_ORIGIN             = "https://api.natrois.top"
+ALLOWED_ORIGINS        = "https://natrois.top,https://www.natrois.top,http://localhost:8788,http://127.0.0.1:8788"
+MEDIA_PUBLIC_BASE      = "https://api.natrois.top/files"
+
+# 超级管理员（首启动自动创建/纠正，密码走 Secret）
+SUPER_ADMIN_EMAIL      = "admin@natrois.top"
+SUPER_ADMIN_USERNAME   = "root"
+
+# Turnstile 人机验证（可选回退）
+# 推荐在后台管理 → 站点设置 → Turnstile 人机验证 中设置 Site Key / Secret；
+# 此处环境变量作为回退，仅在后台未配置时生效。Site Key 公开，Secret 请用
+# `wrangler secret put TURNSTILE_SECRET` 注入（不要写在此文件）。
+TURNSTILE_SITE_KEY     = "0x4AAAAAAA_在此填入_SITEKEY"
+TURNSTILE_ENABLED      = "true"
+
+# OAuth（Client ID 公开，Secret 走 Secret）
+GITHUB_CLIENT_ID       = "在此填入_GITHUB_CLIENT_ID"
+DISCORD_CLIENT_ID      = "在此填入_DISCORD_CLIENT_ID"
+
+# 用户绑定「自己的 Cloudflare 账号」所用的 OAuth 应用（在 dash.cloudflare.com
+# 个人资料 → OAuth 应用中创建；回调地址填 https://api.natrois.top/api/cf/bind/callback）
+# 作用域需包含 account:read / workers_kv_storage:edit / d1:edit
+# Client Secret 与下方 ENCRYPTION_SECRET 通过 secret 注入，不要写在这里。
+CF_OAUTH_CLIENT_ID     = "在此填入_CF_OAUTH_CLIENT_ID"
+
+# Cloud Mail（自建邮局）—— 详见 docs/DEPLOY.md 第 8 章
+# MAIL_PROVIDER 可选: cloudmail | resend | mailchannels | console
+MAIL_PROVIDER          = "cloudmail"
+MAIL_API_URL           = "https://mail.natrois.top/api/send"
+MAIL_FROM              = "MarytOpens <no-reply@natrois.top>"
+
+# 运行参数
+JWT_TTL_SECONDS        = "604800"     # 7 天
+LOG_TTL_SECONDS        = "2592000"    # 访问日志保留 30 天
+RATE_LIMIT_WINDOW      = "60"
+RATE_LIMIT_MAX         = "120"
+
+# ----------------------------- 定时任务 -------------------------------
+# 每天 04:00 UTC 清理过期验证码 / 过期限流键 / 生成站点统计快照
+[triggers]
+crons = ["0 4 * * *"]
+
+[observability]
+enabled = true
+
+[placement]
+mode = "smart"

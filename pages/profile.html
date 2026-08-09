@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>用户主页 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/css/main.css">
+<style>
+  .pf-banner { height: 180px; border-radius: 16px 16px 0 0; background: linear-gradient(120deg, var(--accent), #0ea5e9);
+    background-size: cover; background-position: center; }
+  .pf-head { padding: 0 24px 22px; position: relative; }
+  .pf-avatar { position: relative; margin-top: -48px; }
+  .pf-stats { display: flex; gap: 26px; }
+  .pf-stats b { display: block; font-size: 19px; }
+  @media (max-width: 640px) { .pf-banner { height: 120px; } .pf-stats { gap: 18px; } }
+</style>
+</head>
+<body>
+
+<header id="navbar"></header>
+
+<div class="layout container-mid">
+  <main class="main">
+    <div class="card" id="pfCard">
+      <div class="card-body"><div class="skeleton sk-card" style="height:180px"></div></div>
+    </div>
+
+    <div class="card card-pad row-between wrap" style="gap:10px">
+      <div class="pill-tabs" id="pfTabs">
+        <button class="pill-tab active" data-tab="posts" data-i18n="user.posts">文章</button>
+        <button class="pill-tab" data-tab="following" data-i18n="user.following">关注</button>
+        <button class="pill-tab" data-tab="followers" data-i18n="user.followers">粉丝</button>
+      </div>
+      <span class="small muted" id="pfHint"></span>
+    </div>
+
+    <div id="paneposts">
+      <div class="post-list" id="feed"></div>
+      <div id="feedMore"></div>
+    </div>
+
+    <div id="panerelations" style="display:none">
+      <div class="card"><div class="card-body col" style="gap:14px" id="relList"></div></div>
+    </div>
+  </main>
+
+  <aside class="aside">
+    <div class="card card-pad" id="pfAbout"></div>
+    <div class="card card-pad" id="pfRoles"></div>
+  </aside>
+</div>
+
+<footer id="footer"></footer>
+<nav id="tabbar"></nav>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script src="/assets/js/feed.js"></script>
+<script>
+(function () {
+  'use strict';
+  const { $, $$, esc, icon, avatar, markdown } = App;
+  const T = (k) => I18N.t(k);
+
+  const sp = new URLSearchParams(location.search);
+  const key = sp.get('u') || sp.get('id') || '';
+  let profile = null;
+  let isSelf = false;
+  let following = false;
+  let list = null;
+
+  /* --------------------------- 资料卡 --------------------------- */
+  function renderProfile() {
+    const u = profile;
+    document.title = u.displayName + ' · MarytOpens';
+    const s = u.stats || {};
+    const me = App.Session.user;
+
+    const actions = isSelf
+      ? '<a class="btn btn-outline btn-sm" href="/user_settings.html">' + icon('settings') + T('settings.profile') + '</a>' +
+        '<a class="btn btn-primary btn-sm" href="/editor.html">' + T('post.write') + '</a>'
+      : (me
+        ? '<button class="btn btn-sm ' + (following ? 'btn-outline' : 'btn-primary') + '" id="btnFollow">' +
+            icon(following ? 'userCheck' : 'userPlus') + '<span>' + T(following ? 'user.unfollow' : 'user.follow') + '</span></button>' +
+          '<a class="btn btn-soft btn-sm" href="/messages.html?to=' + encodeURIComponent(u.id) + '">' +
+            icon('mail') + T('user.sendDm') + '</a>' +
+          '<button class="icon-btn" id="btnReportUser" title="' + T('report.title') + '">' + icon('flag') + '</button>'
+        : '<a class="btn btn-primary btn-sm" href="/login.html">' + T('nav.login') + '</a>');
+
+    const adminBox = (App.Session.isSuperAdmin || App.Session.can('user.ban'))
+      ? '<div class="row mt-3" style="gap:6px;flex-wrap:wrap">' +
+          '<button class="btn btn-ghost btn-sm" data-ua="rename">' + T('admin.rename') + '</button>' +
+          '<button class="btn btn-ghost btn-sm" data-ua="mute">' + T('admin.mute') + '</button>' +
+          '<button class="btn btn-ghost btn-sm" data-ua="unmute">' + T('admin.unmute') + '</button>' +
+          '<button class="btn btn-ghost btn-sm" data-ua="' + (u.banned ? 'unban' : 'ban') + '">' +
+            T(u.banned ? 'admin.unban' : 'admin.ban') + '</button>' +
+        '</div>' : '';
+
+    $('#pfCard').innerHTML =
+      '<div class="pf-banner"' + (u.banner ? ' style="background-image:url(' + esc(API.fileURL(u.banner)) + ')"' : '') + '></div>' +
+      '<div class="pf-head">' +
+        '<div class="row-between wrap" style="gap:14px;align-items:flex-end">' +
+          '<div class="row" style="gap:14px;align-items:flex-end">' +
+            '<div class="pf-avatar">' + avatar(u, 'xl', { class: 'avatar-ring' }) + '</div>' +
+            '<div style="padding-bottom:4px">' +
+              '<h2 class="mb-0">' + esc(u.displayName) +
+                (u.banned ? ' <span class="badge badge-danger">已封禁</span>' : '') +
+                (u.mutedUntil > Date.now() ? ' <span class="badge badge-warn">禁言中</span>' : '') + '</h2>' +
+              '<div class="small muted">@' + esc(u.username) + '</div>' +
+              '<div class="mt-2">' + App.roleTagsHTML(u.roleTags) + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="row" style="gap:8px">' + actions + '</div>' +
+        '</div>' +
+        (u.bio ? '<p class="mt-4 mb-0" style="color:var(--text-2)">' + esc(u.bio) + '</p>' : '') +
+        '<div class="pf-stats mt-4">' +
+          '<span><b>' + (s.posts || 0) + '</b><span class="xsmall muted">' + T('user.posts') + '</span></span>' +
+          '<span><b>' + (s.followers || 0) + '</b><span class="xsmall muted">' + T('user.followers') + '</span></span>' +
+          '<span><b>' + (s.following || 0) + '</b><span class="xsmall muted">' + T('user.following') + '</span></span>' +
+          '<span><b>' + (s.likes || 0) + '</b><span class="xsmall muted">获赞</span></span>' +
+        '</div>' + adminBox +
+      '</div>';
+
+    bindProfile();
+    renderAbout();
+  }
+
+  function bindProfile() {
+    const f = $('#btnFollow');
+    if (f) f.onclick = async () => {
+      if (!App.Session.require()) return;
+      f.disabled = true;
+      try {
+        const d = await API.Users.follow(profile.id);
+        following = d.following;
+        profile.stats.followers = d.followers;
+        renderProfile();
+      } catch (e) { App.toastError(e); }
+      f.disabled = false;
+    };
+
+    const r = $('#btnReportUser');
+    if (r) r.onclick = () => { if (App.Session.require()) App.reportDialog('user', profile.id); };
+
+    $$('[data-ua]').forEach((b) => b.onclick = async () => {
+      const act = b.dataset.ua;
+      try {
+        if (act === 'rename') {
+          const v = await App.promptDialog(T('admin.rename'), { value: profile.displayName, maxlength: 40 });
+          if (!v) return;
+          await API.Admin.userAction(profile.id, { action: 'rename', displayName: v });
+        } else if (act === 'mute') {
+          const m = await App.promptDialog('禁言时长（分钟）', { value: '60', type: 'number' });
+          if (!m) return;
+          await API.Admin.userAction(profile.id, { action: 'mute', minutes: Number(m) });
+        } else if (act === 'ban') {
+          const reason = await App.promptDialog('封禁原因', { value: '' });
+          if (reason === null) return;
+          await API.Admin.userAction(profile.id, { action: 'ban', reason });
+        } else {
+          await API.Admin.userAction(profile.id, { action: act });
+        }
+        App.toast(T('common.success'), 'success');
+        await load();
+      } catch (e) { App.toastError(e); }
+    });
+  }
+
+  function renderAbout() {
+    const u = profile;
+    const links = (u.links || []).filter((l) => l && l.url);
+    $('#pfAbout').innerHTML =
+      '<h4 style="margin:0 0 12px">' + T('user.profile') + '</h4>' +
+      '<div class="kv-list">' +
+        '<div class="kv-row"><span class="muted small">' + T('user.joined') + '</span>' +
+          '<span class="small" data-time="' + u.createdAt + '" data-time-style="abs"></span></div>' +
+        '<div class="kv-row"><span class="muted small">ID</span><span class="small mono">' + esc(u.id) + '</span></div>' +
+        (u.email ? '<div class="kv-row"><span class="muted small">' + T('auth.email') + '</span>' +
+          '<span class="small">' + esc(u.email) + '</span></div>' : '') +
+        (u.lastIP ? '<div class="kv-row"><span class="muted small">最近 IP</span>' +
+          '<span class="small mono">' + esc(u.lastIP) + '</span></div>' : '') +
+      '</div>' +
+      (links.length ? '<div class="chip-row mt-4">' + links.map((l) =>
+        '<a class="chip" href="' + esc(App.safeURL(l.url)) + '" target="_blank" rel="noopener nofollow">' +
+        icon('link') + esc(l.label || l.url) + '</a>').join('') + '</div>' : '');
+    I18N.apply($('#pfAbout'));
+
+    $('#pfRoles').innerHTML = (u.roleTags || []).length
+      ? '<h4 style="margin:0 0 12px">' + T('role.title') + '</h4><div class="chip-row">' +
+        App.roleTagsHTML(u.roleTags) + '</div>'
+      : '';
+  }
+
+  /* --------------------------- 关注 / 粉丝 --------------------------- */
+  async function loadRelations(type) {
+    const box = $('#relList');
+    box.innerHTML = App.skeletonList(3, 52);
+    if (!isSelf) {
+      box.innerHTML = App.emptyState('不可见', '仅本人可查看自己的关注与粉丝列表', 'lock');
+      return;
+    }
+    try {
+      const d = await API.Users.following(type === 'followers' ? { type: 'followers' } : {});
+      const us = d.users || [];
+      box.innerHTML = us.length ? us.map((x) =>
+        '<div class="row-between" style="gap:12px">' +
+          '<a class="row" style="gap:10px;align-items:center;min-width:0" href="/profile.html?u=' +
+            encodeURIComponent(x.username) + '">' + avatar(x, 'md') +
+            '<span style="min-width:0"><b class="truncate" style="display:block">' + esc(x.displayName) + '</b>' +
+            '<span class="xsmall muted truncate" style="display:block">' + esc(x.bio || '@' + x.username) + '</span></span></a>' +
+          '<a class="btn btn-soft btn-sm" href="/messages.html?to=' + encodeURIComponent(x.id) + '">' +
+            T('user.sendDm') + '</a>' +
+        '</div>').join('')
+        : App.emptyState('空空如也', type === 'followers' ? '还没有人关注你' : '你还没有关注任何人', 'users');
+      $('#pfHint').textContent = '共 ' + (d.total || us.length) + ' 人';
+    } catch (e) { box.innerHTML = App.emptyState(T('common.failed'), e.message, 'alert'); }
+  }
+
+  function setTab(k) {
+    $$('#pfTabs .pill-tab').forEach((b) => b.classList.toggle('active', b.dataset.tab === k));
+    $('#paneposts').style.display = k === 'posts' ? '' : 'none';
+    $('#panerelations').style.display = k === 'posts' ? 'none' : '';
+    $('#pfHint').textContent = '';
+    if (k === 'posts') list.load(true); else loadRelations(k);
+  }
+
+  /* ------------------------------ 加载 ------------------------------ */
+  async function load() {
+    try {
+      const target = key || (App.Session.user && App.Session.user.id);
+      if (!target) { location.href = '/login.html'; return; }
+      const d = await API.Users.detail(target);
+      profile = d.user;
+      isSelf = d.isSelf;
+      following = d.following;
+      renderProfile();
+
+      if (!list) {
+        list = Feed.createList({
+          mount: $('#feed'), moreMount: $('#feedMore'),
+          params: () => ({ author: profile.id, limit: 15 }),
+          showAuthor: false,
+          onEmpty: () => App.emptyState(T('post.empty'),
+            isSelf ? T('post.emptyDesc') : '这位用户还没有公开文章', 'file',
+            isSelf ? '<a class="btn btn-primary" href="/editor.html">' + T('post.write') + '</a>' : ''),
+        });
+        await list.load(true);
+        list.autoLoad();
+      } else { list.load(true); }
+    } catch (e) {
+      $('#pfCard').innerHTML = '<div class="card-body">' +
+        App.emptyState(T('common.notfound'), e.message, 'alert',
+          '<a class="btn btn-primary" href="/home.html">' + T('nav.home') + '</a>') + '</div>';
+      $('#pfTabs').closest('.card').style.display = 'none';
+    }
+  }
+
+  App.boot({
+    nav: '',
+    onReady: async function () {
+      $$('#pfTabs .pill-tab').forEach((b) => b.onclick = () => setTab(b.dataset.tab));
+      await load();
+      const t = new URLSearchParams(location.search).get('tab');
+      if (t && t !== 'posts') setTab(t);
+    },
+  });
+})();
+</script>
+</body>
+</html>

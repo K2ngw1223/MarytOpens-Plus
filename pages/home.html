@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="MarytOpens 社区主页 —— 文章、频道与讨论">
+<title>社区 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/css/main.css">
+</head>
+<body>
+
+<header id="navbar"></header>
+
+<div class="layout">
+
+  <!-- ============================ 左侧导航 ============================ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="side-group">
+      <div class="section-title">导航</div>
+      <a class="side-item active" href="/home.html" data-i18n="nav.home">首页</a>
+      <a class="side-item" href="/explore.html" data-i18n="nav.explore">探索</a>
+      <a class="side-item" href="/channels.html" data-i18n="nav.channels">频道</a>
+      <a class="side-item" href="/favorites.html" data-i18n="nav.favorites">收藏</a>
+      <a class="side-item" href="/notifications.html" data-i18n="nav.notifications">通知</a>
+    </div>
+
+    <div class="side-group" id="sideChannels">
+      <div class="section-title" data-i18n="ch.title">频道</div>
+      <div class="small muted" style="padding:6px 10px" data-i18n="common.loading">加载中…</div>
+    </div>
+
+    <div class="side-group" id="sideBoards"></div>
+
+    <div class="side-group">
+      <div class="section-title">快捷</div>
+      <a class="side-item" href="/editor.html" data-i18n="post.write">写文章</a>
+      <a class="side-item" href="/messages.html" data-i18n="dm.title">私信</a>
+      <a class="side-item" href="/user_settings.html" data-i18n="settings.title">设置</a>
+      <a class="side-item" href="/about.html" data-i18n="about.title">关于</a>
+    </div>
+  </aside>
+
+  <!-- ============================== 主内容 ============================== -->
+  <main class="main">
+
+    <div class="card card-pad row-between wrap" style="gap:12px">
+      <div class="pill-tabs" id="feedTabs">
+        <button class="pill-tab active" data-tab="all" data-i18n="common.all">全部</button>
+        <button class="pill-tab" data-tab="following">关注</button>
+        <button class="pill-tab" data-tab="mine" data-i18n="nav.myposts">我的文章</button>
+        <button class="pill-tab" data-tab="drafts" data-i18n="nav.drafts">草稿</button>
+      </div>
+      <div class="row" style="gap:8px">
+        <div class="input-icon" style="max-width:220px">
+          <input class="input input-sm" id="feedSearch" type="search" placeholder="搜索本页" data-i18n-ph="common.search">
+        </div>
+        <a class="btn btn-primary btn-sm" href="/editor.html" id="btnWrite" data-i18n="post.write">写文章</a>
+      </div>
+    </div>
+
+    <div id="feedFilterBar"></div>
+
+    <div class="post-list" id="feed"></div>
+    <div id="feedMore"></div>
+  </main>
+
+  <!-- ============================== 右侧栏 ============================== -->
+  <aside class="aside">
+    <div class="card card-pad" id="railMe"></div>
+
+    <div class="card">
+      <div class="card-head"><h4 class="mb-0">社区数据</h4></div>
+      <div class="card-body">
+        <div class="kv-list" id="railStats">
+          <div class="kv-row"><span class="muted small" data-i18n="admin.totalUsers">成员</span><b id="stUsers">—</b></div>
+          <div class="kv-row"><span class="muted small" data-i18n="admin.totalPosts">文章</span><b id="stPosts">—</b></div>
+          <div class="kv-row"><span class="muted small" data-i18n="admin.totalComments">评论</span><b id="stComments">—</b></div>
+          <div class="kv-row"><span class="muted small" data-i18n="ch.title">频道</span><b id="stChannels">—</b></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="railTags">
+      <div class="card-head"><h4 class="mb-0">热门标签</h4></div>
+      <div class="card-body"><div class="chip-row" id="tagCloud"><span class="muted small" data-i18n="common.loading">加载中…</span></div></div>
+    </div>
+
+    <div class="card card-pad">
+      <h4 style="margin:0 0 8px">社区守则</h4>
+      <ul class="small muted" style="margin:0;padding-left:18px;line-height:1.9">
+        <li>友善讨论，拒绝人身攻击</li>
+        <li>发布前确认内容合法合规</li>
+        <li>转载请注明来源与作者</li>
+        <li>违规内容可点击举报处理</li>
+      </ul>
+    </div>
+  </aside>
+</div>
+
+<footer id="footer"></footer>
+<nav id="tabbar"></nav>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script src="/assets/js/feed.js"></script>
+<script>
+(function () {
+  'use strict';
+  const { $, $$, esc, icon, avatar } = App;
+
+  let tab = new URLSearchParams(location.search).get('tab') || 'all';
+  let board = new URLSearchParams(location.search).get('board') || '';
+  let scope = new URLSearchParams(location.search).get('scope') || '';
+  let keyword = '';
+  let list = null;
+  let followingIds = [];
+
+  /* ------------------------- 请求参数 ------------------------- */
+  function params() {
+    const p = { limit: 15 };
+    if (keyword) p.q = keyword;
+    if (board) p.board = board;
+    if (scope) p.scope = scope;
+    if (tab === 'mine' || tab === 'drafts') p.mine = 1;
+    return p;
+  }
+
+  /* --------------------- 关注 / 草稿 的客户端筛选 --------------------- */
+  async function fetcher(p) {
+    const d = await API.Posts.list(p);
+    let items = d.items || [];
+    if (tab === 'drafts') items = items.filter((x) => x.status === 'draft');
+    else if (tab === 'mine') items = items.filter((x) => x.status !== 'deleted');
+    else if (tab === 'following') {
+      items = items.filter((x) => x.author && followingIds.includes(x.author.id));
+    }
+    return { items, cursor: d.cursor };
+  }
+
+  /* ------------------------- 顶部筛选条 ------------------------- */
+  function renderFilterBar() {
+    const bar = $('#feedFilterBar');
+    const chips = [];
+    if (board) chips.push({ k: 'board', label: '版块：' + board });
+    if (scope) chips.push({ k: 'scope', label: '范围：' + scope });
+    if (keyword) chips.push({ k: 'q', label: '搜索：' + keyword });
+    if (!chips.length) { bar.innerHTML = ''; return; }
+    bar.innerHTML = '<div class="card card-pad chip-row">' +
+      chips.map((c) => '<span class="tag">' + esc(c.label) +
+        '<button class="tag-close" data-clear="' + c.k + '" aria-label="clear">×</button></span>').join('') +
+      '<button class="btn btn-ghost btn-sm" data-clear="all" data-i18n="common.reset">重置</button></div>';
+    $$('[data-clear]', bar).forEach((b) => b.onclick = () => {
+      const k = b.dataset.clear;
+      if (k === 'all') { board = ''; scope = ''; keyword = ''; $('#feedSearch').value = ''; }
+      if (k === 'board') board = '';
+      if (k === 'scope') scope = '';
+      if (k === 'q') { keyword = ''; $('#feedSearch').value = ''; }
+      syncURL(); renderFilterBar(); markSideActive(); list.load(true);
+    });
+  }
+
+  function syncURL() {
+    const q = new URLSearchParams();
+    if (tab !== 'all') q.set('tab', tab);
+    if (board) q.set('board', board);
+    if (scope) q.set('scope', scope);
+    history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : ''));
+  }
+
+  /* ------------------------- 侧栏频道 ------------------------- */
+  async function loadChannels() {
+    const box = $('#sideChannels');
+    try {
+      const d = await API.Channels.list();
+      const items = (d.items || []).slice(0, 12);
+      box.innerHTML = '<div class="section-title">' + I18N.t('ch.title') + '</div>' +
+        (items.length
+          ? items.map((c) => '<button class="side-item" data-scope="channel:' + esc(c.id) + '">' +
+              '<span style="width:17px;text-align:center">' + esc(c.icon || '#') + '</span>' +
+              '<span class="truncate">' + esc(c.name) + '</span>' +
+              '<span class="count">' + (c.memberCount || 0) + '</span></button>').join('')
+          : '<div class="small muted" style="padding:6px 10px">暂无频道</div>') +
+        '<a class="side-item" href="/channels.html">' + icon('plus') + '<span>' + I18N.t('ch.create') + '</span></a>';
+
+      // 板块（取所有频道的 boards 去重）
+      const boards = [];
+      (d.items || []).forEach((c) => (c.boards || []).forEach((b) => {
+        if (!boards.find((x) => x.id === b.id)) boards.push(b);
+      }));
+      const bx = $('#sideBoards');
+      bx.innerHTML = boards.length
+        ? '<div class="section-title">版块</div>' + boards.slice(0, 10).map((b) =>
+            '<button class="side-item" data-board="' + esc(b.id) + '">' +
+            '<span style="width:17px;text-align:center">' + esc(b.icon || '•') + '</span>' +
+            '<span class="truncate">' + esc(b.name) + '</span></button>').join('')
+        : '';
+
+      $$('[data-scope],[data-board]', document.querySelector('.sidebar')).forEach((b) => b.onclick = () => {
+        if (b.dataset.scope) { scope = b.dataset.scope; board = ''; }
+        else { board = b.dataset.board; scope = ''; }
+        tab = 'all'; setTab('all', true);
+        syncURL(); renderFilterBar(); markSideActive(); list.load(true);
+      });
+      markSideActive();
+    } catch (e) {
+      box.innerHTML = '<div class="section-title">' + I18N.t('ch.title') + '</div>' +
+        '<div class="small muted" style="padding:6px 10px">加载失败</div>';
+    }
+  }
+
+  function markSideActive() {
+    $$('.sidebar .side-item').forEach((n) => {
+      if (n.dataset.scope) n.classList.toggle('active', n.dataset.scope === scope);
+      else if (n.dataset.board) n.classList.toggle('active', n.dataset.board === board);
+    });
+  }
+
+  /* ------------------------- 右栏个人卡片 ------------------------- */
+  function renderRailMe() {
+    const u = App.Session.user;
+    const box = $('#railMe');
+    if (!u) { box.innerHTML = ''; return; }
+    box.innerHTML =
+      '<div class="row" style="gap:12px;align-items:center">' +
+        avatar(u, 'lg') +
+        '<div style="min-width:0"><div class="bold truncate">' + esc(u.displayName) + '</div>' +
+        '<div class="xsmall muted truncate">@' + esc(u.username) + '</div></div>' +
+      '</div>' +
+      '<div class="mt-3">' + App.roleTagsHTML(App.Session.roleTags) + '</div>' +
+      '<div class="row mt-4" style="gap:8px">' +
+        '<a class="btn btn-soft btn-sm grow" href="/profile.html?u=' + encodeURIComponent(u.username) + '">' +
+          I18N.t('user.profile') + '</a>' +
+        '<a class="btn btn-primary btn-sm grow" href="/editor.html">' + I18N.t('post.write') + '</a>' +
+      '</div>';
+  }
+
+  /* ------------------------- 统计与标签 ------------------------- */
+  async function loadStats() {
+    try {
+      const m = await API.meta();
+      const s = m.stats || {};
+      $('#stUsers').textContent = I18N.formatNumber(s.users || 0);
+      $('#stPosts').textContent = I18N.formatNumber(s.posts || 0);
+      $('#stComments').textContent = I18N.formatNumber(s.comments || 0);
+      $('#stChannels').textContent = I18N.formatNumber(s.channels || 0);
+    } catch (e) { /* 忽略 */ }
+  }
+
+  async function loadTags() {
+    try {
+      const d = await API.Posts.list({ limit: 50 });
+      const count = {};
+      (d.items || []).forEach((p) => (p.tags || []).forEach((t) => { count[t] = (count[t] || 0) + 1; }));
+      const top = Object.entries(count).sort((a, b) => b[1] - a[1]).slice(0, 18);
+      $('#tagCloud').innerHTML = top.length
+        ? top.map(([t, n]) => '<a class="tag" href="/explore.html?q=' + encodeURIComponent(t) + '">#' +
+            esc(t) + '<span class="muted2">' + n + '</span></a>').join('')
+        : '<span class="muted small">暂无标签</span>';
+    } catch (e) { $('#tagCloud').innerHTML = '<span class="muted small">—</span>'; }
+  }
+
+  /* ------------------------- Tab 切换 ------------------------- */
+  function setTab(k, silent) {
+    tab = k;
+    $$('#feedTabs .pill-tab').forEach((b) => b.classList.toggle('active', b.dataset.tab === k));
+    if (!silent) { syncURL(); list.load(true); }
+  }
+
+  async function loadFollowing() {
+    if (!App.Session.isLoggedIn) return;
+    try {
+      const d = await API.Users.following();
+      followingIds = d.ids || [];
+    } catch (e) { followingIds = []; }
+  }
+
+  /* ------------------------------- 启动 ------------------------------- */
+  App.boot({
+    nav: 'home',
+    requireAuth: true,
+    onReady: async function () {
+      renderRailMe();
+
+      list = Feed.createList({
+        mount: $('#feed'),
+        moreMount: $('#feedMore'),
+        params, fetcher,
+      });
+
+      $$('#feedTabs .pill-tab').forEach((b) => b.onclick = async () => {
+        if (b.dataset.tab === 'following' && !followingIds.length) await loadFollowing();
+        setTab(b.dataset.tab);
+      });
+      setTab(tab, true);
+
+      const s = $('#feedSearch');
+      s.addEventListener('input', App.debounce(() => {
+        keyword = s.value.trim();
+        renderFilterBar();
+        list.load(true);
+      }, 400));
+
+      renderFilterBar();
+      await list.load(true);
+      list.autoLoad();
+
+      loadChannels();
+      loadStats();
+      loadTags();
+      if (tab === 'following') loadFollowing().then(() => list.load(true));
+    },
+  });
+})();
+</script>
+</body>
+</html>

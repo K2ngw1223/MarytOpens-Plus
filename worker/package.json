@@ -1,0 +1,20 @@
+{
+  "name": "marytopens-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MarytOpens community backend — Cloudflare Workers + KV + R2",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "wrangler dev --local",
+    "dev:remote": "wrangler dev --remote",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail --format pretty",
+    "kv:create": "wrangler kv namespace create DB && wrangler kv namespace create DB --preview",
+    "r2:create": "wrangler r2 bucket create marytopens-media",
+    "secrets": "node scripts/put-secrets.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^3.90.0"
+  }
+}
