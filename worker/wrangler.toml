@@ -26,12 +26,13 @@ binding = "DB"
 id = "在此填入你的_KV_ID"
 preview_id = "在此填入你的_KV_PREVIEW_ID"
 
-# ----------------------------- R2 对象存储 ----------------------------
-# 创建命令： wrangler r2 bucket create marytopens-media
-[[r2_buckets]]
-binding = "MEDIA"
-bucket_name = "marytopens-media"
-preview_bucket_name = "marytopens-media"
+# ----------------------------- R2 对象存储（可选） ----------------------------
+# 如果你有 R2，取消下面注释并创建桶： wrangler r2 bucket create marytopens-media
+# 未绑定 R2 时，Worker 会自动回退到 KV 存储文件（头像/图片），功能不受影响。
+# [[r2_buckets]]
+# binding = "MEDIA"
+# bucket_name = "marytopens-media"
+# preview_bucket_name = "marytopens-media"
 
 # ------------------------- 非敏感环境变量 ----------------------------
 # 敏感变量（JWT_SECRET / TURNSTILE_SECRET / OAuth Secret / MAIL_API_TOKEN /
@@ -65,10 +66,12 @@ DISCORD_CLIENT_ID      = "在此填入_DISCORD_CLIENT_ID"
 # Client Secret 与下方 ENCRYPTION_SECRET 通过 secret 注入，不要写在这里。
 CF_OAUTH_CLIENT_ID     = "在此填入_CF_OAUTH_CLIENT_ID"
 
-# Cloud Mail（自建邮局）—— 详见 docs/DEPLOY.md 第 8 章
+# 邮件服务（可选回退）
+# 推荐在后台管理 → 邮件服务 中直接填写 Resend API Key / 发件地址；
+# 此处环境变量仅作为回退，仅在后台未配置时生效。
 # MAIL_PROVIDER 可选: cloudmail | resend | mailchannels | console
-MAIL_PROVIDER          = "cloudmail"
-MAIL_API_URL           = "https://mail.natrois.top/api/send"
+MAIL_PROVIDER          = "resend"
+MAIL_API_URL           = "https://api.resend.com/emails"
 MAIL_FROM              = "MarytOpens <no-reply@natrois.top>"
 
 # 运行参数

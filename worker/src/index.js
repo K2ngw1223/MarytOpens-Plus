@@ -843,20 +843,25 @@ function mailTemplate(cfg, { title, body, code, locale = 'zh-CN' }) {
  *  - mailchannels : Workers 免费通道
  *  - console      : 只打日志（本地调试）
  */
-async function sendMail(env, { to, subject, html, text }) {
-  const provider = (env.MAIL_PROVIDER || 'console').toLowerCase();
-  const from = env.MAIL_FROM || 'MarytOpens <no-reply@localhost>';
+// 邮件设置来源优先级：后台站点配置 cfg.mail > Worker 环境变量（env）
+// 这样站长可在「后台管理 → 邮件服务」里直接填 Resend API Key，无需改 wrangler.toml
+async function sendMail(env, { to, subject, html, text }, cfg) {
+  const m = (cfg && cfg.mail) || {};
+  const provider = (m.provider || env.MAIL_PROVIDER || 'console').toLowerCase();
+  const from = m.from || env.MAIL_FROM || 'MarytOpens <no-reply@localhost>';
+  const token = m.apiToken || env.MAIL_API_TOKEN || '';
+  const apiUrl = m.apiUrl || env.MAIL_API_URL || '';
   const payloadText = text || html?.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 
   try {
-    if (provider === 'console' || (!env.MAIL_API_TOKEN && provider !== 'mailchannels')) {
+    if (provider === 'console' || (!token && provider !== 'mailchannels')) {
       console.log('[MAIL:console]', to, subject, payloadText?.slice(0, 200));
       return { ok: true, provider: 'console' };
     }
     if (provider === 'cloudmail') {
-      const r = await fetch(env.MAIL_API_URL, {
+      const r = await fetch(apiUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${env.MAIL_API_TOKEN}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ from, to, subject, html, text: payloadText }),
       });
       const body = await r.text();
@@ -865,14 +870,14 @@ async function sendMail(env, { to, subject, html, text }) {
     if (provider === 'resend') {
       const r = await fetch('https://api.resend.com/emails', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${env.MAIL_API_TOKEN}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ from, to: [to], subject, html }),
       });
       return { ok: r.ok, provider, status: r.status, body: (await r.text()).slice(0, 400) };
     }
     if (provider === 'mailchannels') {
-      const m = /<(.+)>/.exec(from);
-      const addr = m ? m[1] : from;
+      const mm = /<(.+)>/.exec(from);
+      const addr = mm ? mm[1] : from;
       const r = await fetch('https://api.mailchannels.net/tx/v1/send', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1080,6 +1085,13 @@ router.get('/api/meta', async (ctx) => {
       github: cfg.allowGithubLogin && !!env.GITHUB_CLIENT_ID,
       discord: cfg.allowDiscordLogin && !!env.DISCORD_CLIENT_ID,
     },
+    mail: {
+      provider: (cfg.mail && cfg.mail.provider) || env.MAIL_PROVIDER || 'console',
+      configured: ((cfg.mail && cfg.mail.provider) || env.MAIL_PROVIDER || 'console') === 'mailchannels'
+        ? true
+        : !!( (cfg.mail && cfg.mail.apiToken) || env.MAIL_API_TOKEN ),
+      from: (cfg.mail && cfg.mail.from) || env.MAIL_FROM || '',
+    },
     site: pick(cfg, ['siteTitle','siteSubtitle','favicon','logo','landingMode','loginBackground',
       'loginBackgroundBlur','themeDefault','accent','registerOpen','footerText','navLinks',
       'announcement','links','personal','about','contributors','announcements','seo']),
@@ -1142,8 +1154,27 @@ router.post('/api/auth/send-code', async (ctx) => {
       body: `你好，你正在 <b>${escapeHtml(cfg.siteTitle)}</b> 进行「${titleMap[purpose]}」操作。请在页面中输入下方验证码完成验证。若非本人操作请忽略本邮件。`,
       code,
     }),
-  });
+  }, cfg);
   return ok({ sent: true, provider: res.provider, delivered: res.ok }, ctx);
+});
+
+// 管理员发测试邮件（验证后台填写的邮件配置是否可用）
+router.post('/api/admin/test-mail', async (ctx) => {
+  await requireAdmin(ctx, 'site.config');
+  const { env, body } = ctx;
+  const email = String(body.to || '').trim().toLowerCase();
+  if (!EMAIL_RE.test(email)) bad('请输入有效的测试收件邮箱');
+  const cfg = await getSiteConfig(env);
+  const res = await sendMail(env, {
+    to: email,
+    subject: `【${cfg.siteTitle}】邮件发送测试`,
+    html: mailTemplate(cfg, {
+      title: '邮件发送测试',
+      body: '这是一封来自 <b>' + escapeHtml(cfg.siteTitle) + '</b> 的测试邮件。如果你收到了它，说明后台的邮件服务配置已生效 ✅',
+      code: '',
+    }),
+  }, cfg);
+  return ok({ sent: res.ok, provider: res.provider, status: res.status, detail: res.body }, ctx);
 });
 
 router.post('/api/auth/register', async (ctx) => {
@@ -2867,6 +2898,16 @@ router.put('/api/admin/config', async (ctx) => {
       secret: body.turnstile.secret ? String(body.turnstile.secret) : (curTs.secret || ''),
     };
   }
+  // 邮件服务配置：合并而非整体替换；apiToken 留空时保留已存储值（反复保存不会清空密钥）
+  if (body.mail && typeof body.mail === 'object') {
+    const curMail = (cur.mail && typeof cur.mail === 'object') ? cur.mail : {};
+    next.mail = {
+      provider: String(body.mail.provider || curMail.provider || 'resend').toLowerCase(),
+      from: String(body.mail.from || curMail.from || 'MarytOpens <no-reply@natrois.top>').trim(),
+      apiUrl: String(body.mail.apiUrl || curMail.apiUrl || '').trim(),
+      apiToken: body.mail.apiToken ? String(body.mail.apiToken) : (curMail.apiToken || ''),
+    };
+  }
   if (Array.isArray(next.navLinks)) {
     next.navLinks = next.navLinks.slice(0, 30).map((l) => ({
       id: l.id || uid('nav'),
@@ -3265,17 +3306,27 @@ async function handleUpload(ctx, kind) {
   const buf = await file.arrayBuffer();
   const limit = kind === 'avatar' ? MAX_AVATAR : MAX_IMAGE;
   if (buf.byteLength > limit) bad(`文件过大，上限 ${(limit / 1024 / 1024).toFixed(0)} MB`);
-  if (!env.MEDIA) bad('未绑定 R2（MEDIA）');
 
   const key = `${kind}/${user.id}/${uid()}.${ext}`;
-  await env.MEDIA.put(key, buf, {
-    httpMetadata: { contentType: mime, cacheControl: 'public, max-age=31536000, immutable' },
-    customMetadata: { uid: user.id, kind, t: String(nowMs()) },
-  });
-  const url = `${env.MEDIA_PUBLIC_BASE || `${env.API_ORIGIN}/files`}/${key}`;
+  let url;
+  if (env.MEDIA) {
+    // 已绑定 R2 时优先用 R2
+    await env.MEDIA.put(key, buf, {
+      httpMetadata: { contentType: mime, cacheControl: 'public, max-age=31536000, immutable' },
+      customMetadata: { uid: user.id, kind, t: String(nowMs()) },
+    });
+    url = `${env.MEDIA_PUBLIC_BASE || `${env.API_ORIGIN}/files`}/${key}`;
+  } else {
+    // 未绑定 R2（如仅使用 KV 的账号）时回退到 KV 存储；KV 单值上限 25MB，满足头像/图片需求
+    await env.DB.put('file:' + key, buf, {
+      metadata: { ct: mime, uid: user.id, kind, t: String(nowMs()) },
+      expirationTtl: 86400 * 365,
+    });
+    url = `${env.API_ORIGIN}/files/${key}`;
+  }
   if (kind === 'avatar') { user.avatar = url; await saveUser(env, user); }
   if (kind === 'banner') { user.banner = url; await saveUser(env, user); }
-  return ok({ url, key, size: buf.byteLength, mime }, ctx);
+  return ok({ url, key, size: buf.byteLength, mime, storage: env.MEDIA ? 'r2' : 'kv' }, ctx);
 }
 
 router.post('/api/upload/avatar', (ctx) => handleUpload(ctx, 'avatar'));
@@ -3285,15 +3336,22 @@ router.post('/api/upload/image',  (ctx) => handleUpload(ctx, 'image'));
 router.get('/files/*', async (ctx) => {
   const { env, request } = ctx;
   const key = new URL(request.url).pathname.replace(/^\/files\//, '');
-  if (!env.MEDIA) notfound('未绑定 R2');
-  const obj = await env.MEDIA.get(key);
-  if (!obj) notfound('文件不存在');
+  let body, ct, etag;
+  if (env.MEDIA) {
+    const obj = await env.MEDIA.get(key);
+    if (!obj) notfound('文件不存在');
+    body = obj.body; ct = obj.httpMetadata?.contentType; etag = obj.httpEtag;
+  } else {
+    const obj = await env.DB.getWithMetadata('file:' + key, { type: 'arrayBuffer' });
+    if (!obj || !obj.value) notfound('文件不存在');
+    body = obj.value; ct = (obj.metadata && obj.metadata.ct) || 'application/octet-stream';
+  }
   const h = new Headers();
-  obj.writeHttpMetadata(h);
-  h.set('etag', obj.httpEtag);
+  if (etag) h.set('etag', etag);
+  h.set('Content-Type', ct || 'application/octet-stream');
   h.set('Cache-Control', 'public, max-age=31536000, immutable');
   h.set('X-Content-Type-Options', 'nosniff');
-  return new Response(obj.body, { headers: h });
+  return new Response(body, { headers: h });
 });
 
 /* ========================================================================== *

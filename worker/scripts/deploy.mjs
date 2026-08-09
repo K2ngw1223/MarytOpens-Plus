@@ -43,6 +43,15 @@ function runCapture(args) {
 
 console.log('=== MarytOpens 部署开始 ===');
 
+// 0. 预检：必须已填好 .secrets（否则密钥无法注入，部署后功能缺失）
+if (!existsSync(secretsPath)) {
+  console.error('✗ 找不到 .secrets 文件，无法注入密钥。请先执行：');
+  console.error('    cp ../.secrets.example ../.secrets');
+  console.error('  然后填入真实密钥值，再运行 npm run deploy');
+  process.exit(1);
+}
+console.log('· 已检测到 .secrets，将自动注入所有密钥');
+
 // 1. 校验登录
 console.log('\n[1/6] 校验 Cloudflare 登录 ...');
 const who = runCapture(['whoami']);
@@ -63,7 +72,9 @@ function kvCreate(name, preview) {
 }
 console.log('\n[2/6] 创建 KV 命名空间 DB ...');
 let tom = readFileSync(tomPath, 'utf8');
-if (tom.includes('在此填入你的_KV_ID')) {
+const KV_ID_RE = /id\s*=\s*"([0-9a-f]{32})"/i;
+const PREVIEW_ID_RE = /preview_id\s*=\s*"([0-9a-f]{32})"/i;
+if (!KV_ID_RE.test(tom) || !PREVIEW_ID_RE.test(tom)) {
   const kvId = kvCreate('DB');
   const kvPreviewId = kvCreate('DB', true);
   tom = tom
@@ -72,14 +83,14 @@ if (tom.includes('在此填入你的_KV_ID')) {
   writeFileSync(tomPath, tom);
   console.log(`  ✓ KV id=${kvId} preview=${kvPreviewId}（已写回 wrangler.toml）`);
 } else {
-  console.log('  · wrangler.toml 中已有 KV ID，跳过创建');
+  console.log('  · wrangler.toml 中已有有效 KV ID，跳过创建');
 }
 
-// 3. 创建 R2 桶
-console.log('\n[3/6] 创建 R2 存储桶 marytopens-media ...');
+// 3. 创建 R2 桶（可选：未绑定 R2 时 Worker 会自动回退到 KV 存储文件）
+console.log('\n[3/6] 创建 R2 存储桶 marytopens-media（可选）...');
 const r2 = runCapture(['r2', 'bucket', 'create', 'marytopens-media']);
 if (r2.status === 0) console.log('  ✓ 已创建（或已存在）');
-else console.warn('  ! r2 创建返回：' + r2.out.trim() + '\n    若已存在可忽略；否则请在控制台手动创建 marytopens-media');
+else console.warn('  ! R2 创建跳过/失败：' + r2.out.trim() + '\n    若你不需要 R2（使用 KV 存储文件），可忽略此步。');
 
 // 4. 注入密钥
 console.log('\n[4/6] 注入密钥 ...');

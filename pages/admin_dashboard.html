@@ -251,6 +251,39 @@
       </div>
 
       <div class="card card-pad mt-4">
+        <div class="section-title">邮件服务（发件配置）</div>
+        <p class="hint">用于发送注册 / 登录 / 重置密码验证码。填写并保存后立即生效，无需改代码或重新部署。推荐 Resend（需先在 Resend 验证你的发件域名）。</p>
+        <div class="field">
+          <label class="label">服务商</label>
+          <select class="input" id="mailProvider">
+            <option value="resend">Resend</option>
+            <option value="cloudmail">Cloud Mail（自建邮局）</option>
+            <option value="mailchannels">Mailchannels（Cloudflare 原生，免密钥）</option>
+            <option value="console">Console（仅写日志，调试用）</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="label">发件地址（From）</label>
+          <input class="input mono" id="mailFrom" placeholder="MarytOpens <no-reply@你的域名>" autocomplete="off" spellcheck="false">
+          <div class="hint">需为已验证的发件域名，例如 no-reply@natrois.top</div>
+        </div>
+        <div class="field" id="mailApiUrlField">
+          <label class="label">自建邮局 API 地址（仅 Cloud Mail 用）</label>
+          <input class="input mono" id="mailApiUrl" placeholder="https://mail.你的域名/api/send" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="field">
+          <label class="label">API Key / Token（服务端）</label>
+          <input class="input mono" id="mailApiToken" type="password" placeholder="留空表示保留当前已存储的值" autocomplete="new-password" spellcheck="false">
+          <div class="hint">仅保存在服务端，不会下发给浏览器。Resend 的 Key 形如 re_xxxx。</div>
+          <span id="mailTokenState" class="hint" style="color:var(--accent)"></span>
+        </div>
+        <div class="row mt-2">
+          <button class="btn btn-ghost" id="mailTestBtn" type="button">发送测试邮件</button>
+          <span id="mailTestState" class="hint"></span>
+        </div>
+      </div>
+
+      <div class="card card-pad mt-4">
         <div class="section-title">公告与文案</div>
         <div class="field">
           <label class="label">站顶公告</label>

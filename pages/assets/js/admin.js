@@ -718,6 +718,33 @@
     const tsState = $('#tsSecretState');
     if (tsState) tsState.textContent = (ts.siteKey ? '已配置 Site Key' : '未配置 Site Key') + (ts.secret ? '；Secret 已保存' : '；Secret 未保存');
 
+    // 邮件服务配置（出于安全，API Token 不回显，仅展示已配置状态）
+    const mail = c.mail || {};
+    $('#mailProvider').value = mail.provider || 'resend';
+    $('#mailFrom').value = mail.from || '';
+    $('#mailApiUrl').value = mail.apiUrl || '';
+    $('#mailApiToken').value = '';
+    const mailState = $('#mailTokenState');
+    if (mailState) mailState.textContent = mail.apiToken ? 'API Key 已保存' : 'API Key 未保存';
+    function toggleMailApiUrl() {
+      const f = $('#mailApiUrlField');
+      if (f) f.style.display = ($('#mailProvider').value === 'cloudmail') ? '' : 'none';
+    }
+    $('#mailProvider').onchange = toggleMailApiUrl;
+    toggleMailApiUrl();
+    const mailTestBtn = $('#mailTestBtn');
+    if (mailTestBtn) mailTestBtn.onclick = async () => {
+      const to = prompt('请输入接收测试邮件的邮箱：');
+      if (!to) return;
+      const st = $('#mailTestState'); st.textContent = '发送中…'; st.style.color = '';
+      try {
+        const d = await API.post('/api/admin/test-mail', { to });
+        const ok = !!(d && d.ok);
+        st.textContent = ok ? ('✅ 已发送（' + (d.provider || '') + '）') : ('❌ 失败：' + ((d && (d.detail || d.msg)) || '未知错误'));
+        st.style.color = ok ? 'var(--accent)' : '#ef4444';
+      } catch (e) { st.textContent = '❌ 请求失败：' + ((e && e.message) || e); st.style.color = '#ef4444'; }
+    };
+
     state.contributors = (c.contributors || []).slice();
     state.announcements = (c.announcements || []).slice();
     renderContributors();
@@ -854,6 +881,12 @@
         enabled: $('#tsEnabled').checked,
         siteKey: $('#tsSiteKey').value.trim(),
         secret: $('#tsSecret').value,
+      },
+      mail: {
+        provider: $('#mailProvider').value,
+        from: $('#mailFrom').value.trim(),
+        apiUrl: $('#mailApiUrl').value.trim(),
+        apiToken: $('#mailApiToken').value,
       },
       personal: {
         displayName: $('#pnName').value.trim(),

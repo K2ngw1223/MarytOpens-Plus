@@ -8,11 +8,13 @@
   "scripts": {
     "dev": "wrangler dev --local",
     "dev:remote": "wrangler dev --remote",
-    "deploy": "wrangler deploy",
+    "deploy": "node scripts/deploy.mjs",
+    "deploy:worker": "wrangler deploy",
+    "deploy:pages": "wrangler pages deploy ../pages --project-name marytopens --branch main",
+    "secrets": "node scripts/put-secrets.mjs",
     "tail": "wrangler tail --format pretty",
     "kv:create": "wrangler kv namespace create DB && wrangler kv namespace create DB --preview",
-    "r2:create": "wrangler r2 bucket create marytopens-media",
-    "secrets": "node scripts/put-secrets.mjs"
+    "r2:create": "wrangler r2 bucket create marytopens-media"
   },
   "devDependencies": {
     "wrangler": "^3.90.0"

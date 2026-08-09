@@ -1134,3 +1134,111 @@
 
   global.App = App;
 })(window);
+
+/* ==========================================================================
+   主题模块：Geek 极客风开关 + 自定义配色（仅用户端生效，localStorage 记忆）
+   ========================================================================== */
+(function () {
+  const KEY_GEEK = 'mo_geek';
+  const KEY_COLORS = 'mo_colors';
+  const root = document.documentElement;
+
+  function hexToRgb(hex) {
+    hex = (hex || '').replace('#', '');
+    if (hex.length === 3) hex = hex.split('').map((c) => c + c).join('');
+    if (hex.length !== 6) return null;
+    const n = parseInt(hex, 16);
+    if (isNaN(n)) return null;
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  function rgbToHex(r, g, b) {
+    return '#' + [r, g, b].map((x) => Math.max(0, Math.min(255, Math.round(x))).toString(16).padStart(2, '0')).join('');
+  }
+  function shade(hex, amt) {
+    const c = hexToRgb(hex); if (!c) return hex;
+    const t = amt < 0 ? 0 : 255, p = Math.abs(amt);
+    return rgbToHex(c[0] + (t - c[0]) * p, c[1] + (t - c[1]) * p, c[2] + (t - c[2]) * p);
+  }
+  function toHex(v, fb) { return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test((v || '').trim()) ? v.trim() : fb; }
+  function currentVar(name, fb) { return toHex(getComputedStyle(root).getPropertyValue(name), fb); }
+
+  function applyColors(c) {
+    if (!c) return;
+    if (c.accent) {
+      const rgb = hexToRgb(c.accent);
+      root.style.setProperty('--accent', c.accent);
+      if (rgb) {
+        root.style.setProperty('--accent-rgb', rgb.join(', '));
+        root.style.setProperty('--accent-hover', shade(c.accent, -0.12));
+        root.style.setProperty('--accent-soft', 'rgba(' + rgb.join(', ') + ', .12)');
+        root.style.setProperty('--accent-ring', 'rgba(' + rgb.join(', ') + ', .35)');
+      }
+    }
+    if (c.bg) { root.style.setProperty('--bg', c.bg); root.style.setProperty('--bg-alt', shade(c.bg, 0.06)); }
+    if (c.text) root.style.setProperty('--text', c.text);
+  }
+
+  function safeParse(s) { try { return JSON.parse(s || 'null'); } catch (e) { return null; } }
+
+  function load() {
+    const geek = localStorage.getItem(KEY_GEEK) === '1';
+    root.classList.toggle('geek', geek);
+    const colors = safeParse(localStorage.getItem(KEY_COLORS));
+    if (colors) applyColors(colors);
+    return { geek, colors };
+  }
+
+  function build() {
+    const state = load();
+    const fab = document.createElement('button');
+    fab.className = 'mo-theme-fab';
+    fab.textContent = 'G';
+    fab.title = '主题 / 外观';
+    fab.setAttribute('aria-label', '主题设置');
+    const panel = document.createElement('div');
+    panel.className = 'mo-theme-panel';
+    panel.hidden = true;
+    const dA = currentVar('--accent', '#6366f1');
+    const dB = currentVar('--bg', '#0c0f16');
+    const dT = currentVar('--text', '#c8f7c5');
+    panel.innerHTML =
+      '<h4>外观 / 主题</h4>' +
+      '<div class="mo-theme-row switch-row inline"><label>极客风 Geek</label>' +
+      '<span class="switch"><input type="checkbox" id="moGeekToggle"' + (state.geek ? ' checked' : '') + '><span class="track"></span></span></div>' +
+      '<div class="mo-theme-row"><label>主色</label><input type="color" id="moAccent" value="' + dA + '"></div>' +
+      '<div class="mo-theme-row"><label>背景色</label><input type="color" id="moBg" value="' + dB + '"></div>' +
+      '<div class="mo-theme-row"><label>文字色</label><input type="color" id="moText" value="' + dT + '"></div>' +
+      '<div class="mo-theme-actions"><button class="btn btn-ghost" id="moReset" type="button">恢复默认</button></div>';
+    document.body.appendChild(fab);
+    document.body.appendChild(panel);
+
+    const geekToggle = panel.querySelector('#moGeekToggle');
+    const accent = panel.querySelector('#moAccent');
+    const bg = panel.querySelector('#moBg');
+    const text = panel.querySelector('#moText');
+
+    fab.addEventListener('click', () => { panel.hidden = !panel.hidden; });
+    function applyAndSave() {
+      const geek = geekToggle.checked;
+      root.classList.toggle('geek', geek);
+      const colors = { accent: accent.value, bg: bg.value, text: text.value };
+      applyColors(colors);
+      localStorage.setItem(KEY_GEEK, geek ? '1' : '0');
+      localStorage.setItem(KEY_COLORS, JSON.stringify(colors));
+    }
+    geekToggle.addEventListener('change', applyAndSave);
+    [accent, bg, text].forEach((inp) => inp.addEventListener('input', applyAndSave));
+    panel.querySelector('#moReset').addEventListener('click', () => {
+      localStorage.removeItem(KEY_GEEK);
+      localStorage.removeItem(KEY_COLORS);
+      root.classList.remove('geek');
+      ['--accent', '--accent-rgb', '--accent-hover', '--accent-soft', '--accent-ring', '--bg', '--bg-alt', '--text']
+        .forEach((v) => root.style.removeProperty(v));
+      geekToggle.checked = false;
+      accent.value = dA; bg.value = dB; text.value = dT;
+    });
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', build);
+  else build();
+})();
