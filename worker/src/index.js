@@ -58,6 +58,7 @@ const PERMISSIONS = {
   'group.create':      { scope: 'S', label: '在频道内创建群组' },
   'group.manage':      { scope: 'S', label: '管理群组' },
   'board.manage':      { scope: 'S', label: '管理板块' },
+  'board.create':      { scope: 'S', label: '创建/设立板块' },
   'role.manage':       { scope: 'S', label: '在本作用域创建/编辑身份组' },
   'invite.create':     { scope: 'S', label: '生成邀请' },
   // —— 交互 ——
@@ -99,9 +100,10 @@ const ROLE_TEMPLATES = {
             'post.create','comment.create','dm.send','react.use'],
   },
   board_moderator: {
-    name: '版主', color: '#22c55e', priority: 500,
-    perms: ['board.manage','user.mute','post.delete.any','post.edit.any','post.pin','post.lock',
-            'comment.delete.any','report.handle','post.create','comment.create','dm.send','react.use'],
+    name: '版主', color: '#22c55e', priority: 800,
+    perms: ['board.manage','board.create','channel.manage','group.create','group.manage','role.manage',
+            'user.mute','user.rename','user.role','post.delete.any','post.edit.any','post.pin','post.lock',
+            'comment.delete.any','report.handle','invite.create','post.create','comment.create','dm.send','react.use'],
   },
   board_worker: {
     name: '板块工作者', color: '#84cc16', priority: 400,

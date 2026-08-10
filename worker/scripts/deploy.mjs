@@ -29,6 +29,7 @@ const projectRoot = resolve(root, '..'); // MarytOpens/
 const wrangler = resolve(root, 'node_modules', 'wrangler', 'bin', 'wrangler.js');
 const pagesDir = resolve(projectRoot, 'pages');
 const tomPath = resolve(root, 'wrangler.toml');
+const secretsPath = resolve(projectRoot, '.secrets'); // MarytOpens/.secrets
 
 function run(args) {
   console.log('\n$ wrangler ' + args.join(' '));
@@ -104,6 +105,19 @@ run(['deploy']);
 // 6. 部署前端
 console.log('\n[6/6] 部署 Pages 前端 → natrois.top ...');
 run(['pages', 'deploy', pagesDir, '--project-name', 'marytopens', '--branch', 'main']);
+
+// 7. 验证后端连通性（核心：确认 api.natrois.top 真正在响应，避免「无法连接后端API」）
+console.log('\n[7/7] 验证后端连通性 https://api.natrois.top/api/health ...');
+try {
+  const hc = await fetch('https://api.natrois.top/api/health');
+  const hj = await hc.json().catch(() => null);
+  if (hc.ok && hj && hj.ok) console.log('  ✓ 后端已上线，可正常连接：', JSON.stringify(hj));
+  else console.warn('  ! 后端返回异常：', hc.status, JSON.stringify(hj));
+} catch (e) {
+  console.warn('  ! 暂时无法连接到 api.natrois.top：', String(e).slice(0, 200));
+  console.warn('    可能是自定义域 api.natrois.top 尚未在 Cloudflare 完成解析/激活（DNS 通常需几分钟生效）。');
+  console.warn('    请到 Cloudflare 控制台 → Workers → marytopens-api → 路由 确认 api.natrois.top 已绑定。');
+}
 
 console.log('\n=== 部署完成 ===');
 console.log('请到 Cloudflare 控制台完成收尾：');
