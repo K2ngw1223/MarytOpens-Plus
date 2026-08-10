@@ -8,15 +8,15 @@
 ## 0. 架构一览
 
 ```
-浏览器 ──https://natrois.top──▶ Cloudflare Pages (静态前端 pages/)
-        ──https://api.natrois.top/api/*──▶ Worker (worker/src/index.js)
+浏览器 ──https://example.com──▶ Cloudflare Pages (静态前端 pages/)
+        ──https://api.example.com/api/*──▶ Worker (worker/src/index.js)
                                           ├─ KV 绑定  DB   （用户/文章/角色/索引/日志）
                                           └─ R2 绑定  MEDIA（头像/配图）
 ```
 
-- **API 域名**（固定）：`https://api.natrois.top`
-- **前端域名**（固定）：`https://natrois.top`
-- 需要 `natrois.top` 已托管在**同一个 Cloudflare 账号**（用于自定义域与 DNS）。
+- **API 域名**（固定）：`https://api.example.com`
+- **前端域名**（固定）：`https://example.com`
+- 需要 `example.com` 已托管在**同一个 Cloudflare 账号**（用于自定义域与 DNS）。
 
 ---
 
@@ -82,8 +82,8 @@ wrangler secret put BOT_MASTER_TOKEN     # 可选，机器人主令牌
 wrangler deploy
 ```
 
-部署成功后，Worker 已绑定到自定义域 `api.natrois.top`（见 `wrangler.toml` 的 `routes`）。
-验证：`curl https://api.natrois.top/api/meta` 应返回站点元信息 JSON。
+部署成功后，Worker 已绑定到自定义域 `api.example.com`（见 `wrangler.toml` 的 `routes`）。
+验证：`curl https://api.example.com/api/meta` 应返回站点元信息 JSON。
 
 ---
 
@@ -96,7 +96,7 @@ wrangler deploy
 1. Cloudflare 控制台 → **Workers & Pages → Create → Pages → 直接上传**。
 2. 项目名称：`marytopens-frontend`。
 3. 上传 `pages/` 整个目录为构建输出。
-4. 部署后进入 **自定义域**，绑定 `natrois.top`（与 `api.natrois.top` 同域但根路径）。
+4. 部署后进入 **自定义域**，绑定 `example.com`（与 `api.example.com` 同域但根路径）。
 
 ### 3.2 方式 B：Git 连接（推荐，便于持续部署）
 
@@ -104,9 +104,9 @@ wrangler deploy
 2. Pages → 连接仓库，构建配置：
    - **构建命令**：留空（纯静态，无需构建）
    - **构建输出目录**：`pages`
-3. 绑定自定义域 `natrois.top`。
+3. 绑定自定义域 `example.com`。
 
-> 前端通过 `meta[name="mo-api"]` 或默认 `https://api.natrois.top` 找到后端；生产环境无需改动。本地联调时可在 HTML `<head>` 加 `<meta name="mo-api" content="http://127.0.0.1:8787">`。
+> 前端通过 `meta[name="mo-api"]` 或默认 `https://api.example.com` 找到后端；生产环境无需改动。本地联调时可在 HTML `<head>` 加 `<meta name="mo-api" content="http://127.0.0.1:8787">`。
 
 ---
 
@@ -114,8 +114,8 @@ wrangler deploy
 
 在 Cloudflare **DNS** 中为两个自定义域确认记录存在（Pages / Workers 路由通常会自动创建）：
 
-- `natrois.top` → Pages
-- `api.natrois.top` → Worker
+- `example.com` → Pages
+- `api.example.com` → Worker
 
 确保两者 **SSL/TLS 模式 = Full (Strict)**，并开启 **Always Use HTTPS**。
 
