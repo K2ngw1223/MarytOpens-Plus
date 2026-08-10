@@ -1,9 +1,10 @@
 # MarytOpens
+该项目与项目创建者的网站部署可能存在差异，使用前请复刻到自己的仓库进行源码改动，以适配自己的需求，不可直接部署，请提前建立API域名，您可以选择使用路径而不是子域名，使用前请仔细阅读，遇到问题自己解决或是询问AI，开源项目不提供其他技术支持与更新服务！
 
 > 一个基于 Cloudflare 边缘网络构建的现代社区治理平台 —— 个人博客 + 社区论坛 + Discord 式频道/群组治理，零公共 CDN 依赖，全自托管。
 
-- **API 域名**：`https://api.natrois.top`
-- **前端域名**：`https://natrois.top`
+- **API 域名**：`https://api.example.top`
+- **前端域名**：`https://example.top`
 
 ---
 
@@ -67,7 +68,7 @@ wrangler deploy
 
 ### 前端
 
-将 `pages/` 目录作为构建输出上传到 **Cloudflare Pages**（无需构建命令），绑定自定义域 `natrois.top`。
+将 `pages/` 目录作为构建输出上传到 **Cloudflare Pages**（无需构建命令），绑定自定义域 `example.top`。
 完整步骤见 [`docs/DEPLOY.md`](docs/DEPLOY.md)。
 
 ### Discord 机器人
