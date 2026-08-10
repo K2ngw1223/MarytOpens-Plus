@@ -776,6 +776,16 @@ async function roleTagsOf(env, user, scope = 'global') {
  * 5. 外部服务：Turnstile / Cloud Mail / OAuth / Cloudflare API
  * ========================================================================== */
 
+/** 判断某个配置项是否被「真正配置」过。
+ *  wrangler.toml 里的公开变量出厂时是中文占位符（如 "在此填入_GITHUB_CLIENT_ID"），
+ *  它们是非空字符串，用 !!v 判断会误判为已配置，导致前端渲染出用假 Site Key 的
+ *  Turnstile 组件或点了就报错的 OAuth 按钮，进而卡住登录/注册流程。 */
+function isConfigured(v) {
+  const s = String(v == null ? '' : v).trim();
+  if (!s) return false;
+  return !/在此填入|填入你的|^your[_-]|^<.+>$|^x{3,}$|_SITEKEY$|^0x4AAAAAAA_/i.test(s);
+}
+
 /** Cloudflare Turnstile 人机验证
  *  密钥优先取后台配置 cfg.turnstile（由超级管理员在后台设置），缺失时回退到 Worker 环境变量。 */
 async function verifyTurnstile(env, token, ip, cfg) {
@@ -1073,7 +1083,10 @@ router.get('/api/meta', async (ctx) => {
   const cfg = await getSiteConfig(env);
   const ts = cfg.turnstile || {};
   const tsEnabled = ts.enabled === true || String(env.TURNSTILE_ENABLED) === 'true';
-  const tsSiteKey = tsEnabled ? (ts.siteKey || env.TURNSTILE_SITE_KEY || '') : '';
+  // 只认「真正配置过」的 Site Key，占位符一律视为未配置，避免前端渲染出无法通过的人机验证
+  const tsKeyRaw = isConfigured(ts.siteKey) ? ts.siteKey
+    : (isConfigured(env.TURNSTILE_SITE_KEY) ? env.TURNSTILE_SITE_KEY : '');
+  const tsSiteKey = tsEnabled ? tsKeyRaw : '';
   return ok({
     version: VERSION,
     locale: negotiateLocale(request),
@@ -1084,8 +1097,8 @@ router.get('/api/meta', async (ctx) => {
       login: cfg.turnstileOnLogin, register: cfg.turnstileOnRegister, post: cfg.turnstileOnPost,
     },
     oauth: {
-      github: cfg.allowGithubLogin && !!env.GITHUB_CLIENT_ID,
-      discord: cfg.allowDiscordLogin && !!env.DISCORD_CLIENT_ID,
+      github: cfg.allowGithubLogin && isConfigured(env.GITHUB_CLIENT_ID),
+      discord: cfg.allowDiscordLogin && isConfigured(env.DISCORD_CLIENT_ID),
     },
     mail: {
       provider: (cfg.mail && cfg.mail.provider) || env.MAIL_PROVIDER || 'console',
@@ -1299,7 +1312,7 @@ router.get('/api/oauth/:provider/start', async (ctx) => {
   const site = await getSiteConfig(env);
   if (provider === 'github' && !site.allowGithubLogin) forbid('站点已关闭 GitHub 登录');
   if (provider === 'discord' && !site.allowDiscordLogin) forbid('站点已关闭 Discord 登录');
-  if (!env[cfg.idKey]) bad(`未配置 ${cfg.idKey}`);
+  if (!isConfigured(env[cfg.idKey])) bad(`未配置 ${cfg.idKey}（当前仍是占位符或为空）`);
 
   const url = new URL(request.url);
   const mode = url.searchParams.get('mode') === 'bind' ? 'bind' : 'login';
@@ -1472,7 +1485,7 @@ async function cfD1(env, bind, sql, bindings) {
 router.get('/api/cf/bind/start', async (ctx) => {
   const { env, user } = ctx;
   if (!user) return Response.redirect(`${env.FRONTEND_ORIGIN}/login.html?redirect=${encodeURIComponent('/files.html')}`, 302);
-  if (!env.CF_OAUTH_CLIENT_ID) return Response.redirect(`${env.FRONTEND_ORIGIN}/files.html?cf=no_config`, 302);
+  if (!isConfigured(env.CF_OAUTH_CLIENT_ID)) return Response.redirect(`${env.FRONTEND_ORIGIN}/files.html?cf=no_config`, 302);
   const verifier = b64urlEncode(crypto.getRandomValues(new Uint8Array(48))).replace(/=+$/, '');
   const state = await signBlob(env, { uid: user.id, v: verifier }, 900);
   const redirectUri = `${env.API_ORIGIN}/api/cf/bind/callback`;
