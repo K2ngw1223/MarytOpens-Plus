@@ -11,12 +11,17 @@
     "deploy": "node scripts/deploy.mjs",
     "deploy:worker": "wrangler deploy",
     "deploy:pages": "wrangler pages deploy ../pages --project-name marytopens --branch main",
+    "//api": "以下两条不依赖 wrangler，网络请求走 curl。适用于本机装有 TUN 代理、node 无法直连 api.cloudflare.com 的情况",
+    "deploy:api": "node scripts/deploy-api.mjs",
+    "deploy:api:pages": "node scripts/deploy-pages.mjs",
+    "deploy:api:all": "node scripts/deploy-api.mjs && node scripts/deploy-pages.mjs",
     "secrets": "node scripts/put-secrets.mjs",
     "tail": "wrangler tail --format pretty",
     "kv:create": "wrangler kv namespace create DB && wrangler kv namespace create DB --preview",
     "r2:create": "wrangler r2 bucket create marytopens-media"
   },
   "devDependencies": {
+    "blake3-wasm": "^2.1.5",
     "wrangler": "^3.90.0"
   }
 }

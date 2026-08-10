@@ -23,8 +23,8 @@ routes = [
 # 然后把返回的 id 填到下面
 [[kv_namespaces]]
 binding = "DB"
-id = "在此填入你的_KV_ID"
-preview_id = "在此填入你的_KV_PREVIEW_ID"
+id = "fa4dd5cd9a6246c8a50a13175ffe9471"
+preview_id = "258098048cc44d319a8058586d9f87b7"
 
 # ----------------------------- R2 对象存储（可选） ----------------------------
 # 如果你有 R2，取消下面注释并创建桶： wrangler r2 bucket create marytopens-media
@@ -42,7 +42,7 @@ preview_id = "在此填入你的_KV_PREVIEW_ID"
 SITE_NAME              = "MarytOpens"
 FRONTEND_ORIGIN        = "https://natrois.top"
 API_ORIGIN             = "https://api.natrois.top"
-ALLOWED_ORIGINS        = "https://natrois.top,https://www.natrois.top,http://localhost:8788,http://127.0.0.1:8788"
+ALLOWED_ORIGINS        = "https://natrois.top,https://www.natrois.top,https://marytopens.pages.dev,http://localhost:8788,http://127.0.0.1:8788,http://localhost:8080,http://127.0.0.1:8080"
 MEDIA_PUBLIC_BASE      = "https://api.natrois.top/files"
 
 # 超级管理员（首启动自动创建/纠正，密码走 Secret）

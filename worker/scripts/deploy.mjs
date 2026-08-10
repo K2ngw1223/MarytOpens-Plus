@@ -63,13 +63,41 @@ if (who.status !== 0) {
 console.log(who.out.trim());
 
 // 2. 创建 KV 命名空间并回填 wrangler.toml
+// 从 wrangler 各版本的输出里稳健地抽取 32 位 KV id
+// wrangler 3.x: { "binding": "DB", "id": "abc..." }
+// wrangler 2.x: id = "abc..."   /   老版本: ID: abc...
+function extractKvId(out) {
+  const pats = [
+    /"id"\s*:\s*"([0-9a-f]{32})"/i,
+    /\bid\s*=\s*"([0-9a-f]{32})"/i,
+    /\bID:\s*([0-9a-f]{32})\b/i,
+    /\b([0-9a-f]{32})\b/, // 兜底：输出中出现的第一个 32 位 hex
+  ];
+  for (const p of pats) { const m = out.match(p); if (m) return m[1]; }
+  return null;
+}
+// 已存在同名命名空间时，改用 list 查回 id（避免重复创建导致的失败）
+function kvLookup(title) {
+  const r = runCapture(['kv', 'namespace', 'list']);
+  if (r.status !== 0) return null;
+  try {
+    const json = JSON.parse(r.out.slice(r.out.indexOf('[')));
+    const hit = json.find((n) => n.title === title);
+    return hit ? hit.id : null;
+  } catch { return null; }
+}
 function kvCreate(name, preview) {
   const args = ['kv', 'namespace', 'create', name];
   if (preview) args.push('--preview');
   const r = runCapture(args);
-  if (r.status !== 0) { console.error('✗ 创建 KV 失败：\n' + r.out); process.exit(1); }
-  const m = r.out.match(/ID:\s*([0-9a-f]+)/i);
-  return m ? m[1] : null;
+  const title = `marytopens-api-${name}${preview ? '_preview' : ''}`;
+  if (r.status !== 0) {
+    // 已存在则直接查回，不算失败
+    const existing = kvLookup(title);
+    if (existing) { console.log(`  · KV ${title} 已存在，复用 id=${existing}`); return existing; }
+    console.error('✗ 创建 KV 失败：\n' + r.out); process.exit(1);
+  }
+  return extractKvId(r.out) || kvLookup(title);
 }
 console.log('\n[2/6] 创建 KV 命名空间 DB ...');
 let tom = readFileSync(tomPath, 'utf8');
@@ -78,9 +106,17 @@ const PREVIEW_ID_RE = /preview_id\s*=\s*"([0-9a-f]{32})"/i;
 if (!KV_ID_RE.test(tom) || !PREVIEW_ID_RE.test(tom)) {
   const kvId = kvCreate('DB');
   const kvPreviewId = kvCreate('DB', true);
+  // 防御：解析不到真实 id 时绝不写回，否则会把 wrangler.toml 写成 id = "null" 导致部署失败
+  if (!kvId || !kvPreviewId) {
+    console.error('✗ 无法解析 KV 命名空间 ID（wrangler 输出格式可能已变更）。');
+    console.error('  请手动执行 `wrangler kv namespace list`，把 marytopens-api-DB 与 marytopens-api-DB_preview');
+    console.error('  的 id 填入 worker/wrangler.toml 的 [[kv_namespaces]] 后重试。');
+    process.exit(1);
+  }
+  // 兼容任意旧值（占位符 / null / 空串），统一替换 [[kv_namespaces]] 段内的 id 与 preview_id
   tom = tom
-    .replace(/id = "在此填入你的_KV_ID"/, `id = "${kvId}"`)
-    .replace(/preview_id = "在此填入你的_KV_PREVIEW_ID"/, `preview_id = "${kvPreviewId}"`);
+    .replace(/^(\s*)preview_id\s*=\s*"[^"]*"/m, `$1preview_id = "${kvPreviewId}"`)
+    .replace(/^(\s*)id\s*=\s*"[^"]*"/m, `$1id = "${kvId}"`);
   writeFileSync(tomPath, tom);
   console.log(`  ✓ KV id=${kvId} preview=${kvPreviewId}（已写回 wrangler.toml）`);
 } else {
