@@ -2,10 +2,11 @@
   "name": "marytopens-api",
   "version": "1.0.0",
   "private": true,
-  "description": "MarytOpens community backend — Cloudflare Workers + KV + R2",
+  "description": "MarytOpens community backend on Cloudflare Workers",
   "type": "module",
   "main": "src/index.js",
   "scripts": {
+    "build": "echo no-build-step-needed",
     "dev": "wrangler dev --local",
     "dev:remote": "wrangler dev --remote",
     "deploy": "node scripts/deploy.mjs",

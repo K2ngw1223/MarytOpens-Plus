@@ -14,15 +14,22 @@ name = "marytopens-api"
 main = "src/index.js"
 compatibility_date = "2026-01-01"
 compatibility_flags = ["nodejs_compat"]
-workers_dev = false
+
+# 从 GitHub 仓库部署时，Cloudflare 会读这个文件。
+# 在 Dashboard 里把 Root directory 设成 worker，构建命令 npm install，部署命令 npx wrangler deploy。
+# 详见 docs/DEPLOY_GIT.md。
+
+# 没有自定义域时保持 true，Worker 会拿到 <name>.<你的账号>.workers.dev 地址，首次部署就能访问。
+# 绑好自定义域之后可以改成 false。
+workers_dev = true
 
 # ----------------------------- 自定义域名 -----------------------------
-# 前提：api.example.com 所在的根域已托管在同一个 Cloudflare 账号下。
-# 若暂时没有自定义域，可先删掉 routes 并把 workers_dev 改为 true，
-# 走 *.workers.dev 子域做联调（记得同步改前端与 site.config.json 的 apiOrigin）。
-routes = [
-  { pattern = "api.example.com", custom_domain = true }
-]
+# 想让 API 走自己的域名，取消下面的注释，并把 api.example.com 换成你的
+# （跑过 tools/configure.mjs 的话会自动替换好）。
+# 前提：该根域已托管在同一个 Cloudflare 账号下。
+# routes = [
+#   { pattern = "api.example.com", custom_domain = true }
+# ]
 
 # ----------------------------- KV 命名空间 ----------------------------
 # 创建命令：

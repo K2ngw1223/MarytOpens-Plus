@@ -64,13 +64,19 @@ MarytOpens/
 │   ├── check-app-helpers.js  页面调用的 App 成员检查
 │   └── i18n-*.py             多语言提取与合并
 └── docs/
-    ├── DEPLOY.md             部署与排错
+    ├── DEPLOY.md             本地部署与排错
+    ├── DEPLOY_GIT.md         从 GitHub 直接部署
     ├── DEPLOY_REGISTRY.md    部署登记模块
     ├── PERMISSIONS.md        权限系统
     └── KV_SCHEMA.md          存储结构
 ```
 
 ## 部署
+
+两种方式，第 1、2 步是共用的：
+
+- **Cloudflare 直连 GitHub**（推荐）：推送即部署，本地不用装环境，见 [docs/DEPLOY_GIT.md](docs/DEPLOY_GIT.md)
+- **本地 wrangler**：就是下面这套流程，机器上有 TUN 模式代理、或需要精细控制时用
 
 ### 1. 填配置
 

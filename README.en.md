@@ -72,13 +72,19 @@ MarytOpens/
 │   ├── check-app-helpers.js  check for bare App member calls
 │   └── i18n-*.py             translation extraction and merge
 └── docs/
-    ├── DEPLOY.md             deployment and troubleshooting
+    ├── DEPLOY.md             local deployment and troubleshooting
+    ├── DEPLOY_GIT.md         deploying straight from GitHub
     ├── DEPLOY_REGISTRY.md    optional deploy registry
     ├── PERMISSIONS.md        permission system
     └── KV_SCHEMA.md          storage layout
 ```
 
 ## Deploying
+
+Two ways. Steps 1 and 2 are shared.
+
+- **Connect the repo to Cloudflare** (recommended): push to deploy, nothing to install locally. See [docs/DEPLOY_GIT.md](docs/DEPLOY_GIT.md).
+- **Local wrangler**: the steps below. Use this if the machine runs a TUN-mode proxy or you want finer control.
 
 ### 1. Fill in the config
 
