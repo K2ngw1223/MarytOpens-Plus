@@ -1,63 +1,80 @@
 # MarytOpens
 
-> 一个跑在 Cloudflare 边缘网络上的社区治理平台 —— 个人博客 + 社区论坛 + Discord 式频道/群组治理。
-> 零构建、零公共 CDN、全自托管。
+[中文](README.md) | [English](README.en.md)
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+跑在 Cloudflare Workers 上的社区平台。可以当个人博客用，也能开论坛、建频道和群组。
 
-- 后端：Cloudflare Workers（单文件 ES Module）+ KV/D1 + R2
-- 前端：原生 HTML / CSS / JS，22 个页面，9 种语言，深色/浅色主题
-- 依赖：无框架、无打包器、无公共 CDN
+前端是原生 HTML/CSS/JS，没有构建步骤，不依赖任何公共 CDN。后端是一个 Worker 单文件，
+数据存在 KV、D1 和 R2 里。
 
----
+```
+https://your-site.com      → Cloudflare Pages（pages/ 静态前端）
+https://api.your-site.com  → Worker（worker/src/index.js）
+```
 
-## ✨ 特性
+## 功能
 
-- **现代社区后端**：Cloudflare Worker + KV + D1 + R2，边缘运行，低延迟。
-- **完整用户体系**：注册 / 登录（邮箱验证码 + Cloudflare Turnstile + GitHub / Discord OAuth）、客户端 SHA-256 预哈希 + 服务端 PBKDF2 派生。
-- **作用域权限模型**：超级管理员、频道主、群主、版主等 Discord 式角色 / 频道 / 群组治理，见 [`docs/PERMISSIONS.md`](docs/PERMISSIONS.md)。
-- **内容生态**：Markdown 文章（公开 / 会员 / 私密 / 指定身份组 / 草稿）、评论、点赞、收藏、关注、私信、通知、举报。
-- **治理工具**：IP 封禁、禁言、强制改名、站点配置、发信服务。
-- **用户文件存储**：登录后绑定自己的 Cloudflare 账号，系统自动创建 KV + D1，文件存于用户自有账户；支持分享链接、预览码与公开下载。
-- **美观响应式 UI**：9 种语言、自动时间格式、主题跟随系统、自托管静态资源。
-- **全站搜索**：可按 用户 / 文件 / 帖子 / 文章 / 官方公告 分类筛选。
-- **端到端加密私信**：PawCrypt 协议 + 阅后即焚，密钥仅由用户掌握，服务端只存密文。
+**账号**
 
----
+注册和登录支持邮箱验证码、Cloudflare Turnstile 人机验证，以及 GitHub / Discord 第三方登录。
+密码在浏览器里先做一次 SHA-256，服务端再走 PBKDF2 派生后入库，明文不出浏览器。
 
-## 📁 项目结构
+**权限**
+
+Discord 那套东西：作用域、权限位、身份组、成员四层组合。超级管理员、频道主、群主、版主、
+普通成员各有各的边界。这一块逻辑比较多，单独写在 [docs/PERMISSIONS.md](docs/PERMISSIONS.md)。
+
+**内容**
+
+Markdown 写作，文章可以设为公开、会员可见、私密、指定身份组或草稿。评论、点赞、收藏、
+关注、私信、通知、举报都有。私信用 PawCrypt 做端到端加密，密钥只在用户手里，服务端存的是密文，
+可以设阅后即焚。
+
+**治理**
+
+封 IP、禁言、强制改名、改站点配置、发信。站内自带访问日志和统计。
+
+**用户文件**
+
+登录后可以绑定自己的 Cloudflare 账号，系统在对方账户下建 KV 和 D1 存文件。文件分享有链接、
+预览码和公开下载三种方式。没绑定的用户，文件存在浏览器本地，会提示有丢失风险。
+
+**界面**
+
+9 种语言，进站自动识别浏览器语言并弹窗确认。深浅主题跟随系统，也能手动切。
+静态资源全部自托管。
+
+## 项目结构
 
 ```
 MarytOpens/
-├── site.config.json          # 集中配置：域名 / 站点名 / 邮箱（改这里）
-├── deploy-info.json          # 部署留档，由配置器生成
-├── worker/                   # 后端 Worker
-│   ├── src/index.js          # 单文件后端（路由 / 鉴权 / 权限 / 存储）
-│   ├── wrangler.toml         # 绑定与部署配置
-│   ├── .dev.vars.example     # 本地密钥样例
-│   ├── scripts/              # 部署 / 备份脚本（不依赖 wrangler，走 curl）
+├── site.config.json          集中配置，改这里
+├── deploy-info.json          部署留档，配置器生成
+├── worker/
+│   ├── src/index.js          后端，单文件
+│   ├── wrangler.toml         绑定与部署配置
+│   ├── .dev.vars.example     本地密钥样例
+│   ├── scripts/              部署和备份脚本
 │   └── package.json
-├── pages/                    # 前端（Cloudflare Pages 静态站点）
-│   ├── index.html …          # 22 个页面
+├── pages/                    前端，44 个 HTML 页面
 │   └── assets/{css,img,js}
-├── tools/                    # 配置器与开发期校验工具
-│   ├── configure.mjs         # 集中配置应用器（部署前必跑）
-│   ├── check-inline.js       # 内联脚本语法校验
-│   └── i18n-*.py             # 多语言提取与合并
-└── docs/                     # 文档
-    ├── DEPLOY.md             # 部署与运维教程
-    ├── DEPLOY_REGISTRY.md    # 部署登记模块说明
-    ├── PERMISSIONS.md        # 权限系统手册
-    └── KV_SCHEMA.md          # 存储结构手册
+├── tools/
+│   ├── configure.mjs         配置应用器，部署前跑一次
+│   ├── check-inline.js       内联脚本语法检查
+│   ├── check-app-helpers.js  页面调用的 App 成员检查
+│   └── i18n-*.py             多语言提取与合并
+└── docs/
+    ├── DEPLOY.md             部署与排错
+    ├── DEPLOY_REGISTRY.md    部署登记模块
+    ├── PERMISSIONS.md        权限系统
+    └── KV_SCHEMA.md          存储结构
 ```
 
----
+## 部署
 
-## 🚀 快速开始
+### 1. 填配置
 
-### 0. 配置你自己的域名
-
-整个项目不含任何硬编码域名，全部集中在 `site.config.json`：
+域名没有硬编码在代码里，都在 `site.config.json`：
 
 ```json
 {
@@ -75,122 +92,87 @@ MarytOpens/
 node tools/configure.mjs
 ```
 
-它会把这几个值同步到前端页面、`worker/wrangler.toml`、文档中，并生成 `deploy-info.json`。
-脚本可重复执行；`node tools/configure.mjs --check` 可校验是否还有占位值未替换（适合接 CI）。
+它把这些值同步到前端页面、`worker/wrangler.toml` 和文档里，同时生成 `deploy-info.json`。
+可以反复执行。`node tools/configure.mjs --check` 用来检查有没有漏改的占位值，
+适合放进 CI。
 
-### 1. 创建 Cloudflare 资源
+### 2. 建 Cloudflare 资源
 
 ```bash
 cd worker
 npx wrangler kv namespace create DB
 npx wrangler kv namespace create DB --preview
 npx wrangler d1 create marytopens
-npx wrangler r2 bucket create marytopens-media   # 可选
+npx wrangler r2 bucket create marytopens-media    # 可选
 ```
 
-把返回的 ID 填回 `worker/wrangler.toml`，并建好 D1 表结构（见 [`docs/KV_SCHEMA.md`](docs/KV_SCHEMA.md)）。
+把返回的 ID 填回 `worker/wrangler.toml`。D1 的表结构要手动建，Worker 不会自动建表，
+语句在 [docs/KV_SCHEMA.md](docs/KV_SCHEMA.md)。
 
-### 2. 注入密钥
+### 3. 注入密钥
 
 ```bash
-cp .dev.vars.example .dev.vars    # 本地开发
+cp .dev.vars.example .dev.vars          # 本地开发用
 npx wrangler secret put JWT_SECRET
 npx wrangler secret put SUPER_ADMIN_PASSWORD
-# 其余按需：TURNSTILE_SECRET / GITHUB_CLIENT_SECRET / ENCRYPTION_SECRET / MAIL_API_TOKEN …
 ```
 
-完整清单见 `worker/.dev.vars.example`。
+其余的（Turnstile、OAuth、发信、加密密钥）按需加，完整清单在 `worker/.dev.vars.example`。
 
-### 3. 部署
+### 4. 部署
 
 ```bash
 cd worker
-npx wrangler deploy                        # 后端
+npx wrangler deploy                                            # 后端
 npx wrangler pages deploy ../pages --project-name marytopens   # 前端
 ```
 
-本机若因 TUN / 代理导致 node 直连 `api.cloudflare.com` 失败，可改用不依赖 wrangler 的纯 REST 部署：
+本机装了 TUN 模式代理时，Node 可能连不上 `api.cloudflare.com`（DNS 返回 fake-ip，
+TLS 握手被重置），wrangler 会失败而 curl 正常。这种机器上用纯 REST 脚本部署：
 
 ```bash
 CLOUDFLARE_API_TOKEN=xxx CF_ACCOUNT_ID=xxx npm run deploy:api:all
 ```
 
-完整步骤与排错见 [`docs/DEPLOY.md`](docs/DEPLOY.md)。
+其他情况和排错见 [docs/DEPLOY.md](docs/DEPLOY.md)。
 
----
+## 存储
 
-## 🔐 权限模型速览
-
-权限 = **作用域 (Scope) + 权限位 (Perm) + 身份组 (Role) + 成员 (Member)**。
-
-| 角色 | 权限级别 |
+| 绑定 | 用途 |
 | --- | --- |
-| 超级管理员 `site.admin` | 一切权限 |
-| 站点管理员 `admin` | 全站治理 |
-| 频道主 `channel_owner` | 频道及下属群组 |
-| 群主 / 版主 … | 对应作用域治理 |
-| 成员 `member` | 发帖 / 评论 / 互动 |
+| `DB1`（D1） | 主存储。运行时通过一层 KV 兼容层，把 `env.DB` 的读写路由到 D1 |
+| `DB`（KV） | `file:` 前缀的二进制回退。没绑 R2 时文件也走这里 |
+| `MEDIA`（R2，可选） | 头像、横幅、配图。键格式 `${kind}/${uid}/${fileId}.${ext}` |
 
-完整权限位清单与判定逻辑见 [`docs/PERMISSIONS.md`](docs/PERMISSIONS.md)。
+键的命名规范见 [docs/KV_SCHEMA.md](docs/KV_SCHEMA.md)。
 
----
-
-## 🗄️ 存储
-
-- **KV（绑定 `DB`）**：用户、文章、角色、成员、索引、计数器、访问日志。键规范见 [`docs/KV_SCHEMA.md`](docs/KV_SCHEMA.md)。
-- **D1（绑定 `DB1`）**：主存储。运行时通过 KV 兼容层把 `env.DB` 的读写路由到 D1。
-- **R2（绑定 `MEDIA`，可选）**：头像 / 横幅 / 配图，键格式 `${kind}/${uid}/${fileId}.${ext}`。未绑定时自动回退 KV。
-
----
-
-## 🛠️ 技术栈
-
-| 层 | 技术 |
-| --- | --- |
-| 后端 | Cloudflare Workers (ES Module)、KV、D1、R2、Hono 风格路由 |
-| 鉴权 | JWT（HMAC-SHA256）、PBKDF2 密码派生、Turnstile、OAuth2 |
-| 前端 | 原生 HTML / CSS / JS（零构建、零公共 CDN）、9 语言 i18n |
-
----
-
-## 🧪 开发
+## 开发
 
 ```bash
-# 前端内联脚本语法校验（改前端后先跑）
-node tools/check-inline.js pages
+node tools/check-inline.js pages        # 页面内联脚本语法
+node tools/check-app-helpers.js pages   # 页面是否裸调用了没解构的 App 成员
+node tools/configure.mjs --check        # 配置完整性
+node --check worker/src/index.js        # 后端语法
 
-# 检查页面是否裸调用了未解构的 App 成员（静默失败的常见根因）
-node tools/check-app-helpers.js pages
-
-# 配置完整性校验（CI 友好，有占位残留则退出码 1）
-node tools/configure.mjs --check
-
-# 后端语法
-node --check worker/src/index.js
-
-# 本地起 Worker
-cd worker && npx wrangler dev --local
+cd worker && npx wrangler dev --local   # 本地起后端
 ```
 
----
+改前端之后建议把前两个都跑一遍。页面里的内联脚本出错通常只在浏览器控制台可见，
+线上表现是"点了没反应"，很容易漏掉。
 
-## 📚 文档索引
+## 支持范围
 
-| 文档 | 内容 |
-| --- | --- |
-| [docs/DEPLOY.md](docs/DEPLOY.md) | 从零部署到 Cloudflare 的完整教程与排错 |
-| [docs/DEPLOY_REGISTRY.md](docs/DEPLOY_REGISTRY.md) | 可选的部署登记模块（默认关闭） |
-| [docs/PERMISSIONS.md](docs/PERMISSIONS.md) | 权限位清单、身份组模板、判定逻辑 |
-| [docs/KV_SCHEMA.md](docs/KV_SCHEMA.md) | KV / D1 / R2 键规范与运维备份 |
+这是个人开源项目，按原样提供，不承诺技术支持。
 
----
+具体一点：不提供部署协助和代部署，不接运维，不保证 Issue 的响应时间，也不接定制开发。
+部署过程中卡住了，先翻 [docs/DEPLOY.md](docs/DEPLOY.md) 和已有的 Issue，大概率有人踩过。
 
-## 🤝 参与贡献
+Bug 报告和功能建议欢迎提 Issue，但采纳与否、什么时候做，取决于维护者有没有时间。
 
-见 [CONTRIBUTING.md](CONTRIBUTING.md)。安全问题请走 [SECURITY.md](SECURITY.md) 的私下渠道，不要开公开 Issue。
+## 参与
 
----
+见 [CONTRIBUTING.md](CONTRIBUTING.md)。安全问题不要开公开 Issue，走 [SECURITY.md](SECURITY.md) 里的渠道。
 
-## 📄 许可
+## 许可
 
-[MIT](LICENSE)。请遵守当地法律法规与 Cloudflare 服务条款。
+[MIT](LICENSE)。使用前请确认符合当地法律法规和 Cloudflare 的服务条款。

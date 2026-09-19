@@ -2,16 +2,16 @@
 /* ==========================================================================
  * MarytOpens · 集中配置应用器
  *
- *   node tools/configure.mjs          应用 site.config.json 到全项目
- *   node tools/configure.mjs --check  只检查是否还有未替换的占位值（CI 用）
+ *   node tools/configure.mjs          把 site.config.json 应用到全项目
+ *   node tools/configure.mjs --check  只检查有没有漏改的占位值（CI 用）
  *
- * 做四件事：
- *   1. 为 pages/ 下所有 .html 注入/更新 <meta name="mo-api">（前端运行时读取）
- *   2. 同步 worker/wrangler.toml 的域名变量、路由与发件地址
- *   3. 把 docs/ README.md 等文档里的占位域名替换为真实域名
- *   4. 生成 deploy-info.json（部署信息留档，可随仓库提交）
+ * 做三件事：
+ *   1. 同步 worker/wrangler.toml 的域名、路由、发件地址与登记开关
+ *   2. 替换源码与文档里的占位域名
+ *   3. 生成 deploy-info.json
  *
- * 幂等：可反复执行。历史生效值记录在 site.config.json 的 _applied 字段。
+ * 可重复执行。上次生效的值记在 site.config.json 的 _applied 里，
+ * 改了域名再跑一遍也能正确覆盖。
  * ========================================================================== */
 import { readFileSync, writeFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, relative, extname, sep } from 'node:path';
@@ -71,7 +71,7 @@ function placeholdersIn(src) {
   return Object.values(PLACEHOLDER).filter((ph) => src.includes(ph));
 }
 
-/* ------------------------- 1. 识别需要处理的文本文件 ------------------------ */
+/* ------------------------------- 遍历文件树 -------------------------------- */
 
 function walk(dir, out = []) {
   for (const name of readdirSync(dir)) {

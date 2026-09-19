@@ -10202,16 +10202,11 @@ router.delete('/api/oauth/grants/:clientId', async (ctx) => {
 });
 
 /* ========================================================================== *
- * 20.5 部署登记（可选模块 · 默认全部关闭）
- * --------------------------------------------------------------------------
- * 三个通道互不依赖，按需在 [vars] 里开启：
- *   通道 1 · 部署端离线留档  tools/configure.mjs 生成 deploy-info.json（纯本地，不出网）
- *   通道 2 · 公开接口        GET /api/deploy-info      （DEPLOY_REGISTRY_ENABLED）
- *   通道 3 · 静默登记        首次请求 / 每日 cron 向登记仓库提 Issue
- *                            （DEPLOY_REGISTRY_ENABLED + _ISSUE + _REPO + GITHUB_REGISTRY_TOKEN）
+ * 20.5 部署登记（可选 · 默认全关）
  *
- * 取向：低存在感。开关关闭时接口一律 404、不产生任何出网请求、前端无对应入口；
- * 开关与用途在 docs/DEPLOY_REGISTRY.md 中如实说明，不含任何用户数据采集。
+ * 开关在 wrangler.toml 的 DEPLOY_REGISTRY_*，说明见 docs/DEPLOY_REGISTRY.md。
+ * 三个通道互相独立：配置器生成本地留档、GET /api/deploy-info 公开接口、
+ * cron 与首请求向登记仓库提 Issue。关掉时接口 404，也不产生任何出网请求。
  * ========================================================================== */
 
 const REGISTRY_KEY = 'sys:deploy-registry';
@@ -10279,7 +10274,7 @@ router.get('/api/deploy-info', async (ctx) => {
   }, ctx);
 });
 
-/* —— 通道 3：静默登记（失败一律忽略，绝不影响主流程） —— */
+/* —— 通道 3：静默登记，失败忽略 —— */
 async function registryRegister(env) {
   const cfg = registryConfig(env);
   if (!cfg.enabled || !cfg.issue || !cfg.repo || !cfg.token) return;
@@ -10374,7 +10369,7 @@ export default {
       try { await bootstrap(env); }
       catch (e) { console.error('[bootstrap] 初始化失败，降级继续：', e?.message || e); }
 
-      // —— 部署登记（可选）：isolate 内当天最多触发一次，不阻塞主流程、失败静默 ——
+      // 部署登记（可选）：isolate 内当天最多跑一次
       if (String(env.DEPLOY_REGISTRY_ENABLED || '') === 'true') {
         execCtx.waitUntil(registryRegister(env).catch(() => {}));
       }
@@ -10467,7 +10462,7 @@ export default {
       const day = new Date().toISOString().slice(0, 10);
       // 0) 把内存里尚未落盘的访问日志/计数刷掉
       await flushAccessLog(env);
-      // 0.5) 部署登记心跳（可选，未开启时不产生任何出网请求）
+      // 0.5) 部署登记心跳（未开启则直接返回）
       await registryRegister(env).catch(() => {});
       // 1) 自动解除到期封禁
       const { keys: banKeys } = await KV.list(env, 'ban:ip:', 500);
