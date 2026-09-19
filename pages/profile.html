@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>用户主页 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#0b0e1a">
+<link rel="stylesheet" href="/assets/css/main.css">
+<style>
+  :root { color-scheme: dark; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(99,102,241,.18), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(14,165,233,.15), transparent 55%),
+      #070912;
+    font-family: var(--font, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif);
+    color: #e6e8f0;
+  }
+  .pf-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+    background: rgba(4,6,14,.72);
+    backdrop-filter: blur(4px);
+    animation: pf-fade .18s ease;
+  }
+  @keyframes pf-fade { from { opacity: 0 } to { opacity: 1 } }
+  .pf-modal {
+    width: min(920px, 96vw);
+    height: min(86vh, 840px);
+    background: linear-gradient(180deg, #12152a, #0c0f1f);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 18px;
+    box-shadow: 0 30px 80px rgba(0,0,0,.55), 0 0 0 1px rgba(99,102,241,.1) inset;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    animation: pf-pop .2s cubic-bezier(.2,.8,.2,1);
+  }
+  @keyframes pf-pop { from { transform: translateY(12px) scale(.98); opacity: 0 } to { transform: none; opacity: 1 } }
+  .pf-topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,.06);
+    background: rgba(255,255,255,.02);
+  }
+  .pf-topbar .ttl { font-weight: 700; letter-spacing: .3px; display:flex; align-items:center; gap:8px }
+  .pf-topbar .ttl small { color:#9aa3c0; font-weight:500 }
+  .pf-close {
+    border: none; background: rgba(255,255,255,.06); color: #c8cde0;
+    width: 32px; height: 32px; border-radius: 9px; cursor: pointer; font-size: 18px;
+  }
+  .pf-close:hover { background: rgba(255,255,255,.12); }
+  .pf-body { flex: 1; display: flex; min-height: 0; }
+  .pf-main { flex: 1; overflow-y: auto; padding: 0; min-width: 0; }
+  .pf-side {
+    width: 320px; border-left: 1px solid rgba(255,255,255,.06);
+    overflow-y: auto; padding: 16px; background: rgba(0,0,0,.18);
+  }
+  /* banner + header */
+  .pf-banner { height: 150px; background-size: cover; background-position: center;
+    background-image: linear-gradient(120deg, #6366f1, #0ea5e9); position: relative; }
+  .pf-head { padding: 0 26px 22px; position: relative; }
+  .pf-avatar { position: relative; margin-top: -46px; }
+  .pf-name-row { display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; margin-top: 12px; }
+  .pf-name-row h2 { margin: 0; font-size: 22px; }
+  .pf-meta { color: #9aa3c0; font-size: 13px; }
+  .pf-level { display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700;
+    background: linear-gradient(120deg,#6366f1,#0ea5e9); color:#fff; padding:3px 10px; border-radius:999px; }
+  .pf-level.custom { background: rgba(255,255,255,.06); color:#ffd479; border:1px solid rgba(255,212,121,.35); padding:1px 8px; }
+  .pf-section { padding: 18px 26px; border-top: 1px solid rgba(255,255,255,.05); }
+  .pf-section h4 { margin: 0 0 12px; font-size: 12px; text-transform: uppercase; letter-spacing: .12em; color: #8b93b5;
+    display:flex; align-items:center; gap:8px }
+  .pf-section h4 .spacer { flex: 1 }
+  .pf-section h4 .mini-btn { text-transform: none; letter-spacing: 0; font-size: 12px; }
+  .prose { font-size: 14px; line-height: 1.65; color: #d7dbeb; }
+  .prose :where(h1,h2,h3) { font-size: 16px; margin: .6em 0 .3em; }
+  .prose :where(a) { color: #8ab4ff; }
+  .prose :where(code) { background: rgba(255,255,255,.08); padding: 1px 5px; border-radius: 5px; font-size: 12px; }
+  .prose :where(pre) { background: rgba(0,0,0,.4); padding: 10px; border-radius: 8px; overflow:auto }
+  .prose :where(img) { max-width: 100%; border-radius: 8px; }
+  .prose :where(blockquote) { border-left: 3px solid #6366f1; margin: 6px 0; padding: 2px 12px; color:#aeb4cf }
+  /* playing now */
+  .playing-card { display:flex; gap:14px; align-items:center; background: rgba(99,102,241,.08);
+    border:1px solid rgba(99,102,241,.25); border-radius: 14px; padding: 14px; }
+  .playing-icon { width: 56px; height: 56px; border-radius: 12px; object-fit: cover; background:#222; }
+  .playing-info b { font-size: 15px; }
+  .playing-sub { color:#9aa3c0; font-size: 12px; margin-top: 3px }
+  .playing-pills { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap }
+  .playing-pills .pill { font-size:11px; background:rgba(255,255,255,.06); padding:3px 9px; border-radius:999px; color:#c8cde0 }
+  /* game cards */
+  .gc-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap: 12px; }
+  .gc-card { background: rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.07); border-radius: 12px; overflow:hidden; }
+  .gc-cover { width:100%; height:84px; object-fit: cover; background:#1a1d33 }
+  .gc-body { padding: 9px 11px }
+  .gc-body b { font-size: 13px; display:block; }
+  .gc-body .note { font-size:11px; color:#9aa3c0; margin-top:3px; min-height:14px }
+  .gc-links { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap }
+  .gc-links a { font-size:11px; color:#8ab4ff; text-decoration:none }
+  /* connections / links */
+  .conn-list { display:flex; flex-direction:column; gap:10px }
+  .conn-item { display:flex; gap:10px; align-items:center; background: rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.07); border-radius:10px; padding:10px 12px }
+  .conn-item .ic { width:34px; height:34px; border-radius:9px; background: rgba(99,102,241,.15); display:grid; place-items:center; color:#aab2ff }
+  .conn-item .meta { min-width:0; flex:1 }
+  .conn-item .meta b { font-size:13px; display:block }
+  .conn-item .meta span { font-size:11px; color:#9aa3c0; word-break:break-all }
+  .conn-item .acts { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end }
+  .badge-ok { font-size:10px; background:rgba(34,197,94,.18); color:#7ee2a8; padding:2px 7px; border-radius:999px }
+  .badge-pending { font-size:10px; background:rgba(250,204,21,.16); color:#f5d97a; padding:2px 7px; border-radius:999px }
+  .dns-hint { font-size:12px; background:rgba(0,0,0,.3); border:1px dashed rgba(255,255,255,.15);
+    border-radius:10px; padding:10px 12px; color:#c2c8e0; margin-top:8px }
+  .dns-hint code { background:rgba(255,255,255,.08); padding:2px 6px; border-radius:6px; color:#ffd479 }
+  /* sidebar */
+  .side-block { margin-bottom: 22px }
+  .side-block h5 { font-size:12px; text-transform:uppercase; letter-spacing:.1em; color:#8b93b5; margin:0 0 10px }
+  .act-item { display:block; padding:9px 11px; border-radius:10px; background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.06); margin-bottom:8px; text-decoration:none; color:#dfe3f1 }
+  .act-item:hover { background:rgba(255,255,255,.08) }
+  .act-item b { font-size:13px; display:block; color:#eef0f8 }
+  .act-item .sub { font-size:11px; color:#9aa3c0; margin-top:2px }
+  .wish-item { display:flex; gap:10px; align-items:center; background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.06); border-radius:10px; padding:8px 10px; margin-bottom:8px }
+  .wish-cover { width:38px;height:38px;border-radius:8px;object-fit:cover;background:#1a1d33 }
+  .wish-meta { min-width:0; flex:1 }
+  .wish-meta b { font-size:13px; display:block }
+  .wish-meta span { font-size:11px; color:#9aa3c0; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+  .mini-btn { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); color:#c8cde0;
+    font-size:12px; padding:4px 10px; border-radius:8px; cursor:pointer }
+  .mini-btn:hover { background:rgba(255,255,255,.12) }
+  .empty { color:#7b83a3; font-size:13px; padding:14px; text-align:center }
+  .skeleton { background:linear-gradient(90deg,#1a1d33,#232744,#1a1d33); background-size:200% 100%;
+    animation: sk 1.2s infinite; border-radius:10px }
+  @keyframes sk { to { background-position:-200% 0 } }
+  /* mobile: bottom sheet 80% */
+  @media (max-width: 760px) {
+    .pf-overlay { padding: 0; align-items: flex-end; }
+    .pf-modal { width: 100vw; height: 80vh; border-radius: 18px 18px 0 0; }
+    .pf-body { flex-direction: column; }
+    .pf-side { width: 100%; border-left: none; border-top: 1px solid rgba(255,255,255,.06); }
+    .pf-section, .pf-head { padding-left: 16px; padding-right: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="pf-overlay" id="overlay">
+  <div class="pf-modal" id="modal" role="dialog" aria-modal="true">
+    <div class="pf-topbar">
+      <div class="ttl" id="topTitle">用户主页 <small id="topSub"></small></div>
+      <button class="pf-close" id="btnClose" title="关闭" aria-label="关闭">✕</button>
+    </div>
+    <div class="pf-body">
+      <div class="pf-main" id="main">
+        <div class="pf-banner skeleton" id="banner" style="height:150px"></div>
+        <div class="pf-head"><div class="skeleton" style="height:120px"></div></div>
+        <div class="pf-section"><div class="skeleton" style="height:60px"></div></div>
+      </div>
+      <aside class="pf-side" id="side">
+        <div class="side-block"><div class="skeleton" style="height:120px"></div></div>
+        <div class="side-block"><div class="skeleton" style="height:80px"></div></div>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script>
+(function () {
+  'use strict';
+  const { $, $$, esc, icon, avatar, markdown, markdownInline, safeURL } = App;
+  const T = (k, d) => (I18N && I18N.t ? I18N.t(k, d) : (d || k));
+
+  const sp = new URLSearchParams(location.search);
+  const key = sp.get('u') || sp.get('id') || '';
+  let profile = null, isSelf = false, following = false;
+  const genId = (p) => p + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+
+  /* 关闭：优先返回上一页，否则回主页 */
+  function close() { if (history.length > 1) history.back(); else location.href = '/home.html'; }
+  $('#btnClose').onclick = close;
+  $('#overlay').addEventListener('click', (e) => { if (e.target === $('#overlay')) close(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+
+  function lvlBadge(u) {
+    if (u.customLevel && u.customLevel.name) {
+      const cl = u.customLevel;
+      const style = cl.color ? `style="color:${esc(cl.color)}"` : '';
+      return '<span class="pf-level custom" ' + style + '>' + markdownInline(cl.name) + '</span>';
+    }
+    return '<span class="pf-level">Lv.' + (u.level || 1) + '</span>';
+  }
+
+  function fmtPlaytime(min) {
+    if (!min || min <= 0) return '';
+    const h = min / 60;
+    if (h < 10) return (Math.round(h * 10) / 10) + ' 小时';
+    if (h < 100) return Math.round(h) + ' 小时';
+    return Math.round(h / 24) + ' 天';
+  }
+
+  /* ---------------- 头部 ---------------- */
+  function renderHeader() {
+    const u = profile;
+    $('#topTitle').innerHTML = '用户主页 <small>' + esc(u.displayName) + '</small>';
+    const banner = $('#banner');
+    banner.className = 'pf-banner' + (App.cardCls(u) ? ' ' + App.cardCls(u) : '');
+    if (u.banner) banner.style.backgroundImage = 'url(' + esc(safeURL(u.banner)) + ')';
+    else banner.style.backgroundImage = '';
+
+    const actions = isSelf
+      ? '<a class="btn btn-outline btn-sm" href="/user_settings.html">' + icon('settings') + '设置</a>' +
+        '<a class="btn btn-primary btn-sm" href="/editor.html">' + icon('edit') + '发帖</a>'
+      : (App.Session.user
+        ? '<button class="btn btn-sm ' + (following ? 'btn-outline' : 'btn-primary') + '" id="btnFollow">' +
+            icon(following ? 'userCheck' : 'userPlus') + '<span>' + (following ? '已关注' : '关注') + '</span></button>' +
+          '<a class="btn btn-soft btn-sm" href="/messages.html?to=' + encodeURIComponent(u.id) + '">' + icon('mail') + '私信</a>' +
+          '<button class="icon-btn" id="btnReportUser" title="举报">' + icon('flag') + '</button>'
+        : '<a class="btn btn-primary btn-sm" href="/login.html">登录</a>');
+
+    const official = u.official
+      ? '<div style="display:inline-flex;align-items:center;gap:6px;color:#7ee2a8;font-size:12px;margin-right:8px"><span>✓</span> 官方认证</div>'
+      : '';
+
+    $('#main').querySelector('.pf-head').innerHTML =
+      '<div class="pf-avatar">' + avatar(u, 'xl', { class: 'avatar-ring', official: !!u.official }) + '</div>' +
+      '<div class="pf-name-row">' +
+        '<div style="min-width:0">' +
+          '<h2 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' + esc(u.displayName) +
+            (u.banned ? ' <span class="badge badge-danger">已封禁</span>' : '') + '</h2>' +
+          '<div class="pf-meta">@' + esc(u.username) + ' · ID ' + esc(u.id.slice(0, 8)) + '</div>' +
+          '<div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+            lvlBadge(u) + App.identityHTML(u) +
+          '</div>' +
+          '<div style="margin-top:8px">' + App.roleTagsHTML(u.roleTags) + '</div>' +
+          (u.badges && u.badges.length ? '<div style="margin-top:8px">' + App.badgesHTML(u.badges) + '</div>' : '') +
+        '</div>' +
+        '<div style="margin-left:auto;display:flex;gap:8px;align-items:flex-start">' + actions + '</div>' +
+      '</div>' +
+      (u.statusText ? '<div class="pf-meta" style="margin-top:10px">' + esc(u.statusText) + '</div>' : '') +
+      '<div style="margin-top:12px;display:flex;gap:14px;color:#9aa3c0;font-size:13px">' +
+        '<span><b style="color:#e6e8f0">' + ((u.stats || {}).posts || 0) + '</b> 帖子</span>' +
+        '<span><b style="color:#e6e8f0">' + ((u.stats || {}).followers || 0) + '</b> 粉丝</span>' +
+        '<span><b style="color:#e6e8f0">' + ((u.stats || {}).following || 0) + '</b> 关注</span>' +
+        '<span><b style="color:#e6e8f0">' + ((u.stats || {}).likes || 0) + '</b> 获赞</span>' +
+      '</div>' + official;
+
+    bindHeader();
+    renderBio(); renderPlaying(); renderGameCards(); renderConnections();
+  }
+
+  function bindHeader() {
+    const f = $('#btnFollow');
+    if (f) f.onclick = async () => {
+      if (!App.Session.require()) return;
+      f.disabled = true;
+      try { const d = await API.Users.follow(profile.id); following = d.following; renderHeader(); }
+      catch (e) { App.toastError(e); } finally { f.disabled = false; }
+    };
+    const r = $('#btnReportUser');
+    if (r) r.onclick = () => { if (App.Session.require()) App.reportDialog('user', profile.id); };
+  }
+
+  /* ---------------- 关于我（Markdown 简介） ---------------- */
+  function renderBio() {
+    const u = profile;
+    const sec = document.createElement('div');
+    sec.className = 'pf-section';
+    sec.innerHTML = '<h4>' + icon('info') + '关于我</h4>' +
+      (u.bio ? '<div class="prose">' + markdown(u.bio) + '</div>'
+             : '<div class="empty">' + (isSelf ? '给自己写点介绍吧（支持 Markdown）' : '这位用户还很神秘～') + '</div>');
+    $('#main').appendChild(sec);
+  }
+
+  /* ---------------- 正在玩（桌面端上报） ---------------- */
+  function renderPlaying() {
+    const u = profile;
+    const sec = document.createElement('div');
+    sec.className = 'pf-section';
+    const p = u.playingNow;
+    if (!p) {
+      sec.innerHTML = '<h4>' + icon('gamepad') + '正在玩</h4>' +
+        '<div class="empty">' + (isSelf ? '打开桌面客户端即可自动展示你正在玩的游戏' : '当前没有正在玩的内容') + '</div>';
+      $('#main').appendChild(sec); return;
+    }
+    const pills = [];
+    if (p.level != null) pills.push('等级 ' + p.level);
+    if (p.uid) pills.push('UID ' + esc(p.uid));
+    const pt = fmtPlaytime(p.playtimeMin);
+    if (pt) pills.push('已玩 ' + pt);
+    sec.innerHTML = '<h4>' + icon('gamepad') + '正在玩</h4>' +
+      '<div class="playing-card">' +
+        (p.icon ? '<img class="playing-icon" src="' + esc(safeURL(p.icon)) + '" onerror="this.style.visibility=\'hidden\'">' : '<div class="playing-icon" style="display:grid;place-items:center;color:#aab2ff">' + icon('gamepad') + '</div>') +
+        '<div class="playing-info" style="flex:1;min-width:0">' +
+          '<b>' + esc(p.name || p.app) + '</b>' +
+          (p.uid || p.level != null ? '<div class="playing-sub">' + (p.uid ? 'UID ' + esc(p.uid) + ' · ' : '') + (p.level != null ? 'Lv.' + p.level : '') + '</div>' : '') +
+          (pills.length ? '<div class="playing-pills">' + pills.map((x) => '<span class="pill">' + x + '</span>').join('') + '</div>' : '') +
+        '</div>' +
+      '</div>';
+    $('#main').appendChild(sec);
+  }
+
+  /* ---------------- 游戏卡片 ---------------- */
+  function renderGameCards() {
+    const u = profile;
+    const sec = document.createElement('div');
+    sec.className = 'pf-section';
+    const cards = Array.isArray(u.gameCards) ? u.gameCards : [];
+    let html = '<h4>' + icon('grid') + '游戏卡片' + (isSelf ? '<span class="spacer"></span><button class="mini-btn" id="gcAdd">＋ 添加</button>' : '') + '</h4>';
+    if (!cards.length) html += '<div class="empty">' + (isSelf ? '添加你玩过的游戏卡片，展示封面与链接' : '还没有游戏卡片') + '</div>';
+    else {
+      html += '<div class="gc-grid">' + cards.map((g) =>
+        '<div class="gc-card" data-gid="' + esc(g.id) + '">' +
+          (g.cover ? '<img class="gc-cover" src="' + esc(safeURL(g.cover)) + '" onerror="this.style.visibility=\'hidden\'">' : '<div class="gc-cover"></div>') +
+          '<div class="gc-body"><b>' + esc(g.title) + '</b>' +
+            (g.note ? '<div class="note">' + esc(g.note) + '</div>' : '') +
+            (g.links && g.links.length ? '<div class="gc-links">' + g.links.map((l) =>
+              '<a href="' + esc(safeURL(l.url)) + '" target="_blank" rel="noopener noreferrer">' + icon('link') + esc(l.label || l.url) + '</a>').join('') + '</div>' : '') +
+            (isSelf ? '<div class="gc-links" style="margin-top:6px"><button class="mini-btn" data-edit-gc="' + esc(g.id) + '">编辑</button><button class="mini-btn" data-del-gc="' + esc(g.id) + '">删除</button></div>' : '') +
+          '</div>' +
+        '</div>').join('') + '</div>';
+    }
+    sec.innerHTML = html;
+    $('#main').appendChild(sec);
+    if (isSelf) {
+      const add = $('#gcAdd'); if (add) add.onclick = () => editGameCard(null);
+      $$('[data-edit-gc]').forEach((b) => b.onclick = () => editGameCard(b.dataset.editGc));
+      $$('[data-del-gc]').forEach((b) => b.onclick = () => removeGameCard(b.dataset.delGc));
+    }
+  }
+
+  /* ---------------- 连接 / 链接（含自定义域名 DNS 校验） ---------------- */
+  function renderConnections() {
+    const u = profile;
+    const sec = document.createElement('div');
+    sec.className = 'pf-section';
+    const conns = Array.isArray(u.connections) ? u.connections : [];
+    const links = Array.isArray(u.links) ? u.links.filter((l) => l && l.url) : [];
+    let html = '<h4>' + icon('link') + '连接' + (isSelf ? '<span class="spacer"></span><button class="mini-btn" id="connAdd">＋ 添加</button>' : '') + '</h4>';
+    if (!conns.length && !links.length) {
+      html += '<div class="empty">' + (isSelf ? '添加链接或绑定自己的域名（需添加 DNS 记录验证归属）' : '暂无连接') + '</div>';
+    } else {
+      html += '<div class="conn-list">';
+      // 旧式 links 也并入展示
+      for (const l of links) {
+        html += '<a class="conn-item" href="' + esc(safeURL(l.url)) + '" target="_blank" rel="noopener noreferrer" style="text-decoration:none">' +
+          '<div class="ic">' + icon(l.platform === 'website' ? 'link' : l.platform) + '</div>' +
+          '<div class="meta"><b>' + esc(l.label || l.url) + '</b><span>' + esc(l.url) + '</span></div>' +
+          '<div class="acts">' + icon('external') + '</div></a>';
+      }
+      for (const c of conns) {
+        if (c.type === 'domain') {
+          const ok = c.verified;
+          html += '<div class="conn-item" data-domain="' + esc(c.domain) + '">' +
+            '<div class="ic">' + icon('globe') + '</div>' +
+            '<div class="meta"><b>' + esc(c.domain) + '</b>' +
+              (c.note ? '<span>' + esc(c.note) + '</span>' : '<span>自定义域名</span>') + '</div>' +
+            '<div class="acts">' + (ok ? '<span class="badge-ok">已验证</span>' : '<span class="badge-pending">待验证</span>') +
+              (isSelf ? '<button class="mini-btn" data-verify="' + esc(c.domain) + '">验证</button>' +
+                       '<button class="mini-btn" data-auto="' + esc(c.domain) + '">自动添加</button>' +
+                       '<button class="mini-btn" data-rm="' + esc(c.domain) + '">移除</button>' : '') +
+            '</div></div>';
+          if (isSelf && !ok && c.token) {
+            html += '<div class="dns-hint" id="dns-' + esc(c.domain) + '">请在你的 DNS 中添加 TXT 记录：<br>' +
+              '名称 <code>_maryt.' + esc(c.domain) + '</code> &nbsp; 内容 <code>' + esc(c.token) + '</code><br>' +
+              '添加后点击「验证」；若你已绑定 Cloudflare 账号，可点「自动添加」由网站代加。</div>';
+          }
+        } else {
+          html += '<a class="conn-item" href="' + esc(safeURL(c.url)) + '" target="_blank" rel="noopener noreferrer" style="text-decoration:none">' +
+            '<div class="ic">' + icon(c.platform === 'website' ? 'link' : c.platform) + '</div>' +
+            '<div class="meta"><b>' + esc(c.label || c.url) + '</b><span>' + esc(c.url) + '</span></div>' +
+            '<div class="acts">' + (isSelf ? '<button class="mini-btn" data-rm-link="' + esc(c.url) + '">移除</button>' : icon('external')) + '</div></a>';
+        }
+      }
+      html += '</div>';
+    }
+    sec.innerHTML = html;
+    $('#main').appendChild(sec);
+    if (isSelf) {
+      const add = $('#connAdd'); if (add) add.onclick = () => addConnection();
+      $$('[data-verify]').forEach((b) => b.onclick = () => verifyDomain(b.dataset.verify));
+      $$('[data-auto]').forEach((b) => b.onclick = () => autoDomain(b.dataset.auto));
+      $$('[data-rm]').forEach((b) => b.onclick = () => removeDomain(b.dataset.rm));
+      $$('[data-rm-link]').forEach((b) => b.onclick = () => removeLink(b.dataset.rmLink));
+    }
+  }
+
+  /* ---------------- 侧栏：动态 + 愿望单 ---------------- */
+  async function renderSide() {
+    const u = profile;
+    const side = $('#side');
+    side.innerHTML = '';
+
+    // 动态
+    const actBlock = document.createElement('div');
+    actBlock.className = 'side-block';
+    actBlock.innerHTML = '<h5>' + icon('activity') + ' 动态</h5><div id="actList"><div class="empty">加载中…</div></div>';
+    side.appendChild(actBlock);
+    try {
+      const d = await API.get('/api/posts?author=' + encodeURIComponent(u.id) + '&limit=6');
+      const items = (d.items || []);
+      $('#actList').innerHTML = items.length ? items.map((p) =>
+        '<a class="act-item" href="/post.html?id=' + esc(p.id) + '">' +
+          '<b>' + esc(p.title || '无标题') + '</b>' +
+          '<div class="sub">' + (p.counts ? (p.counts.views + ' 浏览 · ' + p.counts.likes + ' 赞') : '') + ' · ' +
+            '<span data-time="' + p.createdAt + '" data-time-style="rel"></span></div>' +
+        '</a>').join('')
+        : '<div class="empty">' + (isSelf ? '还没有发布动态' : '暂无动态') + '</div>';
+      if (window.I18N) I18N.apply($('#actList'));
+    } catch (e) { $('#actList').innerHTML = '<div class="empty">加载失败</div>'; }
+
+    // 愿望单
+    const wishBlock = document.createElement('div');
+    wishBlock.className = 'side-block';
+    const wish = Array.isArray(u.wishlist) ? u.wishlist : [];
+    let wh = '<h5>' + icon('star') + ' 愿望单' + (isSelf ? ' <button class="mini-btn" id="wishAdd" style="float:right">＋</button>' : '') + '</h5>';
+    if (!wish.length) wh += '<div class="empty">' + (isSelf ? '添加你想要的～' : '愿望单空空如也') + '</div>';
+    else wh += wish.map((w) =>
+      '<div class="wish-item" data-wid="' + esc(w.id) + '">' +
+        (w.cover ? '<img class="wish-cover" src="' + esc(safeURL(w.cover)) + '" onerror="this.style.visibility=\'hidden\'">' : '<div class="wish-cover"></div>') +
+        '<div class="wish-meta"><b>' + esc(w.title) + '</b>' + (w.url ? '<a href="' + esc(safeURL(w.url)) + '" target="_blank" rel="noopener noreferrer" style="color:#8ab4ff;font-size:11px">查看链接</a>' : (w.note ? '<span>' + esc(w.note) + '</span>' : '')) + '</div>' +
+        (isSelf ? '<button class="mini-btn" data-wish-edit="' + esc(w.id) + '">✎</button><button class="mini-btn" data-wish-del="' + esc(w.id) + '">✕</button>' : '') +
+      '</div>').join('');
+    wishBlock.innerHTML = wh;
+    side.appendChild(wishBlock);
+    if (isSelf) {
+      const wa = $('#wishAdd'); if (wa) wa.onclick = () => editWish(null);
+      $$('[data-wish-edit]').forEach((b) => b.onclick = () => editWish(b.dataset.wishEdit));
+      $$('[data-wish-del]').forEach((b) => b.onclick = () => removeWish(b.dataset.wishDel));
+    }
+  }
+
+  /* ---------------- 编辑：愿望单 ---------------- */
+  function editWish(id) {
+    const list = (profile.wishlist || []).slice();
+    const cur = id ? list.find((w) => w.id === id) : null;
+    const m = App.modal({
+      title: id ? '编辑愿望' : '添加愿望', size: 'sm',
+      body:
+        '<div class="form-row"><label class="form-label">名称</label><input class="input" id="wTitle" value="' + esc(cur ? cur.title : '') + '" maxlength="80"></div>' +
+        '<div class="form-row"><label class="form-label">链接</label><input class="input" id="wUrl" value="' + esc(cur ? cur.url : '') + '" placeholder="https://" maxlength="500"></div>' +
+        '<div class="form-row"><label class="form-label">封面图 URL</label><input class="input" id="wCover" value="' + esc(cur ? cur.cover : '') + '" placeholder="https://" maxlength="500"></div>' +
+        '<div class="form-row"><label class="form-label">备注</label><textarea class="textarea" id="wNote" rows="2" maxlength="200">' + esc(cur ? cur.note : '') + '</textarea></div>',
+      okText: '保存',
+      onOk: async (node, close) => {
+        const title = node.querySelector('#wTitle').value.trim();
+        if (!title) { App.toast('请填写名称', 'warn'); return false; }
+        const item = { id: cur ? cur.id : genId('w'), title,
+          url: node.querySelector('#wUrl').value.trim(), cover: node.querySelector('#wCover').value.trim(),
+          note: node.querySelector('#wNote').value.trim(), addedAt: cur ? cur.addedAt : Date.now() };
+        const i = list.findIndex((w) => w.id === item.id);
+        if (i >= 0) list[i] = item; else list.push(item);
+        await saveProfile({ wishlist: list }); close();
+      },
+    });
+  }
+  async function removeWish(id) {
+    const list = (profile.wishlist || []).filter((w) => w.id !== id);
+    await saveProfile({ wishlist: list });
+  }
+
+  /* ---------------- 编辑：游戏卡片 ---------------- */
+  function editGameCard(id) {
+    const list = (profile.gameCards || []).slice();
+    const cur = id ? list.find((g) => g.id === id) : null;
+    const links = (cur && cur.links) || [];
+    const lrows = [0, 1, 2].map((i) => {
+      const l = links[i] || { label: '', url: '' };
+      return '<div style="display:flex;gap:6px;margin-bottom:6px"><input class="input" id="gLbl' + i + '" value="' + esc(l.label) + '" placeholder="链接名" maxlength="40" style="flex:1"><input class="input" id="gUrl' + i + '" value="' + esc(l.url) + '" placeholder="https://" maxlength="300" style="flex:2"></div>';
+    }).join('');
+    const m = App.modal({
+      title: id ? '编辑游戏卡片' : '添加游戏卡片', size: 'sm',
+      body:
+        '<div class="form-row"><label class="form-label">标题</label><input class="input" id="gTitle" value="' + esc(cur ? cur.title : '') + '" maxlength="80"></div>' +
+        '<div class="form-row"><label class="form-label">封面图 URL</label><input class="input" id="gCover" value="' + esc(cur ? cur.cover : '') + '" placeholder="https://" maxlength="500"></div>' +
+        '<div class="form-row"><label class="form-label">备注</label><textarea class="textarea" id="gNote" rows="2" maxlength="200">' + esc(cur ? cur.note : '') + '</textarea></div>' +
+        '<div class="form-row"><label class="form-label">链接（最多 3 个）</label>' + lrows + '</div>',
+      okText: '保存',
+      onOk: async (node, close) => {
+        const title = node.querySelector('#gTitle').value.trim();
+        if (!title) { App.toast('请填写标题', 'warn'); return false; }
+        const glinks = [0, 1, 2].map((i) => ({ label: node.querySelector('#gLbl' + i).value.trim(), url: node.querySelector('#gUrl' + i).value.trim() }))
+          .filter((l) => l.url);
+        const item = { id: cur ? cur.id : genId('g'), title,
+          cover: node.querySelector('#gCover').value.trim(), note: node.querySelector('#gNote').value.trim(), links: glinks };
+        const i = list.findIndex((g) => g.id === item.id);
+        if (i >= 0) list[i] = item; else list.push(item);
+        await saveProfile({ gameCards: list }); close();
+      },
+    });
+  }
+  async function removeGameCard(id) {
+    const list = (profile.gameCards || []).filter((g) => g.id !== id);
+    await saveProfile({ gameCards: list });
+  }
+
+  /* ---------------- 编辑：连接 / 域名 ---------------- */
+  function addConnection() {
+    const m = App.modal({
+      title: '添加连接', size: 'sm',
+      body:
+        '<div class="form-row"><label class="form-label">类型</label><select class="input" id="cType">' +
+          '<option value="link">链接（如 GitHub / 自定义站点）</option>' +
+          '<option value="domain">自定义域名（需 DNS 验证归属）</option></select></div>' +
+        '<div id="cLinkBox">' +
+          '<div class="form-row"><label class="form-label">平台</label><input class="input" id="cPlat" value="website" maxlength="20"></div>' +
+          '<div class="form-row"><label class="form-label">名称</label><input class="input" id="cLabel" value="" maxlength="40"></div>' +
+          '<div class="form-row"><label class="form-label">URL</label><input class="input" id="cUrl" placeholder="https://" maxlength="500"></div>' +
+        '</div>' +
+        '<div id="cDomainBox" style="display:none">' +
+          '<div class="form-row"><label class="form-label">域名</label><input class="input" id="cDomain" placeholder="example.com" maxlength="120"></div>' +
+          '<div class="form-row"><label class="form-label">备注</label><input class="input" id="cNote" maxlength="120"></div>' +
+        '</div>',
+      okText: '添加',
+      onOk: async (node, close) => {
+        const type = node.querySelector('#cType').value;
+        if (type === 'link') {
+          const url = node.querySelector('#cUrl').value.trim();
+          if (!/^https?:\/\//i.test(url)) { App.toast('请填写合法 URL', 'warn'); return false; }
+          const list = (profile.connections || []).filter((c) => c.type !== 'domain');
+          list.push({ type: 'link', platform: node.querySelector('#cPlat').value.trim() || 'website',
+            label: node.querySelector('#cLabel').value.trim(), url });
+          await saveProfile({ connections: list }); close();
+        } else {
+          const domain = node.querySelector('#cDomain').value.trim().toLowerCase();
+          if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(domain)) { App.toast('域名格式不正确', 'warn'); return false; }
+          try {
+            const d = await API.Users.domainConnection({ action: 'start', domain, note: node.querySelector('#cNote').value.trim() });
+            const list = (profile.connections || []).filter((c) => !(c.type === 'domain' && c.domain === domain));
+            list.push({ type: 'domain', domain, note: d.note || '', token: d.token, verified: false, autoAdded: false, status: 'pending' });
+            await saveProfile({ connections: list });
+ close();
+          } catch (e) { App.toastError(e); return false; }
+        }
+      },
+    });
+    const sel = m.body.querySelector('#cType');
+    const linkBox = m.body.querySelector('#cLinkBox');
+    const domBox = m.body.querySelector('#cDomainBox');
+    sel.onchange = () => { linkBox.style.display = sel.value === 'link' ? '' : 'none'; domBox.style.display = sel.value === 'domain' ? '' : 'none'; };
+  }
+  async function verifyDomain(domain) {
+    try {
+      const d = await API.Users.domainConnection({ action: 'verify', domain });
+      if (d.verified) App.toast('域名验证成功 ✓', 'success');
+      else App.toast('尚未检测到 TXT 记录，请稍候重试', 'warn');
+      await reloadProfile();
+    } catch (e) { App.toastError(e); }
+  }
+  async function autoDomain(domain) {
+    try {
+      const d = await API.Users.domainConnection({ action: 'auto', domain });
+      if (d.autoAdded) App.toast('已自动添加 DNS 记录并验证 ✓', 'success');
+      else App.toast((d.reason ? ('自动添加失败：' + d.reason + '。') : '') + '已为你生成手动添加说明', 'warn');
+      await reloadProfile();
+    } catch (e) { App.toastError(e); }
+  }
+  async function removeDomain(domain) {
+    if (!confirm('确定移除域名 ' + domain + ' 的连接？')) return;
+    try { await API.Users.domainConnection({ action: 'remove', domain }); await reloadProfile(); }
+    catch (e) { App.toastError(e); }
+  }
+  async function removeLink(url) {
+    const list = (profile.connections || []).filter((c) => !(c.type === 'link' && c.url === url));
+    await saveProfile({ connections: list });
+  }
+
+  /* ---------------- 持久化 ---------------- */
+  async function saveProfile(patch) {
+    try {
+      const d = await API.Users.updateProfile(patch);
+      profile = d.user; isSelf = d.isSelf;
+      rerenderAll();
+      App.toast('已保存', 'success');
+    } catch (e) { App.toastError(e); }
+  }
+  async function reloadProfile() {
+    const d = await API.Users.detail(key || (profile && profile.id));
+    profile = d.user; isSelf = d.isSelf; following = d.following;
+    rerenderAll();
+  }
+  function rerenderAll() {
+    $('#main').querySelector('.pf-head').innerHTML = '';
+    $$('#main .pf-section').forEach((s) => s.remove());
+    renderHeader();   // 内部会重新追加 关于我/正在玩/游戏卡片/连接 各 section
+    renderSide();
+  }
+
+  /* ---------------- 加载 ---------------- */
+  async function load() {
+    try {
+      const target = key || (App.Session.user && App.Session.user.id);
+      if (!target) { location.href = '/login.html'; return; }
+      const d = await API.Users.detail(target);
+      profile = d.user; isSelf = d.isSelf; following = d.following;
+      const head = $('#main').querySelector('.pf-head');
+      head.innerHTML = '';
+      $$('#main .pf-section').forEach((s) => s.remove());
+      renderHeader();
+      renderSide();
+    } catch (e) {
+      $('#main').innerHTML = '<div class="pf-section">' +
+        '<div class="empty">加载失败：' + esc(e.message || e) + '</div>' +
+        '<div style="text-align:center"><a class="btn btn-primary" href="/home.html">返回主页</a></div></div>';
+      $('#side').innerHTML = '';
+    }
+  }
+
+  App.boot({
+    nav: '',
+    onReady: async function () { await load(); },
+  });
+})();
+</script>
+</body>
+</html>

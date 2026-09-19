@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="MarytOpens 更新日志">
+  <title>更新日志 · MarytOpens</title>
+  <link rel="stylesheet" href="/assets/css/main.css">
+  <link rel="icon" href="/favicon.ico">
+</head>
+<body>
+  <header id="navbar"></header>
+  <main class="container container-mid" style="padding-top:24px;padding-bottom:60px">
+    <div class="section-head">
+      <div class="eyebrow">Changelog</div>
+      <h1>更新日志</h1>
+      <p class="muted">每一次更新的内容都在这里记录。</p>
+    </div>
+    <div id="clList" class="card card-pad">
+      <div class="muted text-center">加载中…</div>
+    </div>
+  </main>
+  <footer id="footer"></footer>
+
+  <script src="/assets/js/i18n.js"></script>
+  <script src="/assets/js/api.js"></script>
+  <script src="/assets/js/app.js"></script>
+  <script>
+    const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    App.boot();
+    (async () => {
+      const T = (k, d) => (window.I18N ? I18N.t(k, d) : (d || k));
+      const box = document.getElementById('clList');
+      try {
+        const d = await API.get('/api/changelog');
+        const items = (d && d.items) || [];
+        if (!items.length) { box.innerHTML = '<div class="muted text-center">暂无更新记录。</div>'; return; }
+        box.innerHTML = items.map((it) =>
+          '<div class="cl-item">' +
+            '<div class="cl-head"><b>' + esc(it.version || '更新') + '</b>' +
+            (it.date ? ' <span class="muted small">' + esc(it.date) + '</span>' : '') + '</div>' +
+            '<div class="cl-body prose">' + App.markdown(it.body || '') + '</div>' +
+          '</div>').join('');
+      } catch (e) {
+        box.innerHTML = '<div class="muted text-center">加载失败。</div>';
+      }
+    })();
+  </script>
+</body>
+</html>

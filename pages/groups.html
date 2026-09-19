@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>群组 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+
+  <meta name="theme-color" content="#6366f1">
+  <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.json">
+  <script>
+    (function() {
+      const apiMeta = document.querySelector('meta[name="mo-api"]');
+      const api = (apiMeta && apiMeta.content) || 'https://api.example.com';
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js?api=' + encodeURIComponent(api)).then(function(reg) {
+          reg.addEventListener('updatefound', function() {
+            const wb = reg.installing;
+            if (wb) wb.addEventListener('statechange', function() {
+              if (wb.state === 'activated') wb.postMessage({ type: 'mo-skip-waiting' });
+            });
+          });
+        }).catch(function() {});
+      }
+    })();
+  </script>
+<link rel="stylesheet" href="/assets/css/main.css">
+</head>
+<body>
+
+<header id="navbar"></header>
+
+<div class="layout container-mid">
+  <aside class="sidebar" id="sidebar">
+    <div class="side-group">
+      <div class="section-title" data-i18n="group.title">群组</div>
+      <a class="side-item active" href="/groups.html"><span data-i18n="group.discover">发现群组</span></a>
+      <a class="side-item" href="/groups.html?mine=1"><span data-i18n="group.mine">我的群组</span></a>
+    </div>
+    <div class="side-group">
+      <div class="section-title" data-i18n="bd.quick">快捷入口</div>
+      <a class="side-item" href="/home.html"><span data-i18n="nav.home">首页</span></a>
+      <a class="side-item" href="/channels.html"><span data-i18n="nav.channels">版块</span></a>
+      <a class="side-item" href="/editor.html"><span data-i18n="nav.write">写文章</span></a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <section id="viewList">
+      <div class="card card-pad row-between wrap" style="gap:12px">
+        <div>
+          <h2 class="mb-0" data-i18n="group.title">群组</h2>
+          <p class="small muted mb-0" data-i18n="group.subtitle">加入频道的用户可以创建与频道关联的独立群组，分类和隶属显示对应频道。</p>
+        </div>
+        <button class="btn btn-primary btn-sm" id="btnCreate" hidden data-i18n="group.create">创建群组</button>
+      </div>
+      <div class="channel-grid" id="groupGrid"></div>
+    </section>
+
+    <section id="viewDetail" hidden>
+      <div class="card" id="gHeader"></div>
+      <div class="tabs" id="gTabs">
+        <button class="tab active" data-tab="feed" data-i18n="group.feed">动态</button>
+        <button class="tab" data-tab="members" data-i18n="group.members">成员</button>
+      </div>
+      <div class="tab-panel active" id="paneFeed">
+        <div class="card card-pad muted" data-i18n="group.feedSoon">群组动态功能即将上线，现在可以先在成员列表中互动。</div>
+      </div>
+      <div class="tab-panel" id="paneMembers">
+        <div class="table-wrap"><table class="table"><thead><tr><th data-i18n="group.member">成员</th><th data-i18n="group.role">角色</th><th data-i18n="group.joinedAt">加入时间</th></tr></thead><tbody id="memberRows"></tbody></table></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<footer id="footer"></footer>
+<nav id="tabbar"></nav>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script>
+(function () {
+  'use strict';
+  const { $, $$, esc, icon, toast, toastError, modal, confirmDialog } = App;
+  const T = (k, fb) => I18N.t(k) || fb || k;
+
+  const state = { items: [], viewing: null };
+
+  function fmt(ts) { return ts ? I18N.formatDate(ts, 'short') : '—'; }
+
+  async function loadList() {
+    const grid = $('#groupGrid');
+    grid.innerHTML = '<div class="skeleton sk-line w80"></div><div class="skeleton sk-line w60"></div>';
+    try {
+      const params = new URLSearchParams(location.search);
+      const mine = params.get('mine') === '1';
+      const boardId = params.get('boardId');
+      const channelId = params.get('channelId');
+      $('#btnCreate').hidden = !App.Session.isLoggedIn;
+      if (mine) document.title = T('group.mine', '我的群组') + ' · MarytOpens';
+      const d = mine ? await API.Groups.mine() : await API.Groups.list({ boardId, channelId });
+      state.items = d.items || [];
+      if (!state.items.length) {
+        grid.innerHTML = App.emptyState(T('group.empty', '还没有群组'), T('group.emptyHint', '加入频道后即可创建关联群组'), 'users',
+          '<a class="btn btn-primary btn-sm" href="/channels.html">' + T('nav.channels', '去版块') + '</a>');
+        return;
+      }
+      grid.innerHTML = state.items.map((g) =>
+        '<div class="card card-pad channel-card" data-id="' + esc(g.id) + '" style="cursor:pointer">' +
+          '<div class="row" style="gap:12px;align-items:flex-start">' +
+            '<div style="font-size:42px;line-height:1">' + App.iconImage(g.iconUrl, g.icon || '👥', 'font-size:42px') + '</div>' +
+            '<div style="flex:1;min-width:0">' +
+              '<div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">' +
+                '<h3 class="mb-0" style="font-size:18px">' + esc(g.name) + '</h3>' +
+                (g.visibility === 'private' ? '<span class="badge badge-warn">' + T('group.private', '私密') + '</span>' : '') +
+              '</div>' +
+              '<p class="small muted mb-2" style="line-height:1.5">' + esc(g.description || T('group.noDesc', '暂无简介')) + '</p>' +
+              '<div class="small muted">' + icon('users') + ' ' + (g.memberCount || 0) + ' · ' +
+                (g.board && g.channel ? esc(g.board.name) + ' / ' + esc(g.channel.name) : T('group.channelLink', '关联频道')) + '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>').join('');
+      $$('#groupGrid .channel-card').forEach((c) => c.onclick = () => openDetail(c.dataset.id));
+    } catch (e) { toastError(e); }
+  }
+
+  async function openDetail(id) {
+    const g = state.items.find((x) => x.id === id);
+    if (!g) return;
+    state.viewing = g;
+    $('#viewList').hidden = true;
+    $('#viewDetail').hidden = false;
+    document.title = esc(g.name) + ' · MarytOpens';
+    const isMember = g.isMember;
+    const isAdmin = g.isAdmin;
+    $('#gHeader').innerHTML =
+      '<div class="row" style="gap:16px;align-items:flex-start;flex-wrap:wrap">' +
+        '<div style="font-size:64px;line-height:1">' + App.iconImage(g.iconUrl, g.icon || '👥', 'font-size:64px') + '</div>' +
+        '<div style="flex:1;min-width:0">' +
+          '<h2 class="mb-0">' + esc(g.name) + ' ' + (g.visibility === 'private' ? '<span class="badge badge-warn">' + T('group.private', '私密') + '</span>' : '') + '</h2>' +
+          '<p class="muted mb-2">' + esc(g.description || T('group.noDesc', '暂无简介')) + '</p>' +
+          '<div class="small muted mb-3">' + icon('users') + ' ' + (g.memberCount || 0) + ' ' + T('group.members', '成员') + ' · ' +
+            (g.board ? '<a href="/channels.html?id=' + esc(g.board.id) + '">' + esc(g.board.name) + '</a>' : '') + ' / ' +
+            (g.channel ? '<a href="/channels.html?board=' + esc(g.board.id) + '&channel=' + esc(g.channel.id) + '">' + esc(g.channel.name) + '</a>' : '') + '</div>' +
+          '<div class="row" style="gap:8px">' +
+            (isMember
+              ? '<button class="btn btn-soft" id="gLeave">' + T('group.leave', '退出') + '</button>'
+              : '<button class="btn btn-primary" id="gJoin">' + T('group.join', '加入') + '</button>') +
+            (isAdmin ? '<button class="btn btn-soft" id="gEdit">' + T('common.edit', '编辑') + '</button>' : '') +
+            (isAdmin ? '<button class="btn btn-danger" id="gDel">' + T('common.delete', '删除') + '</button>' : '') +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    bindDetailActions(g);
+    loadMembers(g.id);
+  }
+
+  function bindDetailActions(g) {
+    const j = $('#gJoin');
+    if (j) j.onclick = async () => { try { await API.Groups.join(g.id); toast.success(T('group.joined', '已加入')); openDetail(g.id); } catch (e) { toastError(e); } };
+    const l = $('#gLeave');
+    if (l) l.onclick = async () => { try { await API.Groups.leave(g.id); toast.success(T('group.left', '已退出')); loadList(); $('#viewList').hidden = false; $('#viewDetail').hidden = true; } catch (e) { toastError(e); } };
+    const e = $('#gEdit');
+    if (e) e.onclick = () => openEditor(g);
+    const d = $('#gDel');
+    if (d) d.onclick = async () => {
+      if (!(await confirmDialog(T('group.confirmDelete', '删除群组？'), { danger: true }))) return;
+      try { await API.Groups.remove(g.id); toast.success(T('group.deleted', '已删除')); loadList(); $('#viewList').hidden = false; $('#viewDetail').hidden = true; }
+      catch (err) { toastError(err); }
+    };
+  }
+
+  async function loadMembers(id) {
+    const tb = $('#memberRows');
+    tb.innerHTML = '<tr><td colspan="3"><div class="skeleton sk-line w60"></div></td></tr>';
+    try {
+      const d = await API.Groups.members(id);
+      const list = d.items || [];
+      tb.innerHTML = list.map((m) =>
+        '<tr>' +
+          '<td><div class="row" style="gap:10px;align-items:center"><img class="avatar" src="' + App.avatar(m) + '" alt="">' +
+            '<div><div>' + esc(m.displayName || m.username) + '</div><div class="small muted">@' + esc(m.username) + '</div></div></div></td>' +
+          '<td><span class="badge ' + (m.role === 'owner' ? 'badge-primary' : (m.role === 'admin' ? 'badge-soft' : 'badge-ghost')) + '">' + esc(m.role || 'member') + '</span></td>' +
+          '<td class="small muted">' + fmt(m.joinedAt) + '</td>' +
+        '</tr>').join('') || '<tr><td colspan="3" class="muted">' + T('group.noMembers', '暂无成员') + '</td></tr>';
+    } catch (e) { toastError(e); }
+  }
+
+  function openEditor(g) {
+    const isEdit = !!g;
+    const canA = App.canAnnounce();
+    let iconUrl = isEdit ? (g.iconUrl || '') : '';
+    const body = document.createElement('div');
+    body.innerHTML =
+      '<div class="field"><label class="label">' + T('group.name', '群组名称') + '</label>' +
+        '<input class="input" id="gName" maxlength="40" value="' + esc(isEdit ? g.name : '') + '"></div>' +
+      '<div class="row" style="gap:12px">' +
+        '<div class="field" style="flex:none"><label class="label">' + T('group.icon', '图标') + '</label>' +
+          '<input class="input" id="gIcon" maxlength="4" style="width:72px;text-align:center;font-size:18px" value="' + esc(isEdit ? (g.icon || '👥') : '👥') + '"></div>' +
+        '<div class="field" style="flex:1"><label class="label">' + T('group.visibility', '可见性') + '</label>' +
+          '<select class="input" id="gVis">' +
+            '<option value="public"' + (isEdit && g.visibility !== 'private' ? ' selected' : '') + '>' + T('group.public', '公开') + '</option>' +
+            '<option value="private"' + (isEdit && g.visibility === 'private' ? ' selected' : '') + '>' + T('group.private', '私密') + '</option>' +
+          '</select></div>' +
+      '</div>' +
+      '<div class="field"><label class="label">自定义图标（上传，可选）</label>' +
+        '<div class="upload-zone" id="gIconZone"><p>点击或拖拽上传图标图（≤2MB）</p></div>' +
+        '<img id="gIconPreview" alt="" style="max-height:48px;border-radius:8px;display:' + (iconUrl ? '' : 'none') + ';margin-top:8px">' +
+      '</div>' +
+      '<div class="field"><label class="label">' + T('group.description', '简介') + '</label>' +
+        '<textarea class="textarea" id="gDesc" rows="3" maxlength="300">' + esc(isEdit ? (g.description || '') : '') + '</textarea></div>' +
+      (canA ? '<div class="switch-row"><span><span class="sr-title">官方群组</span><span class="sr-desc">标记为官方群组，展示在「官方栏」</span></span>' +
+        '<label class="switch"><input type="checkbox" id="gOfficial"' + (isEdit && g.official ? ' checked' : '') + '><span class="track"></span></label></div>' : '') +
+      (isEdit && canA ? '<div class="field"><button class="btn btn-soft btn-sm" id="gCommittee" type="button">管理委员</button></div>' : '') +
+      (!isEdit ? '<div class="field"><label class="label">' + T('group.linkChannel', '关联频道') + '</label>' +
+        '<div class="row" style="gap:8px">' +
+          '<input class="input" id="gBoard" placeholder="boardId" value="' + esc(new URLSearchParams(location.search).get('boardId') || '') + '">' +
+          '<input class="input" id="gChannel" placeholder="channelId" value="' + esc(new URLSearchParams(location.search).get('channelId') || '') + '">' +
+        '</div><p class="small muted">' + T('group.linkChannelHint', '需要先加入该频道') + '</p></div>' : '');
+    if (iconUrl) { const pr = body.querySelector('#gIconPreview'); if (pr) pr.src = API.fileURL(iconUrl); }
+    App.uploadZone(body.querySelector('#gIconZone'), 'image', (url) => {
+      iconUrl = url;
+      const pr = body.querySelector('#gIconPreview');
+      if (pr) { pr.src = API.fileURL(url); pr.style.display = ''; }
+    });
+    const cmtBtn = body.querySelector('#gCommittee');
+    if (cmtBtn) cmtBtn.onclick = () => {
+      App.openCommitteeManager({
+        list: () => API.Groups.committee(g.id),
+        add: (data) => API.Groups.addCommittee(g.id, data),
+        update: (uid, data) => API.Groups.updateCommittee(g.id, uid, data),
+        remove: (uid) => API.Groups.removeCommittee(g.id, uid),
+        setChairman: (uid) => API.Groups.setChairman(g.id, uid),
+      });
+    };
+    modal({
+      title: isEdit ? T('group.edit', '编辑群组') : T('group.create', '创建群组'),
+      body, size: 'md',
+      okText: isEdit ? T('common.save', '保存') : T('group.create', '创建'),
+      async onOk() {
+        const payload = {
+          name: $('#gName', body).value.trim(),
+          icon: $('#gIcon', body).value.trim() || '👥',
+          iconUrl: iconUrl,
+          description: $('#gDesc', body).value.trim(),
+          visibility: $('#gVis', body).value,
+          official: canA ? !!($('#gOfficial', body) && $('#gOfficial', body).checked) : undefined,
+        };
+        if (payload.name.length < 2) { toast.warn(T('group.nameShort', '名称至少 2 个字符')); return false; }
+        if (!isEdit) {
+          payload.boardId = $('#gBoard', body).value.trim();
+          payload.channelId = $('#gChannel', body).value.trim();
+          if (!payload.boardId || !payload.channelId) { toast.warn(T('group.needChannel', '请选择关联频道')); return false; }
+        }
+        if (isEdit) await API.Groups.update(g.id, payload);
+        else await API.Groups.create(payload);
+        toast.success(isEdit ? T('group.updated', '已更新') : T('group.created', '已创建'));
+        loadList();
+        return true;
+      },
+    });
+  }
+
+  function bindTabs() {
+    $$('#gTabs .tab').forEach((t) => t.onclick = () => {
+      $$('#gTabs .tab').forEach((x) => x.classList.toggle('active', x === t));
+      $$('#viewDetail .tab-panel').forEach((p) => p.classList.toggle('active', p.id === 'pane' + (t.dataset.tab[0].toUpperCase() + t.dataset.tab.slice(1))));
+    });
+  }
+
+  App.boot({ nav: 'channels', requireAuth: false, onReady() {
+    $('#btnCreate').onclick = () => openEditor(null);
+    bindTabs();
+    loadList();
+  }});
+})();
+</script>
+</body>
+</html>

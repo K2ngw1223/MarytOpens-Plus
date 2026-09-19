@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>版块管理 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+
+  <meta name="theme-color" content="#6366f1">
+  <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.json">
+  <script>
+    (function() {
+      const apiMeta = document.querySelector('meta[name="mo-api"]');
+      const api = (apiMeta && apiMeta.content) || 'https://api.example.com';
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js?api=' + encodeURIComponent(api)).then(function(reg) {
+          reg.addEventListener('updatefound', function() {
+            const wb = reg.installing;
+            if (wb) wb.addEventListener('statechange', function() {
+              if (wb.state === 'activated') wb.postMessage({ type: 'mo-skip-waiting' });
+            });
+          });
+        }).catch(function() {});
+      }
+    })();
+  </script>
+<link rel="stylesheet" href="/assets/css/main.css">
+</head>
+<body>
+
+<header id="navbar"></header>
+
+<div class="admin-layout">
+
+  <!-- ============================== 左侧导航 ============================== -->
+  <aside class="admin-side">
+      <div class="side-group">
+        <div class="section-title" id="sideChName">版块管理</div>
+        <button class="side-item active" data-pane="general">基本信息</button>
+        <button class="side-item" data-pane="channels">频道管理</button>
+        <button class="side-item" data-pane="roles">身份组与权限</button>
+        <button class="side-item" data-pane="members">成员与角色分配</button>
+        <button class="side-item" data-pane="reports">举报处理</button>
+        <button class="side-item" data-pane="interactions">互动与机器人</button>
+        <button class="side-item" data-pane="committee">官方委员</button>
+        <button class="side-item" data-pane="danger">危险区域</button>
+      </div>
+    <div class="side-group">
+      <div class="section-title" data-i18n="common.back">返回</div>
+      <a class="side-item" id="backToChannel" href="/channels.html">返回版块</a>
+      <a class="side-item" href="/home.html" data-i18n="nav.home">首页</a>
+    </div>
+  </aside>
+
+  <!-- ================================ 主区 ================================ -->
+  <main class="admin-main">
+
+    <!-- 基本信息 -->
+    <section class="tab-panel active" id="pane-general">
+      <div class="admin-header">
+        <div><h2>基本信息</h2><p>版块名称、图标、横幅与可见性设置</p></div>
+        <button class="btn btn-primary" id="btnSaveGeneral" data-i18n="common.save">保存</button>
+      </div>
+
+      <div class="card card-pad">
+        <div class="row" style="gap:16px;align-items:flex-start" >
+          <div class="field" style="flex:0 0 110px">
+            <label class="label" data-i18n="bd.icon">版块图标</label>
+            <input class="input text-center" id="cfIcon" maxlength="4" style="font-size:22px;height:52px">
+          </div>
+          <div class="field grow">
+            <label class="label" data-i18n="bd.name">版块名称</label>
+            <input class="input" id="cfName" maxlength="40">
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="label" data-i18n="bd.desc">版块简介</label>
+          <textarea class="textarea" id="cfDesc" maxlength="300" rows="3"></textarea>
+        </div>
+
+        <div class="field">
+          <label class="label">自定义图标（上传，可选）</label>
+          <div class="upload-zone" id="cfIconZone"><p>点击或拖拽上传图标图（≤2MB，建议 1:1）</p></div>
+          <div class="row mt-2" style="gap:8px;align-items:center">
+            <img id="cfIconPreview" alt="" style="max-height:48px;border-radius:8px;display:none">
+            <button class="btn btn-sm btn-ghost" id="cfIconClear" hidden>移除图标</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="label" data-i18n="bd.banner">版块横幅</label>
+          <div class="upload-zone" id="cfBannerZone">
+            <p>点击或拖拽上传横幅图（建议 1200×300，≤5MB）</p>
+          </div>
+          <div class="row mt-2" style="gap:8px;align-items:center">
+            <img id="cfBannerPreview" alt="" style="max-height:70px;border-radius:8px;display:none">
+            <button class="btn btn-sm btn-ghost" id="cfBannerClear" hidden>移除横幅</button>
+          </div>
+        </div>
+
+        <div class="row" style="gap:16px">
+          <div class="field grow">
+            <label class="label" data-i18n="post.visibility">可见性</label>
+            <select class="select" id="cfVis">
+              <option value="public">公开版块 · 所有人可浏览</option>
+              <option value="private">私密版块 · 仅成员可见</option>
+            </select>
+          </div>
+          <div class="field" style="flex:0 0 160px">
+            <label class="label">排序权重</label>
+            <input class="input" id="cfOrder" type="number" value="0">
+            <div class="hint">数值越大越靠前</div>
+          </div>
+        </div>
+
+        <div class="switch-row" id="cfOfficialRow" style="display:none">
+          <span><span class="sr-title">官方版块</span><span class="sr-desc">标记为官方版块，展示在首页「官方栏」</span></span>
+          <label class="switch"><input type="checkbox" id="cfOfficial"><span class="track"></span></label>
+        </div>
+
+        <div class="switch-row">
+          <span><span class="sr-title">敏感内容</span><span class="sr-desc">开启后，访问该版块会霸屏提醒用户并需确认继续</span></span>
+          <label class="switch"><input type="checkbox" id="cfSensitive"><span class="track"></span></label>
+        </div>
+        <div class="switch-row">
+          <span><span class="sr-title">剧透内容</span><span class="sr-desc">开启后，访问该版块会霸屏提醒用户可能含剧透</span></span>
+          <label class="switch"><input type="checkbox" id="cfSpoiler"><span class="track"></span></label>
+        </div>
+      </div>
+    </section>
+
+    <!-- 频道管理 -->
+    <section class="tab-panel" id="pane-channels">
+      <div class="admin-header">
+        <div><h2>频道管理</h2><p>频道挂在版块下，拥有独立作用域与身份组；版主可管理本版块全部频道</p></div>
+        <button class="btn btn-primary" id="btnAddChannel" data-i18n="ch.create">创建频道</button>
+      </div>
+      <div class="card card-pad" id="channelEditor"></div>
+    </section>
+
+    <!-- 身份组与权限 -->
+    <section class="tab-panel" id="pane-roles">
+      <div class="admin-header">
+        <div><h2>身份组与权限</h2><p id="roleScopeHint">当前作用域的权限仅在该区域内生效</p></div>
+        <div class="row" style="gap:8px">
+          <select class="select" id="roleScopeSel" style="min-width:200px"></select>
+          <button class="btn btn-primary" id="btnNewRole" data-i18n="role.create">创建身份组</button>
+        </div>
+      </div>
+      <div class="grid" style="grid-template-columns:280px 1fr;gap:16px;align-items:start">
+        <div class="card card-pad">
+          <div class="section-title" data-i18n="role.title">身份组</div>
+          <div id="roleSideList" style="display:flex;flex-direction:column;gap:6px"></div>
+        </div>
+        <div class="card card-pad" id="roleDetail">
+          <p class="muted small">从左侧选择一个身份组开始编辑。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 成员 -->
+    <section class="tab-panel" id="pane-members">
+      <div class="admin-header">
+        <div><h2>成员与角色分配</h2><p>为版块成员分配身份组、禁言、改名</p></div>
+        <div class="input-icon" style="max-width:240px">
+          <input class="input input-sm" id="memSearch" type="search" placeholder="搜索成员" data-i18n-ph="common.search">
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th data-i18n="ch.members">成员</th><th data-i18n="role.title">身份组</th><th data-i18n="ch.joinedAt">加入时间</th><th data-i18n="common.status">状态</th><th></th></tr></thead>
+          <tbody id="memRows"></tbody>
+        </table>
+      </div>
+      <div class="text-center mt-4"><button class="btn btn-sm" id="btnMoreMem" hidden data-i18n="common.loadMore">加载更多</button></div>
+    </section>
+
+    <!-- 举报 -->
+    <section class="tab-panel" id="pane-reports">
+      <div class="admin-header">
+        <div><h2>举报处理</h2><p>处理本版块作用域内的举报</p></div>
+        <select class="select" id="repStatus" style="max-width:180px">
+          <option value="open">待处理</option>
+          <option value="processing">处理中</option>
+          <option value="resolved">已处理</option>
+          <option value="">全部</option>
+        </select>
+      </div>
+      <div id="repList" style="display:flex;flex-direction:column;gap:10px"></div>
+    </section>
+
+    <!-- 互动与机器人 -->
+    <section class="tab-panel" id="pane-interactions">
+      <div class="admin-header">
+        <div><h2>互动与机器人</h2><p>欢迎机器人、管理机器人、表态（反应）开关与新手教程</p></div>
+        <button class="btn btn-primary" id="btnSaveInteractions" data-i18n="common.save">保存</button>
+      </div>
+
+      <div class="card card-pad">
+        <div class="section-title">欢迎机器人</div>
+        <div class="switch-row">
+          <span><span class="sr-title">启用内置机器人</span><span class="sr-desc">关闭后 /命令（欢迎、踢人、禁言等）将不再响应</span></span>
+          <label class="switch"><input type="checkbox" id="itBot"><span class="track"></span></label>
+        </div>
+        <div class="switch-row">
+          <span><span class="sr-title">新成员加入时发送欢迎语</span><span class="sr-desc">成员加入版块后，在欢迎频道自动发送欢迎消息</span></span>
+          <label class="switch"><input type="checkbox" id="itWelcomeOn"><span class="track"></span></label>
+        </div>
+        <div class="row" style="gap:16px;flex-wrap:wrap">
+          <div class="field grow" style="min-width:220px">
+            <label class="label">欢迎频道</label>
+            <select class="select" id="itWelcomeCh"><option value="none">不发送</option></select>
+          </div>
+        </div>
+        <div class="field">
+          <label class="label">欢迎语</label>
+          <textarea class="textarea" id="itWelcomeMsg" rows="2" maxlength="500"></textarea>
+          <div class="hint">支持占位符 <code>${user}</code>，会被替换为成员昵称（如「欢迎加入 ${user}！」）</div>
+        </div>
+        <div class="field">
+          <label class="label">欢迎图（图片地址或上传）</label>
+          <div class="row" style="gap:8px">
+            <input class="input grow" id="itWelcomeImg" placeholder="https://… 或上传">
+            <div class="upload-zone" id="itWelcomeImgZone" style="flex:0 0 160px"><p>上传图片</p></div>
+          </div>
+        </div>
+        <div class="field">
+          <label class="label">新手教程（Markdown）</label>
+          <textarea class="textarea" id="itOnboarding" rows="5" maxlength="2000" placeholder="写给新成员的区域说明、规则与玩法…"></textarea>
+          <div class="hint">支持 Markdown，新成员加入时可在欢迎频道查看。</div>
+        </div>
+      </div>
+
+      <div class="card card-pad mt-4">
+        <div class="section-title">表态 / 反应</div>
+        <div class="switch-row">
+          <span><span class="sr-title">允许全版块表态（Discord 式点表情）</span><span class="sr-desc">关闭后仅管理者可重新开启；各频道可单独覆盖</span></span>
+          <label class="switch"><input type="checkbox" id="itReact"><span class="track"></span></label>
+        </div>
+        <div class="section-title mt-4">频道表态开关</div>
+        <div id="itChannelList" style="display:flex;flex-direction:column;gap:6px"></div>
+      </div>
+    </section>
+
+    <!-- 官方委员 -->
+    <section class="tab-panel" id="pane-committee">
+      <div class="admin-header">
+        <div><h2>官方委员</h2><p>为官方版块设置委员与委员长（业绩 / 功勋、荣誉）；委员长至多一名。仅官方账号或超级管理员可管理。</p></div>
+        <button class="btn btn-primary" id="btnBoardCommittee" data-i18n="committee.manage">管理委员</button>
+      </div>
+      <div class="card card-pad muted small" id="committeeInfo">点击右上角「管理委员」打开委员面板。</div>
+    </section>
+
+    <!-- 危险区域 -->
+    <section class="tab-panel" id="pane-danger">
+      <div class="admin-header"><div><h2>危险区域</h2><p>以下操作不可撤销，请谨慎执行</p></div></div>
+      <div class="card card-pad tip-danger">
+        <h4 style="margin:0 0 6px">删除版块</h4>
+        <p class="small muted">删除后版块下的频道与身份组配置将全部移除，频道内文章会变为无归属状态。仅版主与超级管理员可执行。</p>
+        <button class="btn btn-danger mt-4" id="btnDeleteChannel">永久删除该版块</button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer id="footer"></footer>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script src="/assets/js/channel_manage.js"></script>
+</body>
+</html>

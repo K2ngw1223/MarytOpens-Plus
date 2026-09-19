@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>文件下载 · MarytOpens</title>
+<style>
+  :root{--bg:#0c0f16;--card:#131826;--text:#e6e9f2;--muted:#9aa3b8;--accent:#6366f1;--border:#222a3d}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;padding:20px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:28px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+  h1{margin:0 0 6px;font-size:20px}
+  p.sub{margin:0 0 20px;color:var(--muted);font-size:13px;line-height:1.6}
+  label{display:block;font-size:13px;margin:12px 0 6px;color:var(--muted)}
+  input{width:100%;padding:10px 12px;border-radius:9px;border:1px solid var(--border);background:#0e1320;color:var(--text);font-size:14px}
+  input:focus{outline:none;border-color:var(--accent)}
+  .row{display:flex;gap:10px}
+  .row>*{flex:1}
+  button{margin-top:18px;width:100%;padding:11px;border:none;border-radius:9px;background:var(--accent);color:#fff;font-size:15px;cursor:pointer}
+  button:hover{filter:brightness(1.08)}
+  .err{color:#ff6b6b;font-size:12px;margin-top:10px;min-height:14px}
+  a{color:var(--accent)}
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>文件下载</h1>
+    <p class="sub">输入分享链接，或填写「拥有者 / 文件 ID」即可前往下载。需要提取码时在对应框填写。</p>
+    <label>分享链接（可整段粘贴）</label>
+    <input id="link" placeholder="https://example.com/f/owner/fileId">
+    <label>拥有者（owner）</label>
+    <input id="owner" placeholder="例如 u_abc123">
+    <div class="row">
+      <div><label>文件 ID</label><input id="id" placeholder="例如 f_xyz"></div>
+      <div><label>提取码</label><input id="code" placeholder="可选"></div>
+    </div>
+    <button id="go">前往下载</button>
+    <div class="err" id="err"></div>
+  </div>
+  <script>
+    (function () {
+      var q = new URLSearchParams(location.search);
+      var lp = q.get('link');
+      if (lp) document.getElementById('link').value = lp;
+      function go() {
+        var err = document.getElementById('err'); err.textContent = '';
+        var link = document.getElementById('link').value.trim();
+        if (link) {
+          try { var u = new URL(link); if (u.pathname.indexOf('/f/') === 0) { location.href = link; return; } } catch (e) {}
+          err.textContent = '链接格式不正确（应以 /f/ 开头）'; return;
+        }
+        var owner = document.getElementById('owner').value.trim();
+        var id = document.getElementById('id').value.trim();
+        if (!owner || !id) { err.textContent = '请填写链接，或同时填写拥有者与文件 ID'; return; }
+        var code = document.getElementById('code').value.trim();
+        location.href = '/f/' + encodeURIComponent(owner) + '/' + encodeURIComponent(id) + (code ? '?code=' + encodeURIComponent(code) : '');
+      }
+      document.getElementById('go').onclick = go;
+      document.getElementById('link').addEventListener('keydown', function (e) { if (e.key === 'Enter') go(); });
+    })();
+  </script>
+</body>
+</html>

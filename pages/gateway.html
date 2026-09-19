@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="MarytOpens 本地网关工具：IP 纯度检查、家庭网络设备管理、OpenClaw 部署">
+<title>网关工具 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#6366f1">
+<link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.json">
+<script>
+  (function() {
+    const apiMeta = document.querySelector('meta[name="mo-api"]');
+    const api = (apiMeta && apiMeta.content) || 'https://api.example.com';
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js?api=' + encodeURIComponent(api)).then(function(reg) {
+        reg.addEventListener('updatefound', function() {
+          const wb = reg.installing;
+          if (wb) wb.addEventListener('statechange', function() {
+            if (wb.state === 'activated') wb.postMessage({ type: 'mo-skip-waiting' });
+          });
+        });
+      }).catch(function() {});
+    }
+  })();
+</script>
+<link rel="stylesheet" href="/assets/css/main.css">
+</head>
+<body>
+
+<header id="navbar"></header>
+
+<div class="layout container-mid">
+  <main class="main">
+    <div class="card card-pad">
+      <h2 class="mb-0" data-i18n="gw.title">本地网关工具</h2>
+      <p class="small muted" data-i18n="gw.ipDesc">所有配置仅保存在你的账号下，令牌不会离开后端。</p>
+    </div>
+
+    <!-- 1. IP 纯度检查 -->
+    <section class="card card-pad gw-card">
+      <div class="gw-head">
+        <span class="gw-ico" id="ipIco"></span>
+        <div>
+          <h3 class="mb-0" data-i18n="gw.ipTitle">IP 纯度检查</h3>
+          <p class="gw-desc" data-i18n="gw.ipDesc">检测当前网络出口 IP 的信誉与类型。</p>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="btnIpCheck" data-i18n="gw.checkIp">检测我的 IP</button>
+      <div class="gw-result" id="ipResult" hidden></div>
+    </section>
+
+    <!-- 2. 家庭网络设备 -->
+    <section class="card card-pad gw-card">
+      <div class="gw-head">
+        <span class="gw-ico" id="rtIco"></span>
+        <div>
+          <h3 class="mb-0" data-i18n="gw.routerTitle">家庭网络设备</h3>
+          <p class="gw-desc" data-i18n="gw.routerDesc">管理并禁用接入路由器的设备。</p>
+        </div>
+      </div>
+
+      <div class="gw-config">
+        <div class="field">
+          <label class="label" data-i18n="gw.routerBase">路由器地址</label>
+          <input class="input" id="rtBase" placeholder="https://router.local" autocomplete="off">
+        </div>
+        <div class="field">
+          <label class="label" data-i18n="gw.routerToken">访问令牌</label>
+          <input class="input" id="rtToken" type="password" placeholder="••••••••" autocomplete="off">
+          <div class="hint" id="rtTokenHint"></div>
+        </div>
+        <button class="btn btn-soft" id="btnSaveRouter" data-i18n="gw.saveConfig">保存配置</button>
+      </div>
+
+      <div class="row gap-8" style="margin-top:12px">
+        <button class="btn btn-primary" id="btnListDevices" data-i18n="gw.devices">列出设备</button>
+      </div>
+      <div class="gw-devices" id="deviceList"></div>
+    </section>
+
+    <!-- 3. OpenClaw 部署 -->
+    <section class="card card-pad gw-card">
+      <div class="gw-head">
+        <span class="gw-ico" id="ocIco"></span>
+        <div>
+          <h3 class="mb-0" data-i18n="gw.openclawTitle">OpenClaw 部署</h3>
+          <p class="gw-desc" data-i18n="gw.openclawDesc">向你的 OpenClaw 实例推送部署。</p>
+        </div>
+      </div>
+
+      <div class="gw-config">
+        <div class="field">
+          <label class="label" data-i18n="gw.target">目标地址</label>
+          <input class="input" id="ocBase" placeholder="https://openclaw.example.com" autocomplete="off">
+        </div>
+        <div class="field">
+          <label class="label" data-i18n="gw.token">令牌</label>
+          <input class="input" id="ocToken" type="password" placeholder="••••••••" autocomplete="off">
+          <div class="hint" id="ocTokenHint"></div>
+        </div>
+        <button class="btn btn-soft" id="btnSaveOpenClaw" data-i18n="gw.saveConfig">保存配置</button>
+      </div>
+
+      <div class="field" style="margin-top:12px">
+        <label class="label" data-i18n="gw.deploy">部署载荷 (JSON)</label>
+        <textarea class="textarea" id="ocPayload" rows="4" placeholder='{"ref":"main"}'></textarea>
+      </div>
+      <button class="btn btn-primary" id="btnDeploy" data-i18n="gw.deploy">部署</button>
+      <div class="gw-result" id="ocResult" hidden></div>
+    </section>
+  </main>
+</div>
+
+<footer id="footer"></footer>
+<nav id="tabbar"></nav>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script>
+(function () {
+  'use strict';
+  const { $, $$, esc, icon, toast, toastError, confirmDialog } = App;
+  const T = (k) => I18N.t(k);
+
+  // 图标
+  $('#ipIco').innerHTML = icon('globe');
+  $('#rtIco').innerHTML = icon('router') || icon('server');
+  $('#ocIco').innerHTML = icon('rocket') || icon('cloud');
+
+  function riskBadge(risk) {
+    if (risk === 'suspicious') return '<span class="tag" style="color:#dc2626;border-color:#dc2626">⚠ ' + T('gw.suspicious') + '</span>';
+    if (risk === 'caution') return '<span class="tag" style="color:#d97706;border-color:#d97706">⚠ ' + (T('gw.type')) + '</span>';
+    return '<span class="tag" style="color:#16a34a;border-color:#16a34a">✓ ' + T('gw.clean') + '</span>';
+  }
+
+  async function loadConfig() {
+    try {
+      const d = await API.Gateway.config();
+      $('#rtBase').value = (d.router && d.router.base) || '';
+      $('#ocBase').value = (d.openclaw && d.openclaw.base) || '';
+      $('#rtTokenHint').textContent = (d.router && d.router.hasToken) ? '已保存令牌（留空则不修改）' : '';
+      $('#ocTokenHint').textContent = (d.openclaw && d.openclaw.hasToken) ? '已保存令牌（留空则不修改）' : '';
+    } catch (e) { /* 忽略 */ }
+  }
+
+  // —— IP 纯度检查 ——
+  $('#btnIpCheck').onclick = async () => {
+    const btn = $('#btnIpCheck'); btn.disabled = true; btn.classList.add('is-loading');
+    try {
+      const d = await API.Gateway.ipCheck();
+      const box = $('#ipResult'); box.hidden = false;
+      if (d.error) { box.innerHTML = '<span class="red-dot">●</span> ' + esc(d.error); return; }
+      const cells = [
+        [T('gw.myIp'), d.ip || '—'],
+        [T('gw.type'), [d.country, d.region, d.city].filter(Boolean).join(' / ') || '—'],
+        ['ISP', d.isp || d.org || '—'],
+        ['ASN', d.asn ? 'AS' + d.asn : '—'],
+        [T('gw.risk'), riskBadge(d.risk)],
+      ];
+      let extra = '';
+      if (d.listed) extra = '<div class="mt-2 small" style="color:#dc2626">命中黑名单：' +
+        d.lists.map((l) => esc(l.zone) + '(' + l.hits.join(',') + ')').join('；') + '</div>';
+      box.innerHTML = '<div class="gw-ip-grid">' + cells.map(([k, v]) =>
+        '<div class="gw-ip-cell"><div class="xsmall muted">' + esc(k) + '</div><div>' + (typeof v === 'string' ? esc(v) : v) + '</div></div>'
+      ).join('') + '</div>' + extra;
+    } catch (e) { toastError(e); }
+    finally { btn.disabled = false; btn.classList.remove('is-loading'); }
+  };
+
+  // —— 路由器配置 ——
+  $('#btnSaveRouter').onclick = async () => {
+    const base = $('#rtBase').value.trim();
+    const token = $('#rtToken').value;
+    try {
+      await API.Gateway.save({ router: { base, token: token ? token : undefined } });
+      toast(T('gw.saved'));
+      $('#rtToken').value = ''; $('#rtTokenHint').textContent = '已保存令牌（留空则不修改）';
+    } catch (e) { toastError(e); }
+  };
+  $('#btnSaveOpenClaw').onclick = async () => {
+    const base = $('#ocBase').value.trim();
+    const token = $('#ocToken').value;
+    try {
+      await API.Gateway.save({ openclaw: { base, token: token ? token : undefined } });
+      toast(T('gw.saved'));
+      $('#ocToken').value = ''; $('#ocTokenHint').textContent = '已保存令牌（留空则不修改）';
+    } catch (e) { toastError(e); }
+  };
+
+  // —— 列出设备 ——
+  $('#btnListDevices').onclick = async () => {
+    const box = $('#deviceList'); box.innerHTML = '<div class="muted small">' + T('gw.loading') + '</div>';
+    try {
+      const d = await API.Gateway.routerDevices();
+      const devs = (d && d.devices) || [];
+      if (!devs.length) { box.innerHTML = '<div class="muted small">' + T('gw.noDevices') + '</div>'; return; }
+      box.innerHTML = devs.map((dv, i) => {
+        const id = dv.id || dv.mac || dv.name || ('d' + i);
+        const off = dv.online === false || dv.disabled === true;
+        return '<div class="gw-device" data-id="' + esc(id) + '">' +
+          '<span class="gd-dot' + (off ? ' off' : '') + '"></span>' +
+          '<div style="flex:1;min-width:0"><div class="gd-name">' + esc(dv.name || dv.hostname || id) + '</div>' +
+          '<div class="gd-meta">' + esc([dv.ip, dv.mac].filter(Boolean).join(' · ')) + '</div></div>' +
+          '<button class="btn btn-ghost btn-xs" data-disable="' + esc(id) + '">' + T('gw.disable') + '</button>' +
+          '</div>';
+      }).join('');
+      box.querySelectorAll('[data-disable]').forEach((b) => b.onclick = async () => {
+        if (!(await confirmDialog(T('gw.disable') + '？'))) return;
+        try { await API.Gateway.disableDevice(b.dataset.disable); toast(T('gw.disable') + ' ✓'); b.closest('.gw-device').querySelector('.gd-dot').classList.add('off'); b.disabled = true; }
+        catch (e) { toastError(e); }
+      });
+    } catch (e) { box.innerHTML = '<div class="red-dot">●</div> ' + esc(e.message || T('gw.configNeeded')); }
+  };
+
+  // —— OpenClaw 部署 ——
+  $('#btnDeploy').onclick = async () => {
+    const btn = $('#btnDeploy'); btn.disabled = true; btn.classList.add('is-loading');
+    const box = $('#ocResult'); box.hidden = false;
+    try {
+      let payload = {};
+      const raw = $('#ocPayload').value.trim();
+      if (raw) { try { payload = JSON.parse(raw); } catch (e) { toast('部署载荷不是合法 JSON'); btn.disabled = false; btn.classList.remove('is-loading'); return; } }
+      const d = await API.Gateway.deployOpenClaw(payload);
+      box.innerHTML = '<span class="green-dot">●</span> ' + esc(T('gw.deployed')) +
+        (d.result ? ' <span class="muted small">' + esc(JSON.stringify(d.result).slice(0, 200)) + '</span>' : '');
+    } catch (e) { box.innerHTML = '<span class="red-dot">●</span> ' + esc(e.message || T('gw.configNeeded')); }
+    finally { btn.disabled = false; btn.classList.remove('is-loading'); }
+  };
+
+  App.boot({
+    nav: 'gateway',
+    requireAuth: true,
+    onReady: async function () {
+      await loadConfig();
+    },
+  });
+})();
+</script>
+</body>
+</html>

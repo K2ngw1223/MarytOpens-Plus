@@ -1,0 +1,34 @@
+# 依赖与构建产物
+node_modules/
+.wrangler/
+dist/
+
+# 密钥：绝不提交
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+.secrets
+.secrets.*
+!.secrets.example
+
+# 部署配置备份
+wrangler.toml.bak
+
+# 本地临时
+*.log
+err.txt
+.DS_Store
+Thumbs.db
+.vscode/settings.json
+
+# 数据库导出 / 备份（含用户数据，禁止提交）
+_backup/
+*.d1.json
+*.sqlite
+*.sqlite3
+
+# 部署留档：默认提交（想忽略就取消下面这行的注释）
+# deploy-info.json

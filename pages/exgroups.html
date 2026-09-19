@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>交流组 · MarytOpens</title>
+  <link rel="stylesheet" href="/assets/css/main.css">
+  <link rel="stylesheet" href="/assets/css/theme.css">
+</head>
+<body>
+<div class="app">
+  <nav id="navbar"></nav>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <main class="main">
+      <!-- 列表视图 -->
+      <section id="listView">
+        <div class="card card-pad row-between wrap" style="gap:12px;margin-bottom:16px">
+          <div>
+            <h2 style="margin:0 0 4px">交流组</h2>
+            <p class="small muted mb-0">任何用户都能创建或加入交流组，发现同好、自由讨论</p>
+          </div>
+          <button class="btn btn-primary btn-sm" id="btnCreate"><span style="font-size:16px;line-height:1">＋</span> 创建交流组</button>
+        </div>
+
+        <section class="card card-pad" id="featuredStrip" hidden style="margin-bottom:16px"></section>
+
+        <div class="card card-pad" style="margin-bottom:16px">
+          <div class="input-icon" style="max-width:380px">
+            <input class="input" id="searchInput" type="search" placeholder="搜索交流组名称 / 简介">
+          </div>
+        </div>
+
+        <div id="groupGrid" class="exg-grid"></div>
+        <div id="groupMore"></div>
+      </section>
+
+      <!-- 详情视图 -->
+      <section id="detailView" hidden></section>
+    </main>
+    <aside class="aside" id="rightAside"></aside>
+  </div>
+</div>
+
+<!-- 创建交流组弹窗 -->
+<div class="modal-mask" id="createModal" hidden>
+  <div class="modal card card-pad" style="max-width:520px;width:92%">
+    <div class="row-between mb-3">
+      <h3 style="margin:0">创建交流组</h3>
+      <button class="icon-btn" id="cmClose" aria-label="关闭">✕</button>
+    </div>
+    <div class="form-row">
+      <label class="form-label">组名 <span class="req">*</span></label>
+      <input class="input" id="cmName" maxlength="40" placeholder="例如：摄影爱好者">
+    </div>
+    <div class="form-row">
+      <label class="form-label">简介</label>
+      <textarea class="textarea" id="cmDesc" rows="2" maxlength="500" placeholder="一句话介绍这个组是做什么的"></textarea>
+    </div>
+    <div class="row" style="gap:12px">
+      <div class="form-row grow">
+        <label class="form-label">分类</label>
+        <input class="input" id="cmCat" maxlength="20" placeholder="其他" value="其他">
+      </div>
+      <div class="form-row" style="width:160px">
+        <label class="form-label">可见性</label>
+        <select class="select input" id="cmVis">
+          <option value="public">公开</option>
+          <option value="private">私有</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="form-label">图标链接（可选）</label>
+      <input class="input" id="cmIcon" placeholder="https://... 图片 URL">
+    </div>
+    <div class="form-row">
+      <label class="form-label">横幅链接（可选）</label>
+      <input class="input" id="cmBanner" placeholder="https://... 图片 URL">
+    </div>
+    <div class="row-between mt-4">
+      <button class="btn btn-ghost" id="cmCancel">取消</button>
+      <button class="btn btn-primary" id="cmSubmit">创建</button>
+    </div>
+  </div>
+</div>
+
+<footer id="footer"></footer>
+<nav id="tabbar"></nav>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script src="/assets/js/feed.js"></script>
+<script>
+(function () {
+  'use strict';
+  const { $, $$, esc, icon, avatar } = App;
+  const T = (k, v) => (global.I18N ? I18N.t(k, v) : k);
+
+  let curId = new URLSearchParams(location.search).get('id') || '';
+  let cursor = null;
+  let keyword = '';
+  let gridItems = [];
+  let state = { group: null, threads: null };
+
+  function groupCardHTML(g) {
+    const badges =
+      (g.featured ? '<span class="badge badge-warn">' + icon('star') + ' 精选</span>' : '') +
+      (g.violated ? '<span class="badge badge-danger">公示违规</span>' : '');
+    return '<a class="exg-card card card-hover" href="/exgroups.html?id=' + esc(g.id) + '">' +
+      (g.banner
+        ? '<div class="exg-banner" style="background-image:url(' + esc(API.fileURL(g.banner)) + ')"></div>'
+        : '<div class="exg-banner exg-banner-def"></div>') +
+      '<div class="exg-card-body">' +
+        '<div class="row" style="gap:10px;align-items:center">' +
+          '<div class="exg-icon">' + (g.icon
+            ? '<img src="' + esc(API.fileURL(g.icon)) + '" alt="">'
+            : esc((g.name || '?').slice(0, 1))) + '</div>' +
+          '<div style="min-width:0"><div class="bold truncate">' + esc(g.name) + '</div>' +
+            '<div class="xsmall muted">' + (g.memberCount || 0) + ' 成员 · ' + (g.postCount || 0) + ' 帖子</div></div>' +
+        '</div>' +
+        (badges ? '<div class="chip-row mt-2">' + badges + '</div>' : '') +
+        '<p class="small muted clamp-2 mt-2">' + esc(g.description || '暂无简介') + '</p>' +
+      '</div></a>';
+  }
+
+  function renderGrid() {
+    const box = $('#groupGrid');
+    if (!gridItems.length) { box.innerHTML = App.emptyState(T('exg.empty')); $('#groupMore').innerHTML = ''; return; }
+    box.innerHTML = gridItems.map(groupCardHTML).join('');
+    $('#groupMore').innerHTML = cursor
+      ? '<div class="mt-4"><button class="btn btn-outline btn-block" id="btnMore">加载更多</button></div>' : '';
+    const b = $('#btnMore'); if (b) b.onclick = () => loadGroups(false);
+  }
+
+  async function loadGroups(reset) {
+    if (reset) { cursor = null; gridItems = []; }
+    const params = { limit: 18 };
+    if (keyword) params.q = keyword;
+    if (cursor) params.cursor = cursor;
+    const d = await API.Exgroups.list(params);
+    gridItems = reset ? (d.items || []) : gridItems.concat(d.items || []);
+    cursor = d.cursor || null;
+    renderGrid();
+  }
+
+  async function loadFeatured() {
+    const strip = $('#featuredStrip');
+    try {
+      const d = await API.Exgroups.list({ featured: 1, limit: 6 });
+      const items = (d.items || []).filter((g) => g && g.id);
+      if (!items.length) { strip.hidden = true; return; }
+      strip.hidden = false;
+      strip.innerHTML = '<div class="section-title mb-2">' + icon('star') + ' ' + T('exg.featured') + '</div>' +
+        '<div class="exg-grid">' + items.map(groupCardHTML).join('') + '</div>';
+    } catch (e) { strip.hidden = true; }
+  }
+
+  /* ----------------------------- 详情 ----------------------------- */
+  async function openDetail(id) {
+    $('#listView').hidden = true; $('#detailView').hidden = false;
+    $('#detailView').innerHTML = App.skeletonList(1, 220);
+    const d = await API.Exgroups.detail(id);
+    state.group = d.group;
+    renderDetail(d.group);
+    loadThreads(id, true);
+  }
+
+  function renderDetail(g) {
+    const me = App.Session.user;
+    const isMember = g.isMember;
+    const canManage = g.canManage;
+    const banner = g.banner
+      ? '<div class="exg-detail-banner" style="background-image:url(' + esc(API.fileURL(g.banner)) + ')"></div>'
+      : '<div class="exg-detail-banner exg-banner-def"></div>';
+    const badges =
+      (g.featured ? '<span class="badge badge-warn">' + icon('star') + ' 精选</span>' : '') +
+      (g.violated ? '<span class="badge badge-danger">公示违规</span>' : '');
+
+    const joinBtn = isMember
+      ? '<button class="btn btn-outline btn-sm" id="btnJoin">' + T('exg.leave') + '</button>'
+      : '<button class="btn btn-primary btn-sm" id="btnJoin">' + T('exg.join') + '</button>';
+
+    const manage = canManage
+      ? '<div class="card card-pad mt-4">' +
+          '<div class="section-title mb-2">管理</div>' +
+          '<div class="row wrap" style="gap:8px">' +
+            '<button class="btn btn-soft btn-sm" id="btnToggleFeatured">' + (g.featured ? '取消精选' : '标记为精选') + '</button>' +
+            '<button class="btn btn-soft btn-sm" id="btnToggleViolated">' + (g.violated ? '取消违规公示' : '公示违规') + '</button>' +
+            (g.isOwner ? '<button class="btn btn-soft btn-sm danger" id="btnDelete">解散交流组</button>' : '') +
+          '</div>' +
+        '</div>'
+      : '';
+
+    $('#detailView').innerHTML =
+      '<div class="card card-pad mb-4" style="overflow:hidden;padding:0">' +
+        banner +
+        '<div class="card-body" style="padding:16px 20px">' +
+          '<div class="row-between wrap" style="gap:12px;align-items:flex-start">' +
+            '<div class="row" style="gap:12px;align-items:center">' +
+              '<div class="exg-icon lg">' + (g.icon ? '<img src="' + esc(API.fileURL(g.icon)) + '" alt="">' : esc((g.name || '?').slice(0, 1))) + '</div>' +
+              '<div><h2 style="margin:0 0 3px">' + esc(g.name) + '</h2>' +
+                '<div class="small muted">' + (g.memberCount || 0) + ' ' + T('exg.members') + ' · ' + (g.postCount || 0) + ' ' + T('exg.posts') + (g.category ? ' · ' + esc(g.category) : '') + '</div>' +
+                (badges ? '<div class="chip-row mt-2">' + badges + '</div>' : '') +
+              '</div>' +
+            '</div>' +
+            '<div class="row" style="gap:8px">' +
+              '<a class="btn btn-primary btn-sm" href="/editor.html?groupId=' + esc(g.id) + '">发帖</a>' +
+              joinBtn +
+            '</div>' +
+          '</div>' +
+          (g.description ? '<p class="small muted mt-3" style="margin-bottom:0">' + esc(g.description) + '</p>' : '') +
+        '</div>' +
+      '</div>' +
+      '<div class="card card-pad mb-4">' +
+        '<div class="section-title mb-2">' + T('exg.threads') + '</div>' +
+        '<div id="threadsBox" class="post-list"></div>' +
+        '<div id="threadsMore"></div>' +
+      '</div>' +
+      manage;
+
+    const jb = $('#btnJoin');
+    if (jb) jb.onclick = async () => {
+      try {
+        const r = await API.Exgroups.join(g.id, { leave: isMember });
+        g.isMember = r.isMember; g.memberCount = r.memberCount;
+        renderDetail(g);
+      } catch (e) { App.toastError(e); }
+    };
+    const tf = $('#btnToggleFeatured');
+    if (tf) tf.onclick = () => updateGroup({ featured: !g.featured });
+    const tv = $('#btnToggleViolated');
+    if (tv) tv.onclick = () => updateGroup({ violated: !g.violated });
+    const del = $('#btnDelete');
+    if (del) del.onclick = async () => {
+      if (!await App.confirmDialog('确定要解散该交流组吗？此操作不可恢复。', { danger: true })) return;
+      try { await API.Exgroups.update(g.id, { status: 'deleted' }); App.toast('已解散', 'success'); location.href = '/exgroups.html'; }
+      catch (e) { App.toastError(e); }
+    };
+  }
+
+  async function updateGroup(patch) {
+    try {
+      const d = await API.Exgroups.update(state.group.id, patch);
+      state.group = d.group;
+      renderDetail(d.group);
+      App.toast(T('common.success'), 'success');
+    } catch (e) { App.toastError(e); }
+  }
+
+  function loadThreads(id, reset) {
+    if (!state.threads) {
+      state.threads = Feed.createList({
+        mount: $('#threadsBox'), moreMount: $('#threadsMore'),
+        params: () => ({ groupId: id, limit: 15 }),
+        fetcher: async (p) => {
+          const d = await API.Posts.list(p);
+          return { items: d.items || [], cursor: d.cursor };
+        },
+      });
+    }
+    state.threads.load(reset);
+  }
+
+  /* ----------------------------- 创建弹窗 ----------------------------- */
+  function openModal() {
+    $('#createModal').hidden = false;
+    $('#cmName').value = ''; $('#cmDesc').value = ''; $('#cmCat').value = '其他';
+    $('#cmVis').value = 'public'; $('#cmIcon').value = ''; $('#cmBanner').value = '';
+    setTimeout(() => $('#cmName').focus(), 50);
+  }
+  function closeModal() { $('#createModal').hidden = true; }
+
+  async function submitCreate() {
+    const name = $('#cmName').value.trim();
+    if (name.length < 2) { App.toast('组名至少 2 个字符', 'warn'); return; }
+    const btn = $('#cmSubmit'); App.busy(btn, true);
+    try {
+      const r = await API.Exgroups.create({
+        name,
+        description: $('#cmDesc').value.trim(),
+        category: $('#cmCat').value.trim() || '其他',
+        visibility: $('#cmVis').value,
+        icon: $('#cmIcon').value.trim(),
+        banner: $('#cmBanner').value.trim(),
+      });
+      closeModal();
+      App.toast(T('common.success'), 'success');
+      location.href = '/exgroups.html?id=' + encodeURIComponent(r.group.id);
+    } catch (e) { App.toastError(e); }
+    App.busy(btn, false);
+  }
+
+  /* ----------------------------- 初始化 ----------------------------- */
+  App.boot({
+    nav: 'exgroups',
+    requireAuth: true,
+    onReady: async function () {
+      $('#btnCreate').onclick = openModal;
+      $('#cmClose').onclick = closeModal;
+      $('#cmCancel').onclick = closeModal;
+      $('#cmSubmit').onclick = submitCreate;
+      $('#createModal').addEventListener('click', (e) => { if (e.target.id === 'createModal') closeModal(); });
+
+      const s = $('#searchInput');
+      s.addEventListener('input', App.debounce(() => { keyword = s.value.trim(); loadGroups(true); }, 400));
+
+      if (curId) { await openDetail(curId); }
+      else {
+        $('#listView').hidden = false; $('#detailView').hidden = true;
+        await loadGroups(true);
+        loadFeatured();
+      }
+    },
+  });
+})();
+</script>
+</body>
+</html>

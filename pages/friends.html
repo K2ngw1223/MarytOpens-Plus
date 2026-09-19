@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>好友 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+
+  <meta name="theme-color" content="#6366f1">
+  <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.json">
+  <script>
+    (function() {
+      const apiMeta = document.querySelector('meta[name="mo-api"]');
+      const api = (apiMeta && apiMeta.content) || 'https://api.example.com';
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js?api=' + encodeURIComponent(api)).then(function(reg) {
+          reg.addEventListener('updatefound', function() {
+            const wb = reg.installing;
+            if (wb) wb.addEventListener('statechange', function() {
+              if (wb.state === 'activated') wb.postMessage({ type: 'mo-skip-waiting' });
+            });
+          });
+        }).catch(function() {});
+      }
+    })();
+  </script>
+<link rel="stylesheet" href="/assets/css/main.css">
+</head>
+<body>
+
+<header id="navbar"></header>
+
+<div class="layout container-mid">
+  <aside class="sidebar" id="sidebar">
+    <div class="side-group">
+      <div class="section-title" data-i18n="friend.title">好友</div>
+      <a class="side-item active" href="/friends.html"><span data-i18n="friend.list">我的好友</span></a>
+      <a class="side-item" href="/friends.html?tab=requests"><span data-i18n="friend.requests">好友申请</span></a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <section id="viewFriends">
+      <div class="card card-pad row-between wrap" style="gap:12px">
+        <div><h2 class="mb-0" data-i18n="friend.list">我的好友</h2><p class="small muted mb-0" data-i18n="friend.subtitle">管理好友、申请与权限。</p></div>
+        <button class="btn btn-sm btn-soft" id="btnRefresh">刷新</button>
+      </div>
+      <div id="friendList"></div>
+    </section>
+
+    <section id="viewRequests" hidden>
+      <div class="card card-pad row-between wrap" style="gap:12px">
+        <div><h2 class="mb-0" data-i18n="friend.requests">好友申请</h2></div>
+        <div class="row" style="gap:8px">
+          <button class="btn btn-sm" id="btnReqIncoming" data-i18n="friend.incoming">收到</button>
+          <button class="btn btn-sm" id="btnReqOutgoing" data-i18n="friend.outgoing">发出</button>
+        </div>
+      </div>
+      <div id="requestList"></div>
+    </section>
+  </main>
+</div>
+
+<footer id="footer"></footer>
+<nav id="tabbar"></nav>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script>
+(function () {
+  'use strict';
+  const { $, $$, esc, icon, toast, toastError, modal } = App;
+  const T = (k, fb) => I18N.t(k) || fb || k;
+
+  async function loadFriends() {
+    const box = $('#friendList');
+    box.innerHTML = '<div class="card card-pad"><div class="skeleton sk-line w60"></div></div>';
+    try {
+      const d = await API.Friends.list();
+      const list = d.items || [];
+      if (!list.length) {
+        box.innerHTML = '<div class="card card-pad muted text-center">' + T('friend.empty', '还没有好友') + '</div>';
+        return;
+      }
+      box.innerHTML = list.map((u) =>
+        '<div class="card card-pad row-between wrap" style="gap:12px">' +
+          '<div class="row" style="gap:12px;align-items:center">' +
+            '<img class="avatar" src="' + App.avatar(u) + '" alt="">' +
+            '<div><div style="font-weight:620">' + esc(u.displayName || u.username) + '</div>' +
+              '<div class="small muted">@' + esc(u.username) + (u.note ? ' · ' + esc(u.note) : '') + '</div></div>' +
+          '</div>' +
+          '<div class="row" style="gap:8px">' +
+            '<a class="btn btn-sm btn-soft" href="/profile.html?id=' + esc(u.id) + '">' + T('user.profile', '主页') + '</a>' +
+            '<button class="btn btn-sm btn-danger" data-del="' + esc(u.id) + '">' + T('friend.remove', '删除') + '</button>' +
+          '</div>' +
+        '</div>').join('');
+      $$('#friendList [data-del]').forEach((b) => b.onclick = async () => {
+        if (!confirm(T('friend.confirmRemove', '删除好友？'))) return;
+        try { await API.Friends.remove(b.dataset.del); toast.success(T('friend.removed', '已删除')); loadFriends(); } catch (e) { toastError(e); }
+      });
+    } catch (e) { toastError(e); }
+  }
+
+  async function loadRequests(type) {
+    const box = $('#requestList');
+    box.innerHTML = '<div class="card card-pad"><div class="skeleton sk-line w60"></div></div>';
+    try {
+      const d = await API.Friends.requests(type);
+      const list = d.items || [];
+      if (!list.length) {
+        box.innerHTML = '<div class="card card-pad muted text-center">' + (type === 'outgoing' ? T('friend.noOutgoing', '没有发出的申请') : T('friend.noIncoming', '没有收到申请')) + '</div>';
+        return;
+      }
+      box.innerHTML = list.map((r) =>
+        '<div class="card card-pad row-between wrap" style="gap:12px">' +
+          '<div class="row" style="gap:12px;align-items:center">' +
+            '<img class="avatar" src="' + App.avatar(r.user) + '" alt="">' +
+            '<div><div style="font-weight:620">' + esc(r.user.displayName || r.user.username) + '</div>' +
+              '<div class="small muted">@' + esc(r.user.username) + (r.message ? ' · ' + esc(r.message) : '') + '</div></div>' +
+          '</div>' +
+          '<div class="row" style="gap:8px">' +
+            (type === 'incoming'
+              ? '<button class="btn btn-sm btn-primary" data-accept="' + esc(r.id) + '">' + T('friend.accept', '同意') + '</button>' +
+                '<button class="btn btn-sm" data-reject="' + esc(r.id) + '">' + T('friend.reject', '拒绝') + '</button>' +
+                '<button class="btn btn-sm btn-ghost" data-block="' + esc(r.id) + '" title="' + T('friend.block', '拉黑') + '">' + T('friend.block', '拉黑') + '</button>'
+              : '<span class="badge badge-soft">' + T('friend.pending', '等待通过') + '</span>') +
+          '</div>' +
+        '</div>').join('');
+      $$('#requestList [data-accept]').forEach((b) => b.onclick = async () => { try { await API.Friends.accept(b.dataset.accept); toast.success(T('friend.accepted', '已同意')); loadRequests(type); loadFriends(); } catch (e) { toastError(e); } });
+      $$('#requestList [data-reject]').forEach((b) => b.onclick = async () => { try { await API.Friends.reject(b.dataset.reject); toast.success(T('friend.rejected', '已忽略')); loadRequests(type); } catch (e) { toastError(e); } });
+      $$('#requestList [data-block]').forEach((b) => b.onclick = async () => {
+        if (!confirm(T('friend.confirmBlock', '确定拉黑该用户？'))) return;
+        try { await API.Friends.blockRequest(b.dataset.block); toast.success(T('friend.blockedToast', '已拉黑')); loadRequests(type); loadFriends(); } catch (e) { toastError(e); }
+      });
+    } catch (e) { toastError(e); }
+  }
+
+  function showTab(name) {
+    const isReq = name === 'requests';
+    $('#viewFriends').hidden = isReq;
+    $('#viewRequests').hidden = !isReq;
+    try { history.replaceState(null, '', location.pathname + (isReq ? '?tab=requests' : '')); } catch (e) {}
+    if (isReq) loadRequests('incoming');
+    else loadFriends();
+  }
+
+  App.boot({ nav: 'me', requireAuth: true, onReady() {
+    $('#btnRefresh').onclick = loadFriends;
+    $('#btnReqIncoming').onclick = () => loadRequests('incoming');
+    $('#btnReqOutgoing').onclick = () => loadRequests('outgoing');
+    const tab = new URLSearchParams(location.search).get('tab');
+    showTab(tab === 'requests' ? 'requests' : 'friends');
+  }});
+})();
+</script>
+</body>
+</html>

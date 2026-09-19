@@ -1,0 +1,25 @@
+name: Checks
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  static-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 后端语法
+        run: node --check worker/src/index.js
+
+      - name: 前端内联脚本语法
+        run: node tools/check-inline.js pages
+
+      - name: App 成员误用检查
+        run: node tools/check-app-helpers.js pages

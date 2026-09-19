@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>官方接入 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#6366f1">
+<link rel="stylesheet" href="/assets/css/main.css">
+</head>
+<body>
+<header id="navbar"></header>
+<div class="layout container-mid">
+  <main class="main">
+    <section class="card card-pad" id="topCard">
+      <h2 class="mb-1" data-i18n="official.title">官方账号与接入</h2>
+      <p class="small muted" data-i18n="official.manage">接入第三方 AI 产品密钥，并以其身份发布官方消息。</p>
+    </section>
+
+    <section class="card card-pad mt-4">
+      <div class="row-between mb-3"><h4 class="mb-0" data-i18n="official.publish">发布官方消息</h4></div>
+      <div class="field"><label class="label" data-i18n="official.pubTitle">标题</label><input class="input" id="opTitle" maxlength="80"></div>
+      <div class="field"><label class="label" data-i18n="official.pubBody">正文</label><textarea class="input" id="opBody" rows="4"></textarea></div>
+      <div class="row" style="gap:12px;align-items:center">
+        <label class="switch-row"><input type="checkbox" id="opPin"><span class="track"></span><span class="small" data-i18n="official.pubPin">置顶</span></label>
+        <div class="field grow"><label class="label" data-i18n="official.useKey">经密钥向外部产品广播</label>
+          <select class="select" id="opKey"><option value="">—</option></select></div>
+      </div>
+      <button class="btn btn-primary btn-sm" id="opPublish" data-i18n="official.publish">发布</button>
+      <p class="small muted2 mt-2" id="opResult"></p>
+    </section>
+
+    <section class="card card-pad mt-4" id="keysCard">
+      <div class="row-between mb-3"><h4 class="mb-0" data-i18n="official.keys">AI 产品接入密钥</h4>
+        <button class="btn btn-sm btn-soft" id="okAdd" hidden>+ <span data-i18n="official.addKey">添加密钥</span></button></div>
+      <div id="okList"></div>
+      <div class="text-right mt-3" id="okSaveWrap" hidden><button class="btn btn-primary btn-sm" id="okSave" data-i18n="official.save">保存</button></div>
+    </section>
+  </main>
+</div>
+<footer id="footer"></footer>
+<nav id="tabbar"></nav>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script>
+(function () {
+  'use strict';
+  const { $, $$, esc, toast, toastError } = App;
+  const T = (k) => I18N.t(k);
+  const isSA = () => App.Session.isSuperAdmin;
+  const canManage = () => isSA() || App.Session.isOfficial;
+
+  async function loadKeys() {
+    const box = $('#okList');
+    if (!canManage()) { $('#keysCard').hidden = true; return; }
+    $('#okAdd').hidden = !isSA();
+    $('#okSaveWrap').hidden = !isSA();
+    try {
+      const d = await API.Official.keys();
+      const items = d.items || [];
+      if (!items.length) { box.innerHTML = '<p class="small muted">' + T('official.empty') + '</p>'; $('#opKey').innerHTML = '<option value="">—</option>'; return; }
+      box.innerHTML = items.map((k, i) =>
+        '<div class="kv-row" style="align-items:start">' +
+          '<div style="flex:1;min-width:0">' +
+            '<div class="row" style="gap:8px"><b>' + esc(k.name) + '</b>' + (k.enabled ? '<span class="stat-pill status-confirmed">ON</span>' : '<span class="stat-pill">OFF</span>') + (k.hasKey ? '<span class="small muted2">' + esc(k.keyMask) + '</span>' : '') + '</div>' +
+            '<div class="small muted2" style="margin-top:2px">' + esc(k.product || '') + ' · ' + esc(k.endpoint || '') + '</div>' +
+            (isSA() ? '<div class="row mt-2" style="gap:6px"><input class="input input-sm" data-k="endpoint" data-i="' + i + '" value="' + esc(k.endpoint || '') + '" placeholder="endpoint"><input class="input input-sm" data-k="apiKey" data-i="' + i + '" placeholder="' + T('official.apiKey') + '"><label class="switch-row"><input type="checkbox" data-k="enabled" data-i="' + i + '"' + (k.enabled ? ' checked' : '') + '><span class="track"></span></label></div>' : '') +
+          '</div>' +
+          (isSA() ? '<button class="btn btn-xs" data-rm="' + i + '">' + T('honor.revoke') + '</button>' : '') +
+        '</div>'
+      ).join('');
+      $('#opKey').innerHTML = '<option value="">—</option>' + items.filter((k) => k.enabled && k.hasKey).map((k) => '<option value="' + esc(k.id) + '">' + esc(k.name) + '</option>').join('');
+      if (isSA()) wireKeys(items);
+    } catch (e) { box.innerHTML = '<p class="error-text">' + esc(e.message) + '</p>'; }
+  }
+
+  function wireKeys(items) {
+    const vals = items.map((k) => ({ ...k, apiKey: k.apiKey || '' }));
+    $('#okList').querySelectorAll('[data-k]').forEach((inp) => {
+      inp.addEventListener('input', () => { const i = +inp.dataset.i; vals[i][inp.dataset.k] = inp.type === 'checkbox' ? inp.checked : inp.value; });
+    });
+    $('#okList').querySelectorAll('[data-rm]').forEach((b) => b.onclick = () => { vals.splice(+b.dataset.rm, 1); render(vals); });
+    $('#okAdd').onclick = () => { vals.push({ id: 'ok_' + Date.now(), name: '新密钥', product: '', endpoint: '', apiKey: '', enabled: true }); render(vals); };
+    $('#okSave').onclick = async () => {
+      try { await API.Official.saveKeys(vals); toast.success(T('common.success')); loadKeys(); }
+      catch (e) { toastError(e); }
+    };
+    function render(v) { vals = v; loadKeys(); }
+  }
+
+  async function publish() {
+    if (!canManage()) return;
+    const title = $('#opTitle').value.trim(), body = $('#opBody').value.trim();
+    if (!title || !body) { toast.warn(T('official.pubTitle')); return; }
+    const btn = $('#opPublish'); App.busy(btn, true);
+    try {
+      const d = await API.Official.publish({ title, body, pinned: $('#opPin').checked, keyId: $('#opKey').value || undefined });
+      $('#opResult').textContent = T('official.published') + (d.external ? ' · 外部广播：' + (d.external.ok ? 'OK' : 'FAIL') : '');
+      toast.success(T('official.published'));
+      $('#opTitle').value = ''; $('#opBody').value = '';
+    } catch (e) { toastError(e); } finally { App.busy(btn, false); }
+  }
+
+  App.boot({
+    requireAuth: true,
+    onReady: async function () {
+      if (!canManage()) {
+        $('#topCard').innerHTML = '<p class="error-text">此页面仅对官方账号或超级管理员开放。</p>';
+        $('#keysCard').hidden = true; return;
+      }
+      $('#opPublish').onclick = publish;
+      await loadKeys();
+    },
+  });
+})();
+</script>
+</body>
+</html>

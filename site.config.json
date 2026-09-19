@@ -1,0 +1,20 @@
+{
+  "_help": "集中配置：改完执行 node tools/configure.mjs，会把下列值同步到前端页面 / Worker 配置 / 文档。可重复执行（幂等）。",
+
+  "siteName": "MarytOpens",
+  "siteOrigin": "https://example.com",
+  "apiOrigin": "https://api.example.com",
+  "supportEmail": "admin@example.com",
+  "mailFromName": "MarytOpens",
+  "repoUrl": "https://github.com/YOUR_NAME/marytopens",
+
+  "registry": {
+    "_help": "部署登记开关，三项全开才生效；详见 docs/DEPLOY_REGISTRY.md",
+    "enabled": false,
+    "public": false,
+    "issue": false,
+    "repo": ""
+  },
+
+  "_applied": null
+}

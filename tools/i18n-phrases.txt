@@ -1,0 +1,848 @@
+9	已保存	assets/js/admin.js,assets/js/storage.js,editor.html
+6	联系我们	admin_dashboard.html,assets/js/app.js
+4	从左侧选择一个身份组开始编辑	admin_dashboard.html,assets/js/admin.js,assets/js/channel_manage.js,channel_manage.html
+4	服务端	admin_dashboard.html
+4	未保存	assets/js/admin.js
+4	留空表示保留当前已存储的值	admin_dashboard.html
+4	返回首页	assets/js/app.js,f.html
+3	位数字	register.html,reset.html,user_settings.html
+3	删除版块	assets/js/admin.js,channel_manage.html
+3	可选	admin_dashboard.html,assets/js/admin.js,files.html
+3	地址	admin_dashboard.html,assets/js/admin.js
+3	小时制	user_settings.html
+3	强制改名	assets/js/admin.js
+3	当前为自动识别	user_settings.html
+3	正在加载文件信息…	assets/js/app.js,f.html
+3	禁言时长	assets/js/admin.js,assets/js/channel_manage.js,profile.html
+3	站点级	assets/js/admin.js,assets/js/channel_manage.js
+3	要求验证邮箱	admin_dashboard.html,assets/js/admin.js
+2	上传失败	assets/js/api.js
+2	上传失败，请检查网络	assets/js/api.js
+2	下载 / 打开文件	assets/js/app.js,f.html
+2	为维护社区秩序，以下账号或 IP 已被封禁	about.html,bans.html
+2	主页	assets/js/admin.js,friends.html
+2	人机验证	admin_dashboard.html,editor.html
+2	全局作用域身份组，决定用户在站点范围内的能力	admin_dashboard.html,assets/js/admin.js
+2	分享链接格式不正确	assets/js/app.js,f.html
+2	分钟	assets/js/channel_manage.js,profile.html
+2	创建机器人	admin_dashboard.html,assets/js/admin.js
+2	只读	admin_dashboard.html,assets/js/channel_manage.js
+2	基本信息	channel_manage.html
+2	处理完成	assets/js/admin.js
+2	处理说明	assets/js/admin.js,assets/js/channel_manage.js
+2	备注	assets/js/admin.js
+2	头像已打码	about.html,bans.html
+2	审核日志	admin_dashboard.html
+2	密码至少 8 位	register.html,reset.html
+2	封禁原因	assets/js/admin.js,profile.html
+2	封禁天数	assets/js/admin.js
+2	已填	assets/js/admin.js
+2	已注销用户	assets/js/feed.js,post.html
+2	已锁定为	user_settings.html
+2	强制下线	assets/js/admin.js
+2	成员与角色分配	channel_manage.html
+2	指定身份组	assets/js/admin.js,editor.html
+2	换个关键词试试	assets/js/admin.js
+2	接收反馈的邮箱	admin_dashboard.html,assets/js/admin.js
+2	数值越大越靠前	admin_dashboard.html,channel_manage.html
+2	文件不存在或链接无效	assets/js/app.js,f.html
+2	文件由上传者自有 Cloudflare 存储提供	assets/js/app.js,f.html
+2	无标题	assets/js/admin.js
+2	无法连接后端 API	login.html,register.html
+2	暂无数据	assets/js/admin.js,explore.html
+2	最近 IP	assets/js/admin.js,profile.html
+2	未命名文件	assets/js/app.js,f.html
+2	未填	assets/js/admin.js
+2	未知错误	assets/js/admin.js
+2	未验证	assets/js/admin.js,user_settings.html
+2	查看	index.html,notifications.html
+2	查看文件	assets/js/app.js,f.html
+2	查看目标	assets/js/admin.js,assets/js/channel_manage.js
+2	标记邮箱已验证	assets/js/admin.js
+2	正文	admin_dashboard.html
+2	注册时间	assets/js/admin.js,user_settings.html
+2	浏览器推送	admin_dashboard.html,user_settings.html
+2	添加链接	admin_dashboard.html,user_settings.html
+2	点击或拖拽上传横幅图	channel_manage.html,user_settings.html
+2	用户提交反馈时，邮件将发送到此邮箱	admin_dashboard.html,assets/js/admin.js
+2	用环境变量	assets/js/admin.js
+2	用英文逗号分隔	admin_dashboard.html
+2	留空为永久	assets/js/admin.js
+2	的权限	assets/js/admin.js,assets/js/channel_manage.js
+2	确认	assets/js/admin.js,assets/js/app.js
+2	确认封禁	assets/js/admin.js
+2	移除横幅	channel_manage.html,user_settings.html
+2	该文件受预览码保护	assets/js/app.js,f.html
+2	请求失败	assets/js/admin.js,assets/js/api.js
+2	请输入分享者提供的预览码后查看	assets/js/app.js,f.html
+2	请输入有效的邮箱地址	assets/js/app.js,register.html
+2	请输入验证码	assets/js/app.js,reset.html
+2	身份组与权限	channel_manage.html
+2	返回版块	assets/js/channel_manage.js,channel_manage.html
+2	返回社区	admin_dashboard.html,assets/js/admin.js
+2	邮件服务未正确配置，请联系管理员	assets/js/app.js
+2	链接已过期	assets/js/app.js,f.html
+2	需已配置邮件服务	admin_dashboard.html,assets/js/admin.js
+2	频道管理	channel_manage.html
+2	验证码 10 分钟内有效	assets/js/app.js,reset.html
+2	验证码发送失败	assets/js/app.js
+1	一切正常	assets/js/admin.js
+1	一句话介绍这个版块	assets/js/admin.js
+1	一句话描述	assets/js/admin.js
+1	一句话标语	admin_dashboard.html
+1	一起构建点什么	index.html
+1	上传中…	editor.html
+1	上次登录	user_settings.html
+1	上次登录 IP	user_settings.html
+1	下载 URL	admin_dashboard.html
+1	不可关闭	user_settings.html
+1	不可见	profile.html
+1	不套用站点模板	admin_dashboard.html
+1	不确定时先用 Resend 官方测试地址	admin_dashboard.html
+1	与健康检查除外	admin_dashboard.html
+1	个 URL 的缓存	assets/js/admin.js
+1	个频道	assets/js/admin.js
+1	为 Discord 机器人或自动化脚本签发访问令牌	admin_dashboard.html
+1	为版块成员分配身份组、禁言、改名	channel_manage.html
+1	为现代社区治理而生	index.html
+1	主色	assets/js/app.js
+1	主题 / 外观	assets/js/app.js
+1	主题、语言与时间格式。语言与时间默认根据浏览器自动识别	user_settings.html
+1	主题与正文不能为空	assets/js/admin.js
+1	主题色	admin_dashboard.html
+1	主题设置	assets/js/app.js
+1	举报人	assets/js/admin.js
+1	也可手动填写名称	admin_dashboard.html
+1	了你	user_settings.html
+1	了解这个社区，以及它背后的故事	about.html
+1	仅会员	assets/js/admin.js
+1	仅保存在服务端，不会下发给浏览器。Resend 的 Key 形如 re	admin_dashboard.html
+1	仅写日志，调试用	admin_dashboard.html
+1	仅在需要更换时填写	admin_dashboard.html
+1	仅所选身份组成员可见	editor.html
+1	仅未登录	assets/js/admin.js
+1	仅本人可查看自己的关注与粉丝列表	profile.html
+1	仅登录可见	editor.html
+1	仅登录用户	assets/js/admin.js
+1	仅管理员	assets/js/admin.js
+1	仅自己与超级管理员可见	editor.html
+1	仅超级管理员可查看审核日志	assets/js/admin.js
+1	仅超级管理员可要求验证	assets/js/admin.js
+1	介绍一下自己…	user_settings.html
+1	仓库	admin_dashboard.html
+1	代理	admin_dashboard.html
+1	代码块	editor.html
+1	令牌	admin_dashboard.html
+1	令牌只显示这一次，请立即复制并妥善保存。丢失后只能删除重建	assets/js/admin.js
+1	令牌有效期	user_settings.html
+1	以下操作不可撤销	user_settings.html
+1	以下操作不可撤销，请谨慎执行	channel_manage.html
+1	以确认	assets/js/admin.js
+1	以确认删除	assets/js/channel_manage.js
+1	以确认注销	user_settings.html
+1	任何人不可见，仅作者与超级管理员可读，也可指定身份组可见	index.html
+1	任务列表	editor.html
+1	会自动捕获头像与用户名	admin_dashboard.html
+1	会话无效	oauth_callback.html
+1	会话校验失败	oauth_callback.html
+1	会通知举报人	assets/js/admin.js
+1	位字母/数字/下划线/中文	register.html
+1	位字母、数字、下划线、连字符或中文	user_settings.html
+1	位已验证	assets/js/admin.js
+1	位未验证邮箱的用户发送验证要求，他们	assets/js/admin.js
+1	位用户发送验证要求	assets/js/admin.js
+1	位验证码	assets/js/app.js
+1	作用域级	assets/js/admin.js
+1	作者	admin_dashboard.html
+1	作者数	favorites.html
+1	你也可以联系管理员手动标记验证	assets/js/app.js
+1	你可以在此作用域内创建与编辑身份组	assets/js/channel_manage.js
+1	你已浏览多页内容，注册或登录后可发布内容、互动与收藏。现在要登录或创建账号吗？	assets/js/app.js
+1	你没有任何后台管理权限	assets/js/admin.js
+1	你没有该作用域的身份组管理权限	assets/js/channel_manage.js
+1	你没有该版块的管理权限	assets/js/channel_manage.js
+1	你的域名	admin_dashboard.html
+1	你的域名/api/send	admin_dashboard.html
+1	你的设备暂时无法连接到 MarytOpens 服务器	offline.html
+1	你的账号通过第三方登录创建，尚未设置密码，可留空直接设置新密码	user_settings.html
+1	你的邮箱	assets/js/app.js
+1	你还没有关注任何人	profile.html
+1	例如 7	assets/js/admin.js
+1	例如：工作时间 9:00-18:00，急事请加 QQ	admin_dashboard.html
+1	例如：已删除违规内容并禁言 24 小时	assets/js/admin.js
+1	例如：批量注册	assets/js/admin.js
+1	例如：综合讨论区	assets/js/admin.js
+1	保存后自动解析头像与名称并替换落地页图标	admin_dashboard.html
+1	保存新密码	user_settings.html
+1	保存时留空则不修改已存储的 Secret	admin_dashboard.html
+1	保存草稿	editor.html
+1	修改密码后，其他设备上的登录会立即失效	user_settings.html
+1	允许 Discord 登录	assets/js/admin.js
+1	允许 GitHub 登录	assets/js/admin.js
+1	允许他人查看你关注了谁	user_settings.html
+1	允许他人查看你的收藏夹	user_settings.html
+1	允许搜索引擎收录	user_settings.html
+1	允许陌生人私信	user_settings.html
+1	免费注册，立即发布文章	register.html
+1	免费额度足够，全球低延迟	index.html
+1	全局作用域权限	assets/js/app.js
+1	全站	editor.html
+1	全站举报队列，处理结果会通知举报人	admin_dashboard.html
+1	全站广播	admin_dashboard.html
+1	全站版块一览，进入任意版块的独立管理面板	admin_dashboard.html
+1	全部已读	notifications.html
+1	公告与文案	admin_dashboard.html
+1	公告会展示在搜索的「官方公告」分类与社区公告区，可置顶	admin_dashboard.html
+1	公告内容	assets/js/admin.js
+1	公告标题	assets/js/admin.js
+1	公开关注列表	user_settings.html
+1	公开收藏	user_settings.html
+1	公开邮箱	user_settings.html
+1	公钥	admin_dashboard.html
+1	关于	home.html
+1	关于页内容	admin_dashboard.html
+1	关注提醒	user_settings.html
+1	关联账号违规	assets/js/admin.js
+1	关键词	admin_dashboard.html
+1	关闭后个人主页添加 noindex 标记	user_settings.html
+1	关闭后仅互相关注的用户可以给你发私信	user_settings.html
+1	关闭后仅管理员可创建账号	assets/js/admin.js
+1	关闭后可直接注册，安全性降低	assets/js/admin.js
+1	关闭后所有场景都不校验	admin_dashboard.html
+1	其下所有频道将一并删除，且不可恢复	assets/js/admin.js
+1	内分配身份组	assets/js/channel_manage.js
+1	决定入口出现的位置	admin_dashboard.html
+1	分割线	editor.html
+1	分栏	editor.html
+1	分配身份组 ·	assets/js/admin.js
+1	列 A	editor.html
+1	列 B	editor.html
+1	创建一个令牌，让 Discord 机器人接入社区	assets/js/admin.js
+1	创建后可在右侧勾选具体权限	assets/js/admin.js
+1	创建后可在右侧权限矩阵中勾选具体权限	assets/js/channel_manage.js
+1	创建成功	assets/js/admin.js
+1	创建第一个版块开始社区治理	assets/js/admin.js
+1	删除后版块下的频道与身份组配置将全部移除，频道内文章会变为无归属状态。仅版主与超级管理员可执行	channel_manage.html
+1	删除后该令牌立即失效，确认继续？	assets/js/admin.js
+1	删除线	editor.html
+1	删除该频道？相关身份组配置会一并失效	assets/js/channel_manage.js
+1	删除身份组	assets/js/admin.js
+1	到期	admin_dashboard.html
+1	刷新会话状态	assets/js/app.js
+1	前往	assets/js/app.js
+1	前往创建	assets/js/admin.js
+1	前往机器人管理	user_settings.html
+1	剩余	assets/js/admin.js
+1	副标题	admin_dashboard.html
+1	加入社区	register.html
+1	加入频道的用户可以创建与频道关联的独立群组，分类和隶属显示对应频道	groups.html
+1	加入频道，参与社区治理	register.html
+1	加粗	editor.html
+1	加载统计	admin_dashboard.html
+1	加载记录	admin_dashboard.html
+1	动作	assets/js/admin.js
+1	匿名	post.html
+1	单位 px，0 为不模糊	admin_dashboard.html
+1	占位	channels.html
+1	原样发送	admin_dashboard.html
+1	原生，免密钥	admin_dashboard.html
+1	去版块	groups.html
+1	友善讨论，拒绝人身攻击	home.html
+1	反馈内容	assets/js/app.js
+1	反馈内容至少 5 个字符	assets/js/app.js
+1	发件地址	admin_dashboard.html
+1	发件配置	admin_dashboard.html
+1	发布位置	editor.html
+1	发布公告	admin_dashboard.html
+1	发布前确认内容合法合规	home.html
+1	发布文章、加入频道、参与治理 —— 一个账号全部搞定	register.html
+1	发布时间	admin_dashboard.html
+1	发文频率高的社区可关闭	assets/js/admin.js
+1	发起新会话	messages.html
+1	发送中…	assets/js/admin.js
+1	发送中，请勿关闭页面…	assets/js/admin.js
+1	发送单封邮件	admin_dashboard.html
+1	发送失败	assets/js/admin.js
+1	发送失败，请稍后重试	assets/js/app.js
+1	发送测试邮件	admin_dashboard.html
+1	发送验证码到邮箱	assets/js/app.js
+1	取消选择	admin_dashboard.html
+1	可留空	assets/js/channel_manage.js
+1	可见身份组	editor.html
+1	可选，会记录并通知	assets/js/admin.js
+1	号 / QQ 群号 / 加群链接	assets/js/admin.js
+1	合计	assets/js/admin.js
+1	同时发送站内通知	admin_dashboard.html
+1	同时推送一条站内通知	admin_dashboard.html
+1	名称不匹配，已取消	assets/js/channel_manage.js
+1	名称与内容不能为空	assets/js/admin.js
+1	后台常驻	user_settings.html
+1	后台开启「联系我们」后显示浮动按钮	index.html
+1	后台开启「联系我们」后，全站	assets/js/app.js
+1	后端未连接，展示默认内容	index.html
+1	吗？解绑后将无法用它登录	user_settings.html
+1	含垃圾箱	assets/js/app.js
+1	含首页	assets/js/app.js
+1	启用联系我们按钮	admin_dashboard.html
+1	品牌、首页模式、注册策略与人机验证	admin_dashboard.html
+1	回车添加，最多 8 个	editor.html
+1	图片不能超过 5MB	assets/js/app.js
+1	图片读取失败	assets/js/app.js
+1	在个人主页展示邮箱地址	user_settings.html
+1	在收藏中搜索	favorites.html
+1	在文章页点击收藏，稍后即可在这里找到它们	favorites.html
+1	在线立即、离线下次访问	assets/js/admin.js
+1	在这里书写你的内容…	editor.html
+1	垃圾信息	assets/js/admin.js
+1	基于 Cloudflare 边缘网络的社区治理平台，含完整权限体系与频道系统	index.html
+1	基址	assets/js/admin.js
+1	处理本版块作用域内的举报	channel_manage.html
+1	处理结论	assets/js/admin.js
+1	复制号码	assets/js/app.js
+1	复制失败	assets/js/app.js
+1	复制失败，请手动选择文本	assets/js/admin.js
+1	外观 / 主题	assets/js/app.js
+1	外部链接	admin_dashboard.html
+1	天内最多修改 2 次，修改后旧链接失效	user_settings.html
+1	失败	assets/js/admin.js
+1	头像地址	admin_dashboard.html
+1	套餐	assets/js/admin.js
+1	如果你拥有机器人管理权限，可在管理后台创建 Bot Token 并调用	user_settings.html
+1	威胁拦截	assets/js/admin.js
+1	字数	post.html
+1	字节	assets/js/admin.js
+1	存草稿	editor.html
+1	安全传输	index.html
+1	完成：成功	assets/js/admin.js
+1	客户端下载页 URL	admin_dashboard.html
+1	密码与登录会话管理	user_settings.html
+1	密码在浏览器内先做 SHA-256 预哈希后再传输，服务端只保存 PBKDF2 派生值	user_settings.html
+1	密码客户端 SHA-256 预哈希 + 服务端 PBKDF2，永不明文落库或传输	index.html
+1	密码已更新，其他设备已下线	user_settings.html
+1	密码已重置，请重新登录	reset.html
+1	密码永不明文传输	register.html
+1	对方的用户名或用户 ID	messages.html
+1	对象	assets/js/admin.js
+1	导出你在本站的公开资料与设置副本	user_settings.html
+1	导出我的数据	user_settings.html
+1	导航	home.html
+1	封禁 IP	assets/js/admin.js
+1	封禁、禁言、改名、分配身份组与强制下线	admin_dashboard.html
+1	封禁其 IP	assets/js/admin.js
+1	封禁时长	assets/js/admin.js
+1	封禁用户	assets/js/admin.js
+1	封禁账号	assets/js/admin.js
+1	封面	editor.html
+1	封，扫描用户	assets/js/admin.js
+1	封，跳过	assets/js/admin.js
+1	将向所有已验证邮箱、未关闭邮件推送、未被封禁的用户群发，单次最多 500 人	admin_dashboard.html
+1	将向选中的	assets/js/admin.js
+1	将清理	assets/js/admin.js
+1	将清空整个 Zone 的全部缓存，可能造成短时回源压力	assets/js/admin.js
+1	小标题	editor.html
+1	尚未配置	assets/js/admin.js
+1	展示名	admin_dashboard.html
+1	展示给其他人的名字	user_settings.html
+1	左侧边栏	assets/js/admin.js
+1	已于	assets/js/channel_manage.js
+1	已代理	assets/js/admin.js
+1	已保存到本地	assets/js/storage.js
+1	已创建	groups.html
+1	已删除版块	assets/js/admin.js
+1	已发布	editor.html
+1	已发布的文章与评论会显示为「已注销用户」	user_settings.html
+1	已发送	assets/js/admin.js
+1	已发送，感谢反馈！	assets/js/app.js
+1	已在 Resend 验证	admin_dashboard.html
+1	已复制到剪贴板	assets/js/admin.js
+1	已对	assets/js/admin.js
+1	已封禁 IP	assets/js/admin.js
+1	已强制下线	assets/js/admin.js
+1	已恢复本地草稿	editor.html
+1	已改名	assets/js/admin.js
+1	已更新举报状态	assets/js/admin.js
+1	已标记为邮箱已验证	assets/js/admin.js
+1	已注销	assets/js/admin.js
+1	已注销/已删除	post.html
+1	已渲染，避免重复	assets/js/app.js
+1	已生成导出文件	user_settings.html
+1	已禁言	assets/js/admin.js
+1	已要求该用户验证邮箱	assets/js/admin.js
+1	已解封	assets/js/admin.js
+1	已解除封禁	assets/js/admin.js
+1	已解除禁言	assets/js/admin.js
+1	已选	assets/js/admin.js
+1	已选 0 项	admin_dashboard.html
+1	已配置	assets/js/admin.js
+1	已锁评	post.html
+1	已驳回	admin_dashboard.html
+1	已验证	user_settings.html
+1	开发模式	assets/js/admin.js
+1	开启	assets/js/admin.js
+1	开启后，用户可在导航菜单中看到「联系我们」	admin_dashboard.html
+1	开放注册	assets/js/admin.js
+1	引用	editor.html
+1	强烈建议开启，防止批量注册	assets/js/admin.js
+1	当前作用域的权限仅在该区域内生效	channel_manage.html
+1	当前处于离线状态	offline.html
+1	当前时间预览	user_settings.html
+1	当前生效	user_settings.html
+1	当前登录	assets/js/admin.js
+1	当前筛选条件下队列是空的	assets/js/admin.js
+1	当前身份组作用域	assets/js/channel_manage.js
+1	当前邮箱	user_settings.html
+1	当前页	assets/js/admin.js
+1	当前频道对象	channels.html
+1	待验证	assets/js/admin.js
+1	必须是	admin_dashboard.html
+1	必须验证邮箱后才能继续使用。确认？	assets/js/admin.js
+1	快捷	home.html
+1	总开关	admin_dashboard.html
+1	总数	favorites.html
+1	恢复默认	assets/js/app.js
+1	想说的话…	assets/js/app.js
+1	感谢以下为项目做出贡献的人	about.html
+1	我在做的东西	index.html
+1	我是	index.html
+1	我是站长	index.html
+1	所有人	assets/js/admin.js
+1	所有机器人接口通过请求头	admin_dashboard.html
+1	所有设备立即下线，且无法再次登录	user_settings.html
+1	所有访客均可阅读	editor.html
+1	打开 QQ	assets/js/app.js
+1	打开链接	assets/js/app.js
+1	执行清理	admin_dashboard.html
+1	技能标签	admin_dashboard.html
+1	拉起 QQ 加好友 / 加群	admin_dashboard.html
+1	拖动调整位置，滑块调整缩放	assets/js/app.js
+1	拥有该组的成员会立即失去对应权限	assets/js/admin.js
+1	指向用户主页的链接	admin_dashboard.html
+1	指定 URL	admin_dashboard.html
+1	按 IP 过滤	admin_dashboard.html
+1	按主题组织社区：版块	channels.html
+1	按标签筛选	favorites.html
+1	按路径过滤	admin_dashboard.html
+1	按钮文字	assets/js/admin.js
+1	换个过滤条件，或等待新的请求进来	assets/js/admin.js
+1	授权范围	assets/js/admin.js
+1	排序在服务端拉取后于本页二次排序	explore.html
+1	排序权重	channel_manage.html
+1	探索	home.html
+1	接入 Cloud Mail，注册、找回密码、换绑邮箱全流程验证	index.html
+1	接入说明	admin_dashboard.html
+1	接口	user_settings.html
+1	控制他人能看到什么	user_settings.html
+1	控制可见人群	admin_dashboard.html
+1	控制站内通知与邮件推送	user_settings.html
+1	描述	admin_dashboard.html
+1	提及提醒	user_settings.html
+1	提示：你只能授予自己已拥有、且属于「作用域级	assets/js/channel_manage.js
+1	插入图片	editor.html
+1	搜索会话	messages.html
+1	搜索成员	channel_manage.html
+1	搜索技巧	explore.html
+1	搜索文章标题、摘要或标签…	explore.html
+1	搜索本页	home.html
+1	搜索标题 / 标签	admin_dashboard.html
+1	搜索版块	channels.html
+1	搜索用户名 / 邮箱 / ID	admin_dashboard.html
+1	摘要	editor.html
+1	操作人	admin_dashboard.html
+1	操作原因	assets/js/admin.js
+1	操作者	assets/js/admin.js
+1	收件人	admin_dashboard.html
+1	收件人、主题、正文都不能为空	assets/js/admin.js
+1	收到新的站内私信	user_settings.html
+1	收藏的文章会保存在这里，随时回看	favorites.html
+1	收藏统计	favorites.html
+1	数据	admin_dashboard.html
+1	数据导出	user_settings.html
+1	文字色	assets/js/app.js
+1	文章与评论请在对应页面自行备份	user_settings.html
+1	文章信息	post.html
+1	斜体	editor.html
+1	新增 DNS 记录	assets/js/admin.js
+1	新增 IP 封禁	assets/js/admin.js
+1	新增入口	admin_dashboard.html
+1	新增封禁	admin_dashboard.html
+1	新增记录	admin_dashboard.html
+1	新的昵称	assets/js/admin.js
+1	新窗口	assets/js/admin.js
+1	新邮箱地址	user_settings.html
+1	无内容	messages.html
+1	无序列表	editor.html
+1	无权访问	assets/js/admin.js
+1	无法获取第三方账号资料，请重试	login.html
+1	时展示	admin_dashboard.html
+1	是否跳转到	assets/js/app.js
+1	显示名称	user_settings.html
+1	显示浮动按钮	assets/js/app.js
+1	暂无主题说明	assets/js/channel_manage.js
+1	暂无会话	messages.html
+1	暂无公告，点击右上角发布	assets/js/admin.js
+1	暂无审核记录	assets/js/admin.js
+1	暂无贡献者，点击右上角添加	assets/js/admin.js
+1	暂无链接，点击右上角添加	assets/js/admin.js
+1	暂无项目，点击右上角添加	assets/js/admin.js
+1	暗色主题下卡片反色，保持可读	f.html
+1	更换设备/清缓存将丢失	assets/js/storage.js
+1	更新	post.html
+1	更新站点配置	assets/js/admin.js
+1	最多 12 条链接	user_settings.html
+1	最多 12 条，会以图标形式展示在你的个人主页	user_settings.html
+1	最多 8 个标签	editor.html
+1	最多浏览	explore.html
+1	最多点赞	explore.html
+1	最多评论	explore.html
+1	最新发布	explore.html
+1	最近登录	assets/js/admin.js
+1	最近的请求记录，可按 IP 与路径过滤	admin_dashboard.html
+1	有人在文章或评论中	user_settings.html
+1	有人评论了你的文章或回复了你	user_settings.html
+1	有人赞了你的文章或评论	user_settings.html
+1	有序列表	editor.html
+1	有效期	files.html
+1	有新用户关注了你	user_settings.html
+1	有未保存的修改，确定离开？	editor.html
+1	服务商	admin_dashboard.html
+1	服务器 / 邀请 URL	admin_dashboard.html
+1	服务器时间	assets/js/admin.js
+1	未授予任何权限	assets/js/admin.js
+1	未收到授权令牌，请重试	oauth_callback.html
+1	未登录访客不可见	editor.html
+1	未登录访客先看个人页	admin_dashboard.html
+1	未知	assets/js/admin.js
+1	未知用户	messages.html
+1	未绑定	user_settings.html
+1	未绑定则仅保存在本机	files.html
+1	未绑定时仅建议小于 3MB 的小文件存于本地	files.html
+1	未读	notifications.html
+1	未验证的域名 Resend 会拒绝发送	admin_dashboard.html
+1	本地兜底仅建议小于 3MB 的文件，大文件请先绑定 Cloudflare	assets/js/storage.js
+1	本地兜底仅建议小文件	assets/js/storage.js
+1	本地存储空间不足，部分文件可能未被保存	assets/js/storage.js
+1	本版块当前没有需要处理的举报	assets/js/channel_manage.js
+1	本站	assets/js/app.js
+1	机器人与开发者	user_settings.html
+1	机器人令牌	assets/js/admin.js
+1	机器人名称	assets/js/admin.js
+1	机器人接入	index.html
+1	权限仅超级管理员可分配	assets/js/channel_manage.js
+1	权限只有超级管理员可以分配	assets/js/admin.js
+1	标签种类	favorites.html
+1	标记处理中	assets/js/admin.js
+1	标题至少 2 个字符	editor.html
+1	检测到的时区	user_settings.html
+1	检索全站文章，处理违规内容	admin_dashboard.html
+1	欢迎来到	assets/js/app.js
+1	正在完成第三方登录…	oauth_callback.html
+1	正在尝试拉起 QQ，若未响应请复制号码手动添加	assets/js/app.js
+1	正文不能为空	editor.html
+1	每行一个，留空则清空全部	admin_dashboard.html
+1	永久删除该版块	channel_manage.html
+1	没收到？	assets/js/app.js
+1	没有 DNS 记录	assets/js/admin.js
+1	没有举报	assets/js/channel_manage.js
+1	没有举报记录	assets/js/admin.js
+1	没有匹配的成员	assets/js/channel_manage.js
+1	没有匹配的文章	assets/js/admin.js
+1	没有匹配的用户	assets/js/admin.js
+1	没有日志记录	assets/js/admin.js
+1	没有被封禁的 IP	assets/js/admin.js
+1	治理	index.html
+1	注册与安全	admin_dashboard.html
+1	注册成功，正在进入社区…	register.html
+1	注册需邮箱验证码	assets/js/admin.js
+1	注销后所有数据将被匿名化，且无法恢复	user_settings.html
+1	活跃作者	explore.html
+1	流量	assets/js/admin.js
+1	添加贡献者	admin_dashboard.html
+1	添加项目	admin_dashboard.html
+1	点击「新增入口」添加第一个导航按钮	assets/js/admin.js
+1	点击「联系我们」时，将尝试拉起 QQ 加好友 / 加群。也可直接填 qm.qq.com 加群链接	assets/js/admin.js
+1	点击「联系我们」时，将询问用户是否打开该链接	assets/js/admin.js
+1	点击下方按钮加载	admin_dashboard.html
+1	点击下方按钮尝试拉起 QQ 客户端	assets/js/app.js
+1	点击作者名可查看其全部文章	explore.html
+1	点击或拖拽上传 Favicon	admin_dashboard.html
+1	点击或拖拽上传 Logo	admin_dashboard.html
+1	点击或拖拽上传头像	admin_dashboard.html
+1	点击或拖拽上传封面	editor.html
+1	点击或拖拽上传背景图	admin_dashboard.html
+1	点击打开邀请 / 加群链接	assets/js/app.js
+1	点击询问是否跳转	admin_dashboard.html
+1	点赞提醒	user_settings.html
+1	热门标签	home.html
+1	版主可管理本版块全部频道	channel_manage.html
+1	版块与频道	index.html
+1	版块内昵称	assets/js/channel_manage.js
+1	版块名称、图标、横幅与可见性设置	channel_manage.html
+1	版块已删除	assets/js/channel_manage.js
+1	版块已更新	assets/js/admin.js
+1	版块详情	channels.html
+1	版本	assets/js/admin.js
+1	独立 Bot Token 与 API，Discord 社区联动、自动审核、自动同步	index.html
+1	独立访客	assets/js/admin.js
+1	生成新的 VAPID 密钥会导致所有已订阅设备失效，是否继续？	assets/js/admin.js
+1	用于发送注册 / 登录 / 重置密码验证码。填写并保存后立即生效，无需改代码或重新部署。推荐 Resend	admin_dashboard.html
+1	用于把 Discord 消息同步到社区	assets/js/admin.js
+1	用户 ID	user_settings.html
+1	用户下拉菜单	assets/js/admin.js
+1	用户主页链接	assets/js/admin.js
+1	用户侧入口	admin_dashboard.html
+1	用户名不匹配，已取消	user_settings.html
+1	用户名需为 2-20 位字母、数字、下划线、连字符或中文	register.html
+1	用户填写反馈，发到下方邮箱	admin_dashboard.html
+1	用户操作 ·	assets/js/admin.js
+1	用途说明	assets/js/admin.js
+1	由 app.js 注入：统一跳登录	assets/js/api.js
+1	由 app.js 注入：被「要求验证邮箱」拦截时唤起弹窗	assets/js/api.js
+1	留空使用渐变背景	admin_dashboard.html
+1	留空则不显示「本网站下载」入口。该地址指向独立部署的客户端下载站	admin_dashboard.html
+1	留空则不显示公告条	admin_dashboard.html
+1	留空则使用 Worker 环境变量 DISCORD	admin_dashboard.html
+1	留空则使用 Worker 环境变量 GITHUB	admin_dashboard.html
+1	留空则取消预览码	assets/js/storage.js
+1	留空则自动截取正文前 200 字	editor.html
+1	登录凭证	admin_dashboard.html
+1	登录出错，请重试	login.html
+1	登录名，注册后可在设置中修改昵称	register.html
+1	登录后即可进入社区、发布文章、加入频道，或直接给我发私信	index.html
+1	登录后可参与评论 ·	post.html
+1	登录失败	oauth_callback.html
+1	登录成功，正在进入…	oauth_callback.html
+1	登录记录	user_settings.html
+1	登录页背景图	admin_dashboard.html
+1	的发件域名	admin_dashboard.html
+1	的身份组，仅在该范围内生效	assets/js/admin.js
+1	目录	post.html
+1	目标 ID	assets/js/admin.js
+1	直接展示社区	admin_dashboard.html
+1	直接输入关键词匹配标题与摘要	explore.html
+1	确定更换	user_settings.html
+1	确定解绑	user_settings.html
+1	确定解绑？你 Cloudflare 账户中的存储资源将保留，但本站的分享记录会清除	assets/js/storage.js
+1	确定退出当前登录吗？	user_settings.html
+1	确认删除《	assets/js/admin.js
+1	确认删除身份组「	assets/js/admin.js
+1	确认新密码	user_settings.html
+1	确认继续？	assets/js/admin.js
+1	确认群发	admin_dashboard.html
+1	确认解封	assets/js/admin.js
+1	社交链接	admin_dashboard.html
+1	社区主页 —— 文章、频道与讨论	home.html
+1	社区公告	admin_dashboard.html
+1	社区守则	home.html
+1	社区数据	home.html
+1	社区首页	admin_dashboard.html
+1	禁言、改名、身份组等操作可限定在某个频道或群组内生效	assets/js/admin.js
+1	禁言分钟数	assets/js/admin.js
+1	禁言至	user_settings.html
+1	私信提醒	user_settings.html
+1	私密文章	index.html
+1	私密文章 · 端到端安全传输	login.html
+1	私密文章仅作者与超级管理员可见	post.html
+1	私密频道	channels.html
+1	移除	editor.html
+1	稍后再说	assets/js/app.js
+1	空空如也	profile.html
+1	站内通知摘要	admin_dashboard.html
+1	站点「联系我们」按钮的内容由超级管理员在此配置。按钮位置：导航栏右上角「主题」菜单内	admin_dashboard.html
+1	站点公告、审核结果、处罚通知	user_settings.html
+1	站点已关闭注册	login.html
+1	站点当前已关闭注册，请联系管理员	register.html
+1	站点标题	admin_dashboard.html
+1	站点核心指标与近 7 日访问趋势	admin_dashboard.html
+1	站点治理	admin_dashboard.html
+1	站点管理员尚未填写「关于我们」页面	about.html
+1	站长尚未配置社交链接	index.html
+1	站顶公告	admin_dashboard.html
+1	第三方登录失败：授权被拒绝或令牌换取出错，请重试或用账号密码登录	login.html
+1	第三方登录未正确配置	login.html
+1	第三方登录状态校验失败，请重试	login.html
+1	管理	assets/js/admin.js
+1	管理员要求你验证邮箱后才能继续使用本站。此窗口无法关闭，请按步骤完成验证	assets/js/app.js
+1	管理好友、申请与权限	friends.html
+1	篇 ·	explore.html
+1	精确过滤标签	explore.html
+1	精选	assets/js/feed.js
+1	精选项目	about.html
+1	系统与公告	user_settings.html
+1	系统预设	assets/js/channel_manage.js
+1	累计	assets/js/admin.js
+1	组织 / 仓库 URL	admin_dashboard.html
+1	细粒度权限体系	index.html
+1	细粒度权限体系与作用域隔离	login.html
+1	绑定 Cloudflare 后单文件上限约 25MB	files.html
+1	绑定 Cloudflare 后，文件存于你自己的账户	files.html
+1	绑定作用域	assets/js/admin.js
+1	绑定后可使用 Discord 一键登录，并接收机器人联动通知	user_settings.html
+1	绑定后可使用 GitHub 一键登录	user_settings.html
+1	绑定后可用第三方账号一键登录	user_settings.html
+1	绑定后系统会在你的 Cloudflare 账户下自动创建 KV 命名空间与 D1 数据库，文件存于你自己的账户	assets/js/storage.js
+1	缓存命中	assets/js/admin.js
+1	缓存清理	admin_dashboard.html
+1	缓存清理指令已提交	assets/js/admin.js
+1	编辑版块	assets/js/admin.js
+1	编辑版块 ·	assets/js/admin.js
+1	编辑身份组	assets/js/admin.js
+1	缺少文章 ID	post.html
+1	缺少版块参数	assets/js/channel_manage.js
+1	网站链接	admin_dashboard.html
+1	群发完成	assets/js/admin.js
+1	群组动态功能即将上线，现在可以先在成员列表中互动	groups.html
+1	联系渠道暂未配置	assets/js/app.js
+1	背景模糊度	admin_dashboard.html
+1	背景色	assets/js/app.js
+1	自动	user_settings.html
+1	自动多语言	index.html
+1	自动识别	user_settings.html
+1	自定义顶栏、侧栏、页脚与首页的自定义入口	admin_dashboard.html
+1	自建邮局	admin_dashboard.html
+1	自建邮局 API 地址	admin_dashboard.html
+1	若收件箱没有，请检查垃圾邮件	assets/js/app.js
+1	若该邮箱已注册，验证码会立即发出	reset.html
+1	范围	home.html
+1	草稿已保存	editor.html
+1	获赞	profile.html
+1	落地页 / 页脚图标与下载入口	admin_dashboard.html
+1	落地页「前往 GitHub 下载」按钮目标	admin_dashboard.html
+1	行内代码	editor.html
+1	表格	editor.html
+1	被封禁的 IP 将无法访问任何 API	admin_dashboard.html
+1	裁剪头像	assets/js/app.js
+1	角色/贡献	assets/js/admin.js
+1	解封 IP	assets/js/admin.js
+1	解封用户	assets/js/admin.js
+1	解除封禁	assets/js/admin.js
+1	记录	admin_dashboard.html
+1	记录已创建	assets/js/admin.js
+1	评论内容不能为空	post.html
+1	评论提醒	user_settings.html
+1	识别浏览器语言与 12/24 小时制，自动匹配界面，也可手动切换	index.html
+1	该套餐不提供 Analytics 数据	assets/js/admin.js
+1	该操作不可撤销	assets/js/admin.js
+1	该文本会展示在全站页脚，修改需谨慎	admin_dashboard.html
+1	该文章已锁定评论	post.html
+1	该用户将立即失效所有登录态	assets/js/admin.js
+1	该第三方账号已绑定到其他用户	login.html
+1	该账号已被封禁	login.html
+1	语音	channels.html
+1	请从版块列表进入管理面板	assets/js/channel_manage.js
+1	请先勾选用户	assets/js/admin.js
+1	请先同意社区规则	register.html
+1	请同时检查垃圾箱	reset.html
+1	请填写新邮箱与验证码	user_settings.html
+1	请填写有效的邮箱	assets/js/app.js
+1	请检查网络后重试	offline.html
+1	请求总数	assets/js/admin.js
+1	请求时通过请求头传递	assets/js/admin.js
+1	请求超时，请检查网络	assets/js/api.js
+1	请留下你的邮箱与反馈，我们会尽快回复	assets/js/app.js
+1	请稍候，正在校验授权凭证	oauth_callback.html
+1	请联系管理员	login.html
+1	请至少选择一个可见身份组	editor.html
+1	请输入	assets/js/admin.js
+1	请输入 IP	assets/js/admin.js
+1	请输入接收测试邮件的邮箱	assets/js/admin.js
+1	请输入有效邮箱	reset.html
+1	请输入机器人名称	assets/js/admin.js
+1	请输入标题…	editor.html
+1	请输入邮箱验证码	register.html
+1	请选择文件	assets/js/app.js
+1	请验证你的邮箱	assets/js/app.js
+1	调整身份组	assets/js/admin.js
+1	调用次数	admin_dashboard.html
+1	贡献者公示	admin_dashboard.html
+1	账号信息	user_settings.html
+1	账号已注销	user_settings.html
+1	账号状态	user_settings.html
+1	赞 ·	assets/js/admin.js
+1	超管	assets/js/admin.js
+1	超管 / 版主 / 副版主 / 频道主 / 频道管理员，30+ 权限位，作用域隔离	index.html
+1	超管可查看访问日志、封禁 IP、限流防刷、禁言成员	index.html
+1	超级管理员	assets/js/admin.js
+1	超级管理员操作留痕：谁、在何时、对谁、做了什么	admin_dashboard.html
+1	跟随地区	user_settings.html
+1	跳转网址	assets/js/admin.js
+1	跳过	assets/js/admin.js
+1	身份组已更新	assets/js/admin.js
+1	转载请注明来源与作者	home.html
+1	输入	explore.html
+1	输入不匹配，已取消	assets/js/admin.js
+1	输入你的用户名	user_settings.html
+1	输入版块名称「	assets/js/channel_manage.js
+1	辱骂骚扰	assets/js/admin.js
+1	边缘节点	assets/js/admin.js
+1	边缘部署	index.html
+1	边缘部署 · 全球加速	login.html
+1	运行时	admin_dashboard.html
+1	近 24 小时流量	admin_dashboard.html
+1	近 7 日页面访问量	admin_dashboard.html
+1	还没有人关注你	profile.html
+1	还没有任何版块	assets/js/admin.js
+1	还没有会话，去看看社区里的朋友吧	messages.html
+1	还没有关于内容	about.html
+1	还没有收藏	favorites.html
+1	还没有机器人	assets/js/admin.js
+1	还没有标签	editor.html
+1	还没有消息，打个招呼吧	messages.html
+1	还没有添加任何链接	user_settings.html
+1	还没有自定义入口	assets/js/admin.js
+1	还没有频道。频道拥有独立的身份组作用域，适合把版块拆成多个自治讨论区	assets/js/channel_manage.js
+1	这些信息会展示在你的个人主页与所有发言处	user_settings.html
+1	这位用户还没有公开文章	profile.html
+1	这将向全站所有已验证邮箱的用户群发邮件，操作不可撤销	assets/js/admin.js
+1	这是系统预设身份组，可以调整权限但不可删除	assets/js/admin.js
+1	这篇文章设置了访问限制	post.html
+1	这里会显示评论、点赞、关注、系统消息等提醒	notifications.html
+1	违规内容可点击举报处理	home.html
+1	通知、私信、点赞收藏全都有	register.html
+1	通过 QQ 与站长联系	assets/js/app.js
+1	邮件已提交发送	assets/js/admin.js
+1	邮件推送	user_settings.html
+1	邮件服务	admin_dashboard.html
+1	邮件验证码	index.html
+1	邮箱、头像、简介、关联链接会被清空，用户名保留占位以免链接失效	user_settings.html
+1	邮箱、账号标识与登录记录	user_settings.html
+1	邮箱已更换	user_settings.html
+1	邮箱验证成功，感谢配合	assets/js/app.js
+1	重新加载	offline.html
+1	重新发送	assets/js/app.js
+1	重置后其它设备将自动下线	reset.html
+1	重要通知同时发送到你的邮箱	user_settings.html
+1	鉴权，基址为	admin_dashboard.html
+1	链接	editor.html
+1	锁定	assets/js/admin.js
+1	阅 ·	assets/js/admin.js
+1	附加消息	profile.html
+1	集成	admin_dashboard.html
+1	需先在 Resend 验证你的发件域名	admin_dashboard.html
+1	需在 Worker 中配置 CF	admin_dashboard.html
+1	需要权限	assets/js/app.js
+1	需配置 GITHUB	assets/js/admin.js
+1	非超管只能授予自己已拥有的作用域级	assets/js/admin.js
+1	面板不可用	assets/js/admin.js
+1	页脚	assets/js/admin.js
+1	页脚版权文本	admin_dashboard.html
+1	页脚版权文本不能为空	assets/js/admin.js
+1	顶部导航栏	assets/js/admin.js
+1	项目名	assets/js/admin.js
+1	项目展示	admin_dashboard.html
+1	预设作用域不存在时回退全站	editor.html
+1	频道 / 群组 / 个人主页 URL	admin_dashboard.html
+1	频道建立在版块内：版主统管版块及全部频道，频道主自治本频道，权限逐级继承	index.html
+1	频道挂在版块下，拥有独立作用域与身份组	channel_manage.html
+1	频道挂在版块下：选择「版块 / 频道」即发布到该频道	editor.html
+1	频道数量	assets/js/admin.js
+1	频道的分层社区治理	login.html
+1	频道，版主统管版块，权限逐级继承	channels.html
+1	首页内联脚本通过全局 Site 加载配置	assets/js/app.js
+1	驳回举报	assets/js/admin.js
+1	验证	assets/js/app.js
+1	验证码	assets/js/app.js
+1	验证码会发送到上方填写的新邮箱，10 分钟内有效	user_settings.html
+1	验证码已发送，请查收邮箱	assets/js/app.js
+1	验证码错误或已过期	assets/js/app.js
+1	验证通道是否通	admin_dashboard.html
+1	默认主题	admin_dashboard.html

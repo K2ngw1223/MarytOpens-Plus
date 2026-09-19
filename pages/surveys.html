@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>问卷 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#6366f1">
+  <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.json">
+  <script>
+    (function() {
+      const apiMeta = document.querySelector('meta[name="mo-api"]');
+      const api = (apiMeta && apiMeta.content) || 'https://api.example.com';
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js?api=' + encodeURIComponent(api)).then(function(reg) {
+          reg.addEventListener('updatefound', function() {
+            const wb = reg.installing;
+            if (wb) wb.addEventListener('statechange', function() {
+              if (wb.state === 'activated') wb.postMessage({ type: 'mo-skip-waiting' });
+            });
+          });
+        }).catch(function() {});
+      }
+    })();
+  </script>
+<link rel="stylesheet" href="/assets/css/main.css">
+<script>(function(){var t=localStorage.getItem('mo_theme');var d=t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light');})();</script>
+</head>
+<body>
+
+<header id="navbar"></header>
+
+<main class="container container-mid py-6">
+  <div class="page-head row-between wrap" style="gap:12px">
+    <div>
+      <h1 data-i18n="nav.surveys">问卷</h1>
+      <p class="muted">参与社区调研，或查看官方发布的问卷。</p>
+    </div>
+    <button class="btn btn-primary" id="btnNewSurvey" hidden><span id="btnNewSurveyIco"></span> 新建问卷</button>
+  </div>
+
+  <div class="chips mt-3" id="surveyTabs"></div>
+
+  <div id="surveyList" class="mt-3 grid-cards"></div>
+  <div id="surveyDetail" class="hidden mt-3"></div>
+</main>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script src="/assets/js/surveys.js"></script>
+<script>
+App.boot({ nav: 'surveys', requireAuth: false, onReady: () => {
+  I18N.apply();
+  SurveysUI.init();
+}});
+</script>
+</body>
+</html>

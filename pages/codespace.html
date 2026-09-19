@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>代码空间 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#6366f1">
+<link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.json">
+<script>(function(){var t=localStorage.getItem('mo_theme');var d=t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light');})();</script>
+<link rel="stylesheet" href="/assets/css/main.css">
+</head>
+<body>
+
+<header id="navbar"></header>
+
+<main class="container container-mid py-6">
+  <div class="page-head row-between" style="gap:12px;flex-wrap:wrap">
+    <div>
+      <h1 data-i18n="codespace.title">代码空间</h1>
+      <p class="muted" data-i18n="codespace.subtitle">分享代码片段、运行环境与教程。</p>
+    </div>
+    <button class="btn btn-primary" id="btnNew"><span id="icoNew"></span> <span data-i18n="codespace.new">新建代码空间</span></button>
+  </div>
+
+  <div class="tabs" id="tabs" style="margin-bottom:14px"></div>
+
+  <div id="list" class="cards-grid"></div>
+</main>
+
+<footer id="footer"></footer>
+<nav id="tabbar"></nav>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script>
+(function () {
+  'use strict';
+  const { $, $$, esc, icon, avatar } = App;
+  const T = (k, p) => I18N.t(k, p);
+
+  const LANGS = ['javascript','typescript','python','go','rust','java','c','cpp','html','css','json','bash','sql','markdown','other'];
+  let mode = 'mine';
+
+  function csCard(s) {
+    const mine = s.ownerId === App.Session.user.id;
+    return '<div class="card card-pad cs-card" data-id="' + esc(s.id) + '">' +
+      '<div class="row-between" style="gap:8px"><b class="truncate grow">'+esc(s.name)+'</b>' +
+        (s.public ? '<span class="badge badge-ok">'+T('codespace.public')+'</span>' : '<span class="badge badge-muted">'+T('codespace.private')+'</span>') + '</div>' +
+      '<p class="muted small mt-2">'+(esc(s.description)||'—')+'</p>' +
+      '<div class="row mt-2" style="gap:8px;align-items:center;flex-wrap:wrap">' +
+        '<span class="tag">'+esc(s.language||'other')+'</span>' +
+        (mine ? '' : '<span class="xsmall muted">'+T('codespace.owner')+' #'+esc(String(s.ownerId).slice(0,8))+'</span>') +
+        '<span class="xsmall muted" style="margin-left:auto" data-time="'+s.updatedAt+'"></span>' +
+      '</div></div>';
+  }
+
+  async function load() {
+    const box = $('#list'); box.innerHTML = App.loadingBlock();
+    try {
+      const d = await API.Codespaces.list(mode === 'public' ? { public: 1 } : {});
+      renderTabs();
+      const items = d.items || [];
+      if (!items.length) { box.innerHTML = App.emptyState(mode==='public'?T('codespace.emptyPublic'):T('codespace.empty'), '', 'terminal'); return; }
+      box.innerHTML = items.map(csCard).join('');
+      $$('.cs-card', box).forEach((n) => n.onclick = () => openDetail(n.dataset.id));
+      I18N.apply(box);
+    } catch (e) { App.toastError(e); box.innerHTML = App.emptyState(T('common.failed'), e.message, 'alert'); }
+  }
+
+  function renderTabs() {
+    const t = $('#tabs');
+    const tabs = [{ k:'mine', label:T('codespace.owner') }, { k:'public', label:T('codespace.public') }];
+    t.innerHTML = tabs.map((x) => '<button class="tab' + (x.k===mode?' active':'') + '" data-mode="' + x.k + '">' + x.label + '</button>').join('');
+    $$('.tab', t).forEach((b) => b.onclick = () => { mode = b.dataset.mode; load(); });
+  }
+
+  function openDetail(id) {
+    const m = App.modal({ title: T('codespace.title'), size: 'lg', footer: false, body: '<div class="loading-center"><div class="spinner"></div></div>' });
+    (async () => {
+      try {
+        const d = await API.Codespaces.get(id);
+        const s = d.space, mine = s.ownerId === App.Session.user.id;
+        let html = '<div class="stack">' +
+          '<div class="row-between" style="gap:8px"><b class="truncate">'+esc(s.name)+'</b>' +
+            (s.public?'<span class="badge badge-ok">'+T('codespace.public')+'</span>':'<span class="badge badge-muted">'+T('codespace.private')+'</span>')+'</div>' +
+          (s.description?'<p class="muted small">'+esc(s.description)+'</p>':'') +
+          '<div class="row" style="gap:8px;flex-wrap:wrap"><span class="tag">'+esc(s.language||'other')+'</span><span class="xsmall muted" data-time="'+s.updatedAt+'"></span></div>' +
+          '<div class="code-wrap"><button class="btn btn-soft btn-sm" id="btnCopy">'+T('tools.copyOut')+'</button>' +
+            '<pre class="code-block" id="codeView">'+esc(s.code||'')+'</pre></div>' +
+          '<div class="row" style="gap:8px;margin-top:6px">' +
+            '<button class="btn btn-soft btn-sm" id="btnRun">'+T('codespace.run')+'</button>' +
+            (mine?'<button class="btn btn-soft btn-sm" id="btnEdit">'+T('codespace.edit')+'</button>':'') +
+            (mine?'<button class="btn btn-soft btn-sm btn-danger-soft" id="btnDel">'+T('codespace.delete')+'</button>':'') +
+          '</div></div>';
+        m.body.innerHTML = html; I18N.apply(m.body);
+        $('#btnCopy', m.body).onclick = () => copyText(s.code||'');
+        $('#btnRun', m.body).onclick = () => { copyText(s.code||''); App.toast.success(T('codespace.run')); };
+        const ed = $('#btnEdit', m.body), dl = $('#btnDel', m.body);
+        if (ed) ed.onclick = () => { m.close(); openEditor(s); };
+        if (dl) dl.onclick = async () => { if (!(await App.confirmDialog(T('common.confirm')+'?', { danger:true }))) return; try { await API.Codespaces.remove(id); App.toast.success(T('common.deleted')); m.close(); load(); } catch(e){ App.toastError(e); } };
+      } catch (e) { m.body.innerHTML = App.emptyState(T('common.failed'), e.message, 'alert'); }
+    })();
+  }
+
+  function copyText(txt) {
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(()=>App.toast.success(T('common.saved')), ()=>App.toast.warn(T('common.failed')));
+    else App.toast.warn(T('common.failed'));
+  }
+
+  function openEditor(existing) {
+    const body = document.createElement('div');
+    body.innerHTML =
+      '<div class="field"><label class="label">'+T('codespace.name')+'</label><input class="input" id="fName" maxlength="80" value="'+(existing?esc(existing.name):'')+'" placeholder="'+T('codespace.namePh')+'"></div>' +
+      '<div class="row" style="gap:10px"><div class="field grow"><label class="label">'+T('codespace.language')+'</label><select class="select" id="fLang">'+LANGS.map((l)=>'<option value="'+l+'"'+(existing&&existing.language===l?' selected':'')+'>'+l+'</option>').join('')+'</select></div>' +
+      '<div class="field grow"><label class="label">'+T('codespace.visibility')+'</label><select class="select" id="fVis"><option value="0"'+(existing&&!existing.public?' selected':'')+'>'+T('codespace.private')+'</option><option value="1"'+(!existing||existing.public?' selected':'')+'>'+T('codespace.public')+'</option></select></div></div>' +
+      '<div class="field"><label class="label">'+T('codespace.desc')+'</label><input class="input" id="fDesc" maxlength="500" value="'+(existing?esc(existing.description||''):'')+'" placeholder="'+T('codespace.descPh')+'"></div>' +
+      '<div class="field"><label class="label">'+T('codespace.code')+'</label><textarea class="textarea mono" id="fCode" rows="10" placeholder="// code…">'+esc(existing?existing.code||'':'')+'</textarea></div>';
+    const m = App.modal({ title: existing ? T('codespace.edit') : T('codespace.new'), body, size: 'lg', okText: existing ? T('common.save') : T('codespace.new'),
+      onOk: async () => {
+        const name = $('#fName', body).value.trim();
+        const code = $('#fCode', body).value;
+        if (!name) { App.toast.warn(T('codespace.name')); return false; }
+        if (!code) { App.toast.warn(T('codespace.code')); return false; }
+        const payload = { name, code, description: $('#fDesc', body).value.trim(), language: $('#fLang', body).value, public: $('#fVis', body).value === '1' };
+        if (existing) { await API.Codespaces.update(existing.id, payload); App.toast.success(T('common.saved')); }
+        else { await API.Codespaces.create(payload); App.toast.success(T('common.success')); }
+        mode = 'mine'; m.close(); load();
+      }
+    });
+  }
+
+  App.boot({
+    nav: 'codespace',
+    requireAuth: true,
+    onReady: function () {
+      $('#icoNew').innerHTML = icon('terminal');
+      $('#btnNew').onclick = () => openEditor(null);
+      load();
+    },
+  });
+})();
+</script>
+</body>
+</html>

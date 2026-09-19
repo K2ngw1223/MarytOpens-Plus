@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>版块 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+
+  <meta name="theme-color" content="#6366f1">
+  <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.json">
+  <script>
+    (function() {
+      const apiMeta = document.querySelector('meta[name="mo-api"]');
+      const api = (apiMeta && apiMeta.content) || 'https://api.example.com';
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js?api=' + encodeURIComponent(api)).then(function(reg) {
+          reg.addEventListener('updatefound', function() {
+            const wb = reg.installing;
+            if (wb) wb.addEventListener('statechange', function() {
+              if (wb.state === 'activated') wb.postMessage({ type: 'mo-skip-waiting' });
+            });
+          });
+        }).catch(function() {});
+      }
+    })();
+  </script>
+<link rel="stylesheet" href="/assets/css/main.css">
+</head>
+<body>
+
+<header id="navbar"></header>
+
+<div class="layout container-mid">
+
+  <!-- ============================ 左侧栏 ============================ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="side-group">
+      <div class="section-title" data-i18n="bd.title">版块</div>
+      <div id="sideBoards"><div class="skeleton sk-line w80"></div><div class="skeleton sk-line w60"></div></div>
+    </div>
+
+    <div class="side-group" id="sideChannelsGroup" hidden>
+      <div class="section-title" data-i18n="ch.title">频道</div>
+      <div id="sideChannels"></div>
+    </div>
+
+    <div class="side-group">
+      <div class="section-title" data-i18n="bd.quick">快捷入口</div>
+      <a class="side-item" href="/home.html"><span data-i18n="nav.home">首页</span></a>
+      <a class="side-item" href="/explore.html"><span data-i18n="nav.explore">发现</span></a>
+      <a class="side-item" href="/editor.html"><span data-i18n="nav.write">写文章</span></a>
+    </div>
+  </aside>
+
+  <!-- ============================== 主区域 ============================== -->
+  <main class="main">
+
+    <!-- 版块总览 -->
+    <section id="viewList">
+      <div class="card card-pad row-between wrap" style="gap:12px">
+        <div>
+          <h2 class="mb-0" data-i18n="bd.title">版块</h2>
+          <p class="small muted mb-0" data-i18n="bd.subtitle">按主题组织社区：版块 ⊃ 频道，版主统管版块，权限逐级继承。</p>
+        </div>
+        <div class="row" style="gap:8px">
+          <div class="input-icon" style="max-width:220px">
+            <input class="input input-sm" id="bdSearch" type="search" placeholder="搜索版块" data-i18n-ph="common.search">
+          </div>
+          <button class="btn btn-primary btn-sm" id="btnCreate" hidden data-i18n="bd.create">创建版块</button>
+        </div>
+      </div>
+
+      <div class="channel-grid" id="bdGrid"></div>
+    </section>
+
+    <!-- 版块详情 -->
+    <section id="viewBoard" hidden>
+      <div class="card" id="bdHeader"></div>
+
+      <div class="tabs" id="bdTabs">
+        <button class="tab active" data-tab="channels" data-i18n="ch.title">频道</button>
+        <button class="tab" data-tab="members" data-i18n="ch.members">成员</button>
+        <button class="tab" data-tab="roles" data-i18n="role.title">身份组</button>
+      </div>
+
+      <div class="tab-panel active" id="paneChannels">
+        <div class="row-between mb-4">
+          <div class="section-title mb-0" style="flex:1" data-i18n="ch.title">频道</div>
+          <button class="btn btn-sm btn-soft" id="btnNewChannel" hidden data-i18n="ch.create">创建频道</button>
+        </div>
+        <div class="card card-pad" id="channelList"></div>
+      </div>
+
+      <div class="tab-panel" id="paneMembers">
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th data-i18n="ch.members">成员</th><th data-i18n="role.title">身份组</th><th data-i18n="ch.joinedAt">加入时间</th><th data-i18n="common.status">状态</th><th></th></tr></thead>
+            <tbody id="memberRows"></tbody>
+          </table>
+        </div>
+        <div class="text-center mt-4"><button class="btn btn-sm" id="btnMoreMembers" hidden data-i18n="common.loadMore">加载更多</button></div>
+      </div>
+
+      <div class="tab-panel" id="paneRoles">
+        <p class="small muted" data-i18n="role.scopeHint">本面板中的身份组仅在当前区域内生效</p>
+        <div id="roleList" style="display:flex;flex-direction:column;gap:8px"></div>
+        <div class="mt-4"><a class="btn btn-primary btn-sm" id="btnManageRoles" hidden data-i18n="bd.openPerms">打开权限管理面板</a></div>
+      </div>
+    </section>
+
+    <!-- 频道详情（文章流 + 群聊） -->
+    <section id="viewChannel" hidden>
+      <div class="card" id="chHeader"></div>
+      <div class="tabs mb-4 mt-4" id="chTabs">
+        <button class="tab active" data-ctab="posts" data-i18n="ch.postsTab">帖子</button>
+        <button class="tab" data-ctab="chat" data-i18n="ch.chatTab">群聊</button>
+      </div>
+      <div class="tab-panel active" id="paneChannelPosts">
+        <div class="row-between wrap mb-4" style="gap:8px">
+          <div class="section-title mb-0" data-i18n="post.list">文章</div>
+          <a class="btn btn-sm btn-soft" id="btnWriteHere" href="/editor.html" data-i18n="ch.writeHere">在此频道发文</a>
+        </div>
+        <div class="post-list" id="chFeed"></div>
+        <div id="chFeedMore"></div>
+      </div>
+      <div class="tab-panel" id="paneChannelChat">
+        <div class="card card-pad chat-panel">
+          <div class="chat-head">
+            <span class="row" style="gap:6px"><span data-i18n="ch.chatDesc">频道内实时群聊</span></span>
+            <span class="badge badge-ok" id="chChatLive">Live</span>
+          </div>
+          <div class="ch-pinned-bar" id="chPinnedBar" hidden></div>
+          <div class="chat-list" id="chChatList"></div>
+          <div class="chat-input" id="chChatInputWrap">
+            <textarea id="chChatInput" class="input" rows="1" data-i18n-ph="ch.msgPlaceholder" placeholder="说点什么…"></textarea>
+            <button class="btn btn-primary btn-sm" id="chChatSend" data-i18n="ch.send">发送</button>
+          </div>
+          <p class="small muted2 mt-2" id="chChatHint" hidden></p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 右侧边栏：仅在版块/频道详情显示，填充空白并提供公告/在线成员等上下文 -->
+  <aside class="aside" id="rightAside" hidden>
+    <div class="card card-pad" id="bdAsideWidgets"></div>
+  </aside>
+</div>
+
+<footer id="footer"></footer>
+<nav id="tabbar"></nav>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script src="/assets/js/feed.js"></script>
+<script>
+(function () {
+  'use strict';
+  const { $, $$, esc, icon, toast, toastError } = App;
+  const T = (k) => I18N.t(k);
+
+  const state = {
+    boards: [],
+    current: null,        // 版块详情 { board, channels, member, roles, perms, canManage }
+    channel: null,        // 当前频道对象
+    memberCursor: null,
+    feed: null,
+  };
+
+  const CH_TYPE = { text: '文字讨论', forum: '论坛帖', announcement: '公告', voice: '语音（占位）' };
+
+  /* --------------------------- 侧栏 --------------------------- */
+
+  function renderSideBoards() {
+    const box = $('#sideBoards');
+    if (!state.boards.length) {
+      box.innerHTML = '<p class="small muted" style="padding:0 10px">' + T('bd.empty') + '</p>';
+      return;
+    }
+    box.innerHTML = state.boards.map((b) =>
+      '<a class="side-item' + (state.current && state.current.board.id === b.id ? ' active' : '') +
+      '" href="/channels.html?id=' + esc(b.id) + '">' +
+      '<span style="font-size:15px">' + esc(b.icon || '📁') + '</span>' +
+      '<span class="truncate">' + esc(b.name) + '</span>' +
+      '<span class="count">' + (b.memberCount || 0) + '</span></a>').join('');
+  }
+
+  function renderSideChannels() {
+    const g = $('#sideChannelsGroup');
+    const d = state.current;
+    if (!d) { g.hidden = true; return; }
+    const chs = d.channels || [];
+    g.hidden = !chs.length;
+    $('#sideChannels').innerHTML = chs.map((c) =>
+      '<a class="side-item' + (state.channel && state.channel.id === c.id ? ' active' : '') +
+      '" href="/channels.html?id=' + esc(d.board.id) + '&ch=' + esc(c.id) + '">' +
+      '<span style="font-size:15px">' + App.iconImage(c.iconUrl, c.icon || '#', 'font-size:15px') + '</span>' +
+      '<span class="truncate">' + esc(c.name) + '</span>' +
+      (c.private ? icon('lock') : '') + '</a>').join('');
+  }
+
+  /* ---------------------------- 版块总览 ------------------------------ */
+
+  function renderGrid(keyword) {
+    const grid = $('#bdGrid');
+    let items = state.boards;
+    if (keyword) {
+      const k = keyword.toLowerCase();
+      items = items.filter((b) => (b.name + ' ' + (b.description || '')).toLowerCase().includes(k));
+    }
+    if (!items.length) {
+      grid.innerHTML = App.emptyState(T('bd.empty'), T('bd.emptyDesc'), 'hash',
+        App.Session.can('board.create') ? '<button class="btn btn-primary" id="emptyCreate">' + T('bd.create') + '</button>' : '');
+      const ec = $('#emptyCreate'); if (ec) ec.onclick = openCreate;
+      return;
+    }
+    grid.innerHTML = items.map((b) => Feed.boardCardHTML(b)).join('');
+    grid.querySelectorAll('[data-join]').forEach((btn) => {
+      btn.onclick = async (e) => {
+        e.preventDefault(); e.stopPropagation();
+        if (!App.Session.require()) return;
+        App.busy(btn, true);
+        try {
+          await API.Boards.join(btn.dataset.join);
+          toast.success(T('ch.joined'));
+          await loadBoards();
+          renderGrid($('#bdSearch').value.trim());
+        } catch (err) { toastError(err); } finally { App.busy(btn, false); }
+      };
+    });
+    I18N.apply(grid);
+  }
+
+  /* ---------------------------- 创建版块 ------------------------------ */
+
+  function openCreate() {
+    if (!App.Session.require()) return;
+    const body = App.el('div', {}, []);
+    body.innerHTML =
+      '<div class="field"><label class="label" data-i18n="bd.name">版块名称</label>' +
+        '<input class="input" id="nbName" maxlength="40" placeholder="' + esc(T('bd.namePh')) + '"></div>' +
+      '<div class="row" style="gap:12px">' +
+        '<div class="field" style="flex:0 0 96px"><label class="label" data-i18n="bd.icon">版块图标</label>' +
+          '<input class="input text-center" id="nbIcon" maxlength="4" value="📁"></div>' +
+        '<div class="field grow"><label class="label" data-i18n="bd.desc">版块简介</label>' +
+          '<input class="input" id="nbDesc" maxlength="120" placeholder="' + esc(T('bd.descPh')) + '"></div>' +
+      '</div>' +
+      '<div class="field"><label class="label" data-i18n="post.visibility">可见性</label>' +
+        '<select class="select" id="nbVis">' +
+          '<option value="public">' + T('bd.public') + '</option>' +
+          '<option value="private">' + T('bd.private') + '</option>' +
+        '</select></div>' +
+      '<p class="hint">' + T('bd.createHint') + '</p>';
+
+    App.modal({
+      title: T('bd.create'), body, okText: T('bd.create'),
+      onOk: async () => {
+        const name = body.querySelector('#nbName').value.trim();
+        if (name.length < 2) { toast.warn(T('bd.nameShort')); return false; }
+        const d = await API.Boards.create({
+          name,
+          icon: body.querySelector('#nbIcon').value.trim() || '📁',
+          description: body.querySelector('#nbDesc').value.trim(),
+          visibility: body.querySelector('#nbVis').value,
+        });
+        toast.success(T('bd.created'));
+        location.href = '/channels.html?id=' + d.board.id;
+      },
+    });
+  }
+
+  /* ---------------------------- 版块详情 ------------------------------ */
+
+  function renderBoardHeader() {
+    const d = state.current, b = d.board;
+    const joined = !!d.member;
+    const banner = b.banner ? 'background-image:url(' + esc(API.fileURL(b.banner)) + ')' : '';
+    $('#bdHeader').innerHTML =
+      '<div class="board-banner" style="' + banner + '"></div>' +
+      '<div class="card-body" style="padding:16px 20px 20px">' +
+        '<div class="row-between wrap" style="gap:12px;align-items:flex-start">' +
+          '<div class="row" style="gap:12px;align-items:flex-start">' +
+            '<div style="width:44px;height:44px;border-radius:12px;background:var(--surface-3);display:flex;align-items:center;justify-content:center;font-size:22px;margin-top:-30px;border:3px solid var(--surface)">' + App.iconImage(b.iconUrl, b.icon || '📁', 'width:100%;height:100%;object-fit:cover;border-radius:8px') + '</div>' +
+            '<div><h2 style="margin:0 0 3px">' + esc(b.name) + '</h2>' +
+              '<p class="small muted mb-0">' + esc(b.description || T('bd.noDesc')) + '</p>' +
+              '<div class="row small muted2 mt-2" style="gap:14px">' +
+                '<span>' + icon('users') + ' ' + (b.memberCount || 0) + ' ' + T('ch.members') + '</span>' +
+                '<span>' + icon('layers') + ' ' + (d.channels || []).length + ' ' + T('ch.title') + '</span>' +
+                '<span class="badge ' + (b.visibility === 'private' ? 'badge-warn' : 'badge-ok') + '">' +
+                  (b.visibility === 'private' ? T('bd.privateShort') : T('bd.publicShort')) + '</span>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="row" style="gap:8px">' +
+            (joined ? '<span class="badge badge-accent">' + T('ch.joined') + '</span>'
+                    : '<button class="btn btn-primary btn-sm" id="btnJoin">' + T('ch.join') + '</button>') +
+            (d.canManage ? '<a class="btn btn-sm btn-soft" href="/channel_manage.html?id=' + esc(b.id) + '">' + T('bd.manage') + '</a>' : '') +
+            (App.Session.isLoggedIn ? '<button class="btn btn-sm btn-ghost" id="bdIdentity">' + icon('user') + ' 区域身份</button>' : '') +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+    const bj = $('#btnJoin');
+    if (bj) bj.onclick = async () => {
+      if (!App.Session.require()) return;
+      App.busy(bj, true);
+      try { await API.Boards.join(b.id); toast.success(T('ch.joined')); await openBoard(b.id); }
+      catch (e) { toastError(e); App.busy(bj, false); }
+    };
+
+    const bdi = $('#bdIdentity');
+    if (bdi) bdi.onclick = () => openAreaIdentity('board:' + b.id, b.name || '版块');
+
+    $('#btnNewChannel').hidden = !(d.canManage || (d.perms || []).includes('channel.create'));
+    $('#btnManageRoles').hidden = !d.canManage;
+    $('#btnManageRoles').href = '/channel_manage.html?id=' + b.id + '&tab=roles';
+    renderAside();
+  }
+
+  function renderAside() {
+    const d = state.current, b = d && d.board;
+    const aside = $('#rightAside');
+    const wrap = $('#bdAsideWidgets');
+    if (!b) { aside.hidden = true; $('.layout').classList.remove('with-aside'); return; }
+    aside.hidden = false;
+    $('.layout').classList.add('with-aside');
+
+    const welcome = b.onboarding
+      ? '<div class="aside-welcome prose small">' + App.markdown(b.onboarding) + '</div>'
+      : '<p class="small muted">' + T('bd.welcomeHint') + '</p>';
+
+    let html =
+      '<div class="aside-block">' +
+        '<div class="section-title mb-2" data-i18n="bd.about">关于版块</div>' +
+        '<div class="row" style="gap:10px;align-items:flex-start;margin-bottom:10px">' +
+          '<div style="width:40px;height:40px;border-radius:10px;background:var(--surface-3);display:flex;align-items:center;justify-content:center;font-size:18px">' + App.iconImage(b.iconUrl, b.icon || '📁', 'width:100%;height:100%;object-fit:cover;border-radius:7px') + '</div>' +
+          '<div style="min-width:0"><div class="bold truncate">' + esc(b.name) + '</div><div class="small muted">' + T('bd.members') + '：' + (b.memberCount || 0) + ' · ' + T('ch.title') + '：' + (d.channels || []).length + '</div></div>' +
+        '</div>' +
+        welcome +
+      '</div>';
+
+    html +=
+      '<div class="aside-block mt-3">' +
+        '<div class="section-title mb-2" data-i18n="ann.title">官方公告</div>' +
+        '<div id="asideAnnouncements"><p class="small muted" data-i18n="ann.empty">暂无公告</p></div>' +
+      '</div>';
+
+    wrap.innerHTML = html;
+    I18N.apply(wrap);
+
+    // 懒加载公告，失败不阻塞
+    API.Announcements.list({ limit: 3 }).then((res) => {
+      const list = (res.items || []).filter((a) => a.pinned || a.official).slice(0, 3);
+      const box = $('#asideAnnouncements');
+      if (!box) return;
+      if (!list.length) { box.innerHTML = '<p class="small muted" data-i18n="ann.empty">' + T('ann.empty') + '</p>'; return; }
+      box.innerHTML = list.map((a) =>
+        '<a class="aside-row" href="/announcements.html" title="' + esc(a.title) + '">' +
+          '<span class="aside-dot"></span>' +
+          '<span class="small truncate">' + esc(a.title) + '</span>' +
+        '</a>').join('');
+    }).catch(() => {
+      const box = $('#asideAnnouncements');
+      if (box) box.innerHTML = '<p class="small muted" data-i18n="ann.empty">' + T('ann.empty') + '</p>';
+    });
+  }
+
+  function renderChannels() {
+    const d = state.current;
+    const box = $('#channelList');
+    if (!d.channels || !d.channels.length) {
+      box.innerHTML = App.emptyState(T('ch.empty'), T('ch.emptyDesc'), 'layers');
+      return;
+    }
+    box.innerHTML = d.channels.map((c) =>
+      '<div class="group-item" data-ch="' + esc(c.id) + '" style="cursor:pointer">' +
+        '<span class="gi-hash">' + esc(c.icon || '#') + '</span>' +
+        '<span class="gi-name">' + esc(c.name) + '</span>' +
+        '<span class="badge">' + esc(T('ch.type.' + c.type) || CH_TYPE[c.type] || c.type) + '</span>' +
+        (c.private ? '<span class="badge badge-warn">' + T('ch.privateShort') + '</span>' : '') +
+        '<span class="small muted2 clamp-1">' + esc(c.topic || '') + '</span>' +
+        '<span class="spacer"></span>' +
+        (d.canManage ? '<button class="icon-btn" data-edit="' + esc(c.id) + '" aria-label="edit">' + icon('edit') + '</button>' +
+                       '<button class="icon-btn" data-del="' + esc(c.id) + '" aria-label="delete">' + icon('trash') + '</button>' : '') +
+        icon('arrowRight') +
+      '</div>').join('');
+
+    box.querySelectorAll('[data-ch]').forEach((n) => n.onclick = (e) => {
+      if (e.target.closest('[data-edit],[data-del]')) return;
+      location.href = '/channels.html?id=' + state.current.board.id + '&ch=' + n.dataset.ch;
+    });
+    box.querySelectorAll('[data-edit]').forEach((b) => b.onclick = () => channelDialog(d.channels.find((x) => x.id === b.dataset.edit)));
+    box.querySelectorAll('[data-del]').forEach((b) => b.onclick = async () => {
+      if (!(await App.confirmDialog(T('ch.delConfirm'), { danger: true }))) return;
+      try {
+        await API.Boards.removeChannel(state.current.board.id, b.dataset.del);
+        toast.success(T('common.success')); await openBoard(state.current.board.id);
+      } catch (e) { toastError(e); }
+    });
+  }
+
+  function channelForm(c) {
+    const body = App.el('div');
+    body.innerHTML =
+      '<div class="row" style="gap:12px">' +
+        '<div class="field" style="flex:0 0 90px"><label class="label" data-i18n="ch.icon">图标</label>' +
+          '<input class="input text-center" id="cfIcon" maxlength="4" value="' + esc((c && c.icon) || '#') + '"></div>' +
+        '<div class="field grow"><label class="label" data-i18n="ch.name">频道名称</label>' +
+          '<input class="input" id="cfName" maxlength="40" value="' + esc((c && c.name) || '') + '"></div>' +
+      '</div>' +
+      '<div class="field"><label class="label" data-i18n="ch.topic">主题说明</label>' +
+        '<input class="input" id="cfTopic" maxlength="120" value="' + esc((c && c.topic) || '') + '"></div>' +
+      '<div class="row" style="gap:12px">' +
+        '<div class="field grow"><label class="label" data-i18n="ch.type">类型</label><select class="select" id="cfType">' +
+          ['text','forum','announcement','voice'].map((t) =>
+            '<option value="' + t + '"' + (c && c.type === t ? ' selected' : '') + '>' +
+            T('ch.type.' + t) + '</option>').join('') +
+        '</select></div>' +
+        '<div class="field" style="flex:0 0 150px"><label class="label" data-i18n="ch.privateShort">私密频道</label>' +
+          '<label class="switch" style="margin-top:9px"><input type="checkbox" id="cfPriv"' + (c && c.private ? ' checked' : '') + '><span class="track"></span></label></div>' +
+      '</div>';
+    return body;
+  }
+
+  function channelDialog(c) {
+    const body = channelForm(c);
+    App.modal({
+      title: c ? T('ch.edit') : T('ch.create'), body, okText: T('common.save'),
+      onOk: async () => {
+        const payload = {
+          name: body.querySelector('#cfName').value.trim(),
+          icon: body.querySelector('#cfIcon').value.trim() || '#',
+          topic: body.querySelector('#cfTopic').value.trim(),
+          type: body.querySelector('#cfType').value,
+          private: body.querySelector('#cfPriv').checked,
+        };
+        if (!payload.name) { toast.warn(T('ch.nameRequired')); return false; }
+        if (c) await API.Boards.updateChannel(state.current.board.id, c.id, payload);
+        else await API.Boards.createChannel(state.current.board.id, payload);
+        toast.success(T('common.success'));
+        await openBoard(state.current.board.id);
+      },
+    });
+  }
+
+  /* ----------------------------- 成员列表 ----------------------------- */
+
+  async function loadMembers(reset) {
+    const tb = $('#memberRows');
+    if (reset) { tb.innerHTML = ''; state.memberCursor = null; }
+    try {
+      const d = await API.Boards.members(state.current.board.id, { cursor: state.memberCursor, limit: 50 });
+      state.memberCursor = d.cursor;
+      $('#btnMoreMembers').hidden = !d.cursor;
+      if (!d.items.length && reset) {
+        tb.innerHTML = '<tr><td colspan="5"><p class="muted small text-center" style="padding:20px 0">' + T('ch.noMembers') + '</p></td></tr>';
+        return;
+      }
+      const seen = new Set(Array.from(tb.querySelectorAll('[data-uid]')).map((n) => n.dataset.uid));
+      const rows = d.items.filter((m) => !seen.has(m.id));
+      tb.insertAdjacentHTML('beforeend', rows.map((m) => {
+        const muted = m.mutedUntil && m.mutedUntil > Date.now();
+        return '<tr data-uid="' + esc(m.id) + '">' +
+          '<td><a class="row" style="gap:8px;align-items:center" href="/profile.html?u=' + esc(m.id) + '">' +
+            App.avatar(m, 'xs') + '<span>' + esc(m.nickname || m.displayName) + '</span>' +
+            '<span class="muted2 xsmall">@' + esc(m.username) + '</span></a></td>' +
+          '<td>' + (App.roleTagsHTML(m.roleTags) || '<span class="muted2 small">—</span>') + '</td>' +
+          '<td><span class="small muted" data-time="' + (m.joinedAt || 0) + '" data-time-style="abs"></span></td>' +
+          '<td>' + (m.banned ? '<span class="badge badge-danger">' + T('admin.banned') + '</span>'
+                  : muted ? '<span class="badge badge-warn">' + T('admin.muted') + '</span>'
+                  : '<span class="badge badge-ok">' + T('admin.normal') + '</span>') + '</td>' +
+          '<td class="td-actions">' +
+            '<a class="btn btn-sm btn-ghost" href="/messages.html?to=' + esc(m.id) + '">' + T('nav.messages') + '</a>' +
+            (state.current.canManage ? '<button class="btn btn-sm btn-ghost" data-mute="' + esc(m.id) + '">' +
+              (muted ? T('admin.unmute') : T('admin.mute')) + '</button>' : '') +
+          '</td></tr>';
+      }).join(''));
+
+      tb.querySelectorAll('[data-mute]').forEach((b) => {
+        if (b.__bound) return; b.__bound = true;
+        b.onclick = async () => {
+          const scope = 'board:' + state.current.board.id;
+          const isUnmute = b.textContent.trim() === T('admin.unmute');
+          try {
+            if (isUnmute) await API.Admin.userAction(b.dataset.mute, { action: 'unmute', scope });
+            else {
+              const mins = await App.promptDialog(T('admin.muteMinutes'), { value: '60', required: true });
+              if (!mins) return;
+              await API.Admin.userAction(b.dataset.mute, { action: 'mute', scope, minutes: Number(mins) || 60 });
+            }
+            toast.success(T('common.success'));
+            loadMembers(true);
+          } catch (e) { toastError(e); }
+        };
+      });
+      I18N.apply(tb);
+    } catch (e) {
+      tb.innerHTML = '<tr><td colspan="5"><p class="error-text text-center" style="padding:20px 0">' + esc(e.message) + '</p></td></tr>';
+    }
+  }
+
+  /* ----------------------------- 身份组 ------------------------------- */
+
+  function renderRoles() {
+    const roles = (state.current.roles || []).slice().sort((a, b) => (b.priority || 0) - (a.priority || 0));
+    $('#roleList').innerHTML = roles.length ? roles.map((r) =>
+      '<div class="role-row">' +
+        '<span class="rr-color" style="background:' + esc(r.color || '#64748b') + '"></span>' +
+        '<span class="rr-name">' + esc(r.name) + '</span>' +
+        '<span class="rr-meta">' + T('role.priority') + ' ' + (r.priority || 0) + '</span>' +
+        '<span class="rr-meta">' + (r.perms || []).length + ' ' + T('role.permCount') + '</span>' +
+        (r.system ? '<span class="badge">' + T('role.system') + '</span>' : '') +
+      '</div>').join('') : App.emptyState(T('role.empty'), T('role.emptyDesc'), 'shield');
+  }
+
+  /* ----------------------------- 频道详情 ----------------------------- */
+
+  function renderChannelHeader() {
+    const d = state.current, c = state.channel, b = d.board;
+    $('#chHeader').innerHTML =
+      '<div class="card-body" style="padding:16px 20px">' +
+        '<div class="row-between wrap" style="gap:10px;align-items:center">' +
+          '<div class="row" style="gap:10px;align-items:center;min-width:0">' +
+            '<a class="btn btn-ghost btn-sm" href="/channels.html?id=' + esc(b.id) + '">' + icon('arrowLeft') + esc(b.name) + '</a>' +
+            '<span style="font-size:20px">' + App.iconImage(c.iconUrl, c.icon || '#', 'font-size:20px') + '</span>' +
+            '<div style="min-width:0"><h2 style="margin:0">' + esc(c.name) + '</h2>' +
+              (c.topic ? '<p class="small muted mb-0">' + esc(c.topic) + '</p>' : '') + '</div>' +
+            (c.private ? '<span class="badge badge-warn">' + T('ch.privateShort') + '</span>' : '') +
+          '</div>' +
+          '<div class="row" style="gap:8px">' +
+            (App.Session.isLoggedIn ? '<button class="btn btn-sm btn-ghost" id="chIdentity">' + icon('user') + ' 区域身份</button>' : '') +
+            (d.canManage ? '<button class="btn btn-sm btn-soft" id="chSettings">' + icon('settings') + ' 设置</button>' : '') +
+            '<a class="btn btn-sm btn-soft" href="/groups.html?boardId=' + esc(b.id) + '&channelId=' + esc(c.id) + '">' + icon('users') + ' <span data-i18n="group.related">相关群组</span></a>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    $('#btnWriteHere').href = '/editor.html?scope=' + encodeURIComponent('channel:' + b.id + ':' + c.id);
+
+    const ci = $('#chIdentity'); if (ci) ci.onclick = () => openAreaIdentity('channel:' + b.id + ':' + c.id, c.name || '频道');
+    const cs = $('#chSettings'); if (cs) cs.onclick = openChannelSettings;
+  }
+
+  /* --------------------- 区域身份（仅该区域可见） --------------------- */
+  async function openAreaIdentity(scope, title) {
+    if (!App.Session.require()) return;
+    let member = { nickname: '', avatar: '', bio: '', banner: '' };
+    try { const d = await API.Members.get(scope); member = d.member || member; } catch (e) { /* 新成员可能没有记录 */ }
+    const body = App.el('div');
+    let avatarUrl = member.avatar || '';
+    let bannerUrl = member.banner || '';
+    const initial = esc((member.nickname || member.avatar || '新').charAt(0) || '新');
+    body.innerHTML =
+      '<div class="field"><label class="label">区域内昵称</label>' +
+        '<input class="input" id="aiNick" maxlength="30" value="' + esc(member.nickname || '') + '" placeholder="留空则使用原昵称"></div>' +
+      '<div class="field"><label class="label">区域内头像</label>' +
+        '<div class="avatar-edit">' + (avatarUrl ? '<img id="aiAvatarImg" src="' + esc(API.fileURL(avatarUrl)) + '">' :
+          '<div class="avatar avatar-lg" id="aiAvatarImg">' + initial + '</div>') +
+        '<div><div class="upload-zone" id="aiAvatarZone"><p>上传头像</p></div></div></div></div>' +
+      '<div class="field"><label class="label">区域内简介</label>' +
+        '<textarea class="textarea" id="aiBio" maxlength="200" rows="2" placeholder="一句话介绍自己（仅区域内可见）">' + esc(member.bio || '') + '</textarea></div>' +
+      '<div class="field"><label class="label">区域内横幅</label>' +
+        '<div class="upload-zone" id="aiBannerZone"><p>上传横幅图（可选）</p></div>' +
+        (bannerUrl ? '<img id="aiBannerImg" src="' + esc(API.fileURL(bannerUrl)) + '" style="max-height:70px;border-radius:8px;margin-top:8px">' : '') + '</div>' +
+      '<p class="hint">这些资料只在「' + esc(title) + '」中显示，不会影响你的个人主页。</p>';
+
+    App.modal({
+      title: '区域身份 · ' + title, body, okText: T('common.save'),
+      onOk: async () => {
+        const payload = {
+          nickname: body.querySelector('#aiNick').value.trim(),
+          avatar: avatarUrl,
+          bio: body.querySelector('#aiBio').value.trim(),
+          banner: bannerUrl,
+        };
+        await API.Members.update(scope, payload);
+        toast.success(T('common.success'));
+      },
+    });
+
+    App.uploadZone(body.querySelector('#aiAvatarZone'), 'avatar', (url) => {
+      avatarUrl = url;
+      const img = body.querySelector('#aiAvatarImg');
+      if (img) img.outerHTML = '<img id="aiAvatarImg" src="' + esc(API.fileURL(url)) + '">';
+    });
+    App.uploadZone(body.querySelector('#aiBannerZone'), 'banner', (url) => {
+      bannerUrl = url;
+      const old = body.querySelector('#aiBannerImg');
+      if (old) old.remove();
+      body.querySelector('#aiBannerZone').insertAdjacentHTML('beforeend',
+        '<img id="aiBannerImg" src="' + esc(API.fileURL(url)) + '" style="max-height:70px;border-radius:8px;margin-top:8px">');
+    });
+  }
+
+  /* --------------------- 频道设置（管理者） --------------------- */
+  function openChannelSettings() {
+    const c = state.channel; if (!c) return;
+    const body = App.el('div');
+    body.innerHTML =
+      '<div class="switch-row"><span><span class="sr-title">允许表态 / 添加反应</span>' +
+        '<span class="sr-desc">关闭后成员无法在频道消息下点表情，仅管理者可重新开启</span></span>' +
+        '<label class="switch"><input type="checkbox" id="csReact"' + (c.allowReactions !== false ? ' checked' : '') + '><span class="track"></span></label></div>' +
+      '<div class="row mt-4" style="gap:8px">' +
+        '<button class="btn btn-sm btn-soft" id="csIdentity">' + icon('user') + ' 设置本频道身份</button>' +
+      '</div>';
+    App.modal({
+      title: '频道设置 · ' + (c.name || ''), body, okText: T('common.save'),
+      onOk: async () => {
+        const allowReactions = body.querySelector('#csReact').checked;
+        await API.Boards.updateChannel(bidOf(), c.id, { allowReactions });
+        c.allowReactions = allowReactions;
+        state.allowReactions = allowReactions;
+        toast.success(T('common.success'));
+      },
+    });
+    body.querySelector('#csIdentity').onclick = () => openAreaIdentity('channel:' + bidOf() + ':' + c.id, c.name || '频道');
+  }
+
+  /* ------------------------------ 加载 -------------------------------- */
+
+  async function loadBoards() {
+    const d = await API.Boards.list();
+    state.boards = d.items || [];
+    renderSideBoards();
+  }
+
+  async function openBoard(id) {
+    $('#viewList').hidden = true;
+    $('#viewBoard').hidden = false;
+    $('#viewChannel').hidden = true;
+    state.channel = null;
+    $('#bdHeader').innerHTML = '<div class="card-body">' + App.skeletonList(1, 120) + '</div>';
+
+    const d = await API.Boards.detail(id);
+    state.current = d;
+    const b = d.board || {};
+    if (b.sensitive || b.spoiler) {
+      App.contentGate({
+        kind: b.spoiler ? 'spoiler' : 'sensitive',
+        id: 'board:' + b.id,
+        onContinue: () => {
+          renderSideBoards(); renderSideChannels(); renderBoardHeader(); renderChannels(); renderRoles();
+          document.title = b.name + ' · MarytOpens';
+        },
+        onLeave: () => { location.href = '/channels.html'; },
+      });
+      return;
+    }
+    renderSideBoards();
+    renderSideChannels();
+    renderBoardHeader();
+    renderChannels();
+    renderRoles();
+
+    document.title = d.board.name + ' · MarytOpens';
+  }
+
+  async function openChannel(bid, cid) {
+    clearChatPoll();
+    await openBoard(bid);
+    const c = (state.current.channels || []).find((x) => x.id === cid);
+    if (!c) { toast.warn(T('ch.notfound')); return; }
+    state.channel = c;
+    $('#viewBoard').hidden = true;
+    $('#viewChannel').hidden = false;
+    renderChannelHeader();
+    renderSideChannels();
+
+    if (state.feed) state.feed.destroy && state.feed.destroy();
+    state.feed = Feed.createList({
+      mount: $('#chFeed'),
+      moreMount: $('#chFeedMore'),
+      params: () => ({ scope: 'channel:' + bid + ':' + cid }),
+      onEmpty: () => App.emptyState(T('ch.feedEmpty'), T('ch.feedEmptyDesc'), 'edit',
+        '<a class="btn btn-primary" href="/editor.html?scope=' + encodeURIComponent('channel:' + bid + ':' + cid) + '">' + T('nav.write') + '</a>'),
+    });
+    state.feed.load(true);
+    state.feed.autoLoad();
+
+    initChat(bid, cid);
+
+    document.title = c.name + ' · ' + state.current.board.name + ' · MarytOpens';
+  }
+
+  /* ----------------------------- 频道群聊 ----------------------------- */
+
+  /* 轮询策略：后端 KV 有每日配额，不能无脑 5 秒一拉。
+     规则 = 页签隐藏或聊天面板未打开就完全停拉；有新消息回到最快档，长时间没人说话逐步退避。 */
+  var CHAT_FAST = 6000, CHAT_SLOW = 45000;
+
+  function clearChatPoll() {
+    if (state.chatTimer) { clearTimeout(state.chatTimer); state.chatTimer = null; }
+    state.chatIds = new Set();
+    state.chatSince = 0;
+    state.chatDelay = CHAT_FAST;
+    state.chatLoaded = false;
+  }
+
+  function scheduleChatPoll() {
+    if (state.chatTimer) { clearTimeout(state.chatTimer); state.chatTimer = null; }
+    if (!state.current || !state.channel) return;
+    state.chatTimer = setTimeout(function () { loadChat().then(scheduleChatPoll); }, state.chatDelay || CHAT_FAST);
+  }
+
+  function chatActive() {
+    var p = $('#paneChannelChat');
+    return !!p && p.classList.contains('active') && !document.hidden;
+  }
+
+  function chatCanModerate() {
+    const d = state.current;
+    return !!(d && (d.canManage || (d.perms || []).some((p) => p === 'channel.manage')));
+  }
+
+  function appendChatMsg(m) {
+    if (state.chatIds.has(m.id)) return;
+    state.chatIds.add(m.id);
+    if (!state.chatMsgs) state.chatMsgs = [];
+    state.chatMsgs.push(m);
+    const list = $('#chChatList');
+    const a = m.author || { displayName: '未知用户' };
+    const mine = App.Session.isLoggedIn && App.Session.user && a.id === App.Session.user.id;
+    const canReact = !!state.allowReactions && App.Session.isLoggedIn;
+    const cls = ['chat-msg'];
+    if (mine) cls.push('mine');
+    if (m.bot) cls.push('bot');
+    if (m.system) cls.push('system');
+    if (m.pinned) cls.push('pinned');
+    const el = document.createElement('div');
+    el.className = cls.join(' ');
+    el.dataset.id = m.id;
+    el.dataset.msg = m.id;
+
+    const avatarHtml = m.system ? '' :
+      '<a class="chat-avatar" href="/profile.html?u=' + esc(a.username || '') + '">' + App.avatar(a, 'sm', { official: !!a.official }) + '</a>';
+    let metaLine = '';
+    if (!m.system) {
+      metaLine =
+        '<a class="chat-name" href="/profile.html?u=' + esc(a.username || '') + '">' + esc(a.displayName || a.username || '未知') + '</a>' +
+        (a.official ? '<span class="badge badge-accent xsmall">' + T('ann.official') + '</span>' : '') +
+        (a.roleTags && a.roleTags.length ? App.roleTagsHTML(a.roleTags) : '') +
+        (m.bot ? '<span class="bot-badge">🤖 机器人</span>' : '') +
+        '<span class="small muted2" data-time="' + m.createdAt + '" data-time-style="hm"></span>';
+    }
+    const delBtn = (!m.system && (mine || chatCanModerate())) ? '<button class="icon-btn chat-del" title="删除">' + icon('trash') + '</button>' : '';
+    const pinBtn = (!m.system && chatCanModerate()) ? '<button class="icon-btn chat-pin" title="' + (m.pinned ? '取消置顶' : '置顶') + '">📌</button>' : '';
+    const reactBtn = (!m.system && canReact) ? '<button class="icon-btn chat-react-add" title="添加反应">😊</button>' : '';
+    const reactions = (m.reactions && m.reactions.length) ? App.reactionsHTML(m.reactions, 'channel', bidOf() + ':' + cidOf() + ':' + m.id) : '';
+
+    el.innerHTML =
+      avatarHtml +
+      '<div class="chat-body">' +
+        '<div class="chat-meta">' + metaLine + reactBtn + pinBtn + delBtn + '</div>' +
+        '<div class="chat-text">' + App.markdown(m.text) + '</div>' +
+        reactions +
+      '</div>';
+    list.appendChild(el);
+    const del = el.querySelector('.chat-del');
+    if (del) del.onclick = async () => {
+      if (!(await App.confirmDialog(T('common.confirmDelete') || '确定删除？', { danger: true }))) return;
+      try { await API.Channels.deleteMessage(bidOf(), cidOf(), m.id); el.remove(); state.chatIds.delete(m.id); state.chatMsgs = (state.chatMsgs || []).filter((x) => x.id !== m.id); renderPinnedBar(); }
+      catch (e) { toastError(e); }
+    };
+    const pin = el.querySelector('.chat-pin');
+    if (pin) pin.onclick = async () => {
+      const btn = pin; App.busy(btn, true);
+      try {
+        const d = await API.Channels.pinMessage(bidOf(), cidOf(), m.id, !m.pinned);
+        m.pinned = !!d.pinned;
+        el.classList.toggle('pinned', m.pinned);
+        btn.title = m.pinned ? '取消置顶' : '置顶';
+        renderPinnedBar();
+      } catch (e) { toastError(e); }
+      finally { App.busy(btn, false); }
+    };
+  }
+
+  function renderPinnedBar() {
+    const bar = $('#chPinnedBar');
+    if (!bar) return;
+    const pinned = (state.chatMsgs || []).filter((m) => m.pinned);
+    if (!pinned.length) { bar.hidden = true; bar.innerHTML = ''; return; }
+    bar.hidden = false;
+    bar.innerHTML = '<div class="ch-pinned-head">📌 ' + T('ch.pinned') + '（' + pinned.length + '）</div>' + pinned.map((m) => {
+      const a = m.author || {};
+      return '<div class="ch-pinned-item" data-id="' + esc(m.id) + '">' +
+        '<span class="ch-pinned-name">' + esc(a.displayName || a.username || '未知') + '</span>' +
+        '<span class="ch-pinned-text">' + esc((m.text || '').slice(0, 80)) + '</span>' +
+        '</div>';
+    }).join('');
+    $$('.ch-pinned-item', bar).forEach((it) => it.onclick = () => {
+      const el = $('#chChatList').querySelector('.chat-msg[data-id="' + it.dataset.id + '"]');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  }
+
+  function bidOf() { return state.current && state.current.board.id; }
+  function cidOf() { return state.channel && state.channel.id; }
+
+  async function loadChat() {
+    if (!state.current || !state.channel) return;
+    if (!chatActive()) return;                       // 面板没打开 / 页签在后台：完全不拉
+    const first = !state.chatLoaded;
+    try {
+      const q = { limit: 50 };
+      if (!first && state.chatSince) q.since = state.chatSince;   // 增量拉取
+      const d = await API.Channels.messages(bidOf(), cidOf(), q);
+      state.allowReactions = d.allowReactions !== false;
+      const items = d.items || [];
+      const l = $('#chChatList');
+      const nearBottom = !l || (l.scrollHeight - l.scrollTop - l.clientHeight) < 120;
+      if (first) {
+        state.chatLoaded = true;
+        if (!items.length) {
+          l.innerHTML = '<p class="small muted text-center" style="padding:24px 0">' + T('ch.noMessages') + '</p>';
+        } else {
+          l.innerHTML = '';
+        }
+      } else if (items.length && l.querySelector('p.muted')) {
+        l.innerHTML = '';                            // 之前是「暂无消息」占位，来消息了先清掉
+      }
+      items.forEach(appendChatMsg);
+      items.forEach(function (m) { if (m.createdAt > (state.chatSince || 0)) state.chatSince = m.createdAt; });
+      renderPinnedBar();
+      if (items.length && nearBottom && l) l.scrollTop = l.scrollHeight;
+      $('#chChatHint').hidden = true;
+      // 有新消息就回到最快档，没有则逐步退避，避免空转烧配额
+      state.chatDelay = items.length ? CHAT_FAST : Math.min(CHAT_SLOW, Math.round((state.chatDelay || CHAT_FAST) * 1.6));
+    } catch (e) {
+      state.chatDelay = Math.min(CHAT_SLOW, Math.round((state.chatDelay || CHAT_FAST) * 2));  // 出错也退避
+    }
+  }
+
+  function initChat(bid, cid) {
+    clearChatPoll();
+    $('#chChatList').innerHTML = '';
+    $('#chPinnedBar').hidden = true; $('#chPinnedBar').innerHTML = '';
+    state.chatMsgs = [];
+    $('#chChatHint').hidden = true;
+    const send = async () => {
+      const ta = $('#chChatInput');
+      const text = ta.value.trim();
+      if (!text) return;
+      if (!App.Session.require()) return;
+      const btn = $('#chChatSend'); App.busy(btn, true);
+      try {
+        const d = await API.Channels.send(bid, cid, { text });
+        ta.value = '';
+        const l = $('#chChatList');
+        if (l.querySelector('p.muted')) l.innerHTML = '';
+        if (d.botHandled) {
+          toast.success('命令已执行，机器人将在群聊中回复');
+          if (d.message) appendChatMsg(d.message);
+        } else if (d.message) {
+          appendChatMsg(d.message);
+          if (d.message.createdAt > (state.chatSince || 0)) state.chatSince = d.message.createdAt;
+        }
+        state.chatLoaded = true;
+        l.scrollTop = l.scrollHeight;
+        state.chatDelay = CHAT_FAST;      // 刚有人说话，回到最快档
+        scheduleChatPoll();
+      } catch (e) { toastError(e); }
+      finally { App.busy(btn, false); }
+    };
+    $('#chChatSend').onclick = send;
+    $('#chChatInput').onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } };
+    loadChat().then(scheduleChatPoll);
+  }
+
+  function bindChatReactions() {
+    const list = $('#chChatList');
+    if (list.__reactBound) return; list.__reactBound = true;
+    list.addEventListener('click', (e) => {
+      const chip = e.target.closest('.reaction-chip');
+      if (chip) {
+        if (!App.Session.isLoggedIn) { App.Session.require(); return; }
+        App.toggleReaction('channel', chip.dataset.tid, chip.dataset.emoji, chip);
+        return;
+      }
+      const add = e.target.closest('.chat-react-add');
+      if (add) {
+        if (!App.Session.isLoggedIn) { App.Session.require(); return; }
+        const msgEl = add.closest('.chat-msg');
+        const id = bidOf() + ':' + cidOf() + ':' + (msgEl && msgEl.dataset.id);
+        App.openEmojiPicker((emoji) => App.toggleReaction('channel', id, emoji, add));
+      }
+    });
+  }
+
+  function showList() {
+    clearChatPoll();
+    $('#viewList').hidden = false;
+    $('#viewBoard').hidden = true;
+    $('#viewChannel').hidden = true;
+    state.current = null;
+    state.channel = null;
+    renderSideChannels();
+    renderSideBoards();
+    renderGrid('');
+    $('#rightAside').hidden = true;
+    $('.layout').classList.remove('with-aside');
+  }
+
+  /* ------------------------------ 启动 -------------------------------- */
+
+  App.boot({
+    nav: 'channels',
+    onReady: async function () {
+      $('#btnCreate').hidden = !App.Session.can('board.create');
+      $('#btnCreate').onclick = openCreate;
+      $('#btnNewChannel').onclick = () => channelDialog(null);
+      $('#btnMoreMembers').onclick = () => loadMembers(false);
+
+      bindChatReactions();
+
+      $('#bdSearch').addEventListener('input', App.debounce(() => renderGrid($('#bdSearch').value.trim()), 250));
+
+      $$('#bdTabs .tab').forEach((t) => t.onclick = () => {
+        $$('#bdTabs .tab').forEach((x) => x.classList.toggle('active', x === t));
+        const map = { channels: '#paneChannels', members: '#paneMembers', roles: '#paneRoles' };
+        Object.entries(map).forEach(([k, sel]) => $(sel).classList.toggle('active', k === t.dataset.tab));
+        if (t.dataset.tab === 'members' && !$('#memberRows').children.length) loadMembers(true);
+      });
+
+      $$('#chTabs .tab').forEach((t) => t.onclick = () => {
+        $$('#chTabs .tab').forEach((x) => x.classList.toggle('active', x === t));
+        $('#paneChannelPosts').classList.toggle('active', t.dataset.ctab === 'posts');
+        $('#paneChannelChat').classList.toggle('active', t.dataset.ctab === 'chat');
+        if (t.dataset.ctab === 'chat') {
+          state.chatDelay = CHAT_FAST;
+          loadChat().then(scheduleChatPoll);
+        } else if (state.chatTimer) {
+          clearTimeout(state.chatTimer); state.chatTimer = null;   // 切回帖子就停拉
+        }
+      });
+
+      // 页签重新可见时立刻补一次，并恢复最快档
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          if (state.chatTimer) { clearTimeout(state.chatTimer); state.chatTimer = null; }
+        } else if (state.current && state.channel && chatActive()) {
+          state.chatDelay = CHAT_FAST;
+          loadChat().then(scheduleChatPoll);
+        }
+      });
+
+      try {
+        await loadBoards();
+      } catch (e) {
+        $('#sideBoards').innerHTML = '<p class="small error-text" style="padding:0 10px">' + esc(e.message) + '</p>';
+      }
+
+      const q = new URLSearchParams(location.search);
+      const id = q.get('id');
+      const ch = q.get('ch');
+      if (id && ch) { try { await openChannel(id, ch); } catch (e) { toastError(e); showList(); } }
+      else if (id) { try { await openBoard(id); } catch (e) { toastError(e); showList(); } }
+      else showList();
+    },
+  });
+})();
+</script>
+</body>
+</html>

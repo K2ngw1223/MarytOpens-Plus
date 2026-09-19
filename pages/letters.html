@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>站内信 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#6366f1">
+<link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.json">
+<script>(function(){var t=localStorage.getItem('mo_theme');var d=t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light');})();</script>
+<link rel="stylesheet" href="/assets/css/main.css">
+</head>
+<body>
+
+<header id="navbar"></header>
+
+<main class="container container-mid py-6">
+  <div class="page-head row-between" style="gap:12px;flex-wrap:wrap">
+    <div>
+      <h1 data-i18n="letter.title">站内信</h1>
+      <p class="muted">私密的站内通信，支持星标与广播。</p>
+    </div>
+    <div class="row" style="gap:8px">
+      <button class="btn btn-soft" id="btnBc" style="display:none"><span id="icoBc"></span> <span data-i18n="letter.broadcast">全站广播</span></button>
+      <button class="btn btn-primary" id="btnNew"><span id="icoNew"></span> <span data-i18n="letter.compose">写站内信</span></button>
+    </div>
+  </div>
+
+  <div class="tabs" id="tabs" style="margin-bottom:14px"></div>
+
+  <div id="list" class="stack-lg"></div>
+</main>
+
+<footer id="footer"></footer>
+<nav id="tabbar"></nav>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script>
+(function () {
+  'use strict';
+  const { $, $$, esc, icon, avatar } = App;
+  const T = (k, p) => I18N.t(k, p);
+
+  let box = 'in';
+  let unread = 0;
+
+  function letterCard(l) {
+    const p = l.peer || { displayName: T('letter.from'), avatar: '' };
+    return '<div class="card card-pad lt-card' + (l.read ? '' : ' unread') + '" data-id="' + esc(l.id) + '">' +
+      '<div class="row" style="gap:10px;align-items:flex-start">' +
+        avatar(p, 'md', { official: !!p.official }) +
+        '<div class="grow" style="min-width:0">' +
+          '<div class="row-between" style="gap:8px"><b class="truncate grow">' + esc(l.subject || '（无主题）') + '</b>' +
+            (l.starred ? '<span class="star-on">★</span>' : '') + '</div>' +
+          '<div class="xsmall muted row" style="gap:6px"><span class="truncate">'+esc(p.displayName)+(l.system?' · '+T('letter.from'):'')+'</span>' +
+            (l.read ? '' : '<span class="badge badge-bad">'+T('letter.unread')+'</span>') + '</div>' +
+          '<div class="small muted truncate mt-1">' + esc(l.excerpt || '') + '</div>' +
+        '</div>' +
+        '<span class="xsmall muted" data-time="' + l.createdAt + '"></span>' +
+      '</div></div>';
+  }
+
+  async function load() {
+    const el = $('#list'); el.innerHTML = App.loadingBlock();
+    try {
+      const d = await API.Letters.list({ box });
+      unread = d.unread || 0;
+      renderTabs();
+      const items = d.items || [];
+      if (!items.length) {
+        el.innerHTML = App.emptyState(box === 'in' ? T('letter.emptyInbox') : T('letter.emptySent'), '', 'mail');
+        return;
+      }
+      el.innerHTML = items.map(letterCard).join('');
+      $$('.lt-card', el).forEach((n) => n.onclick = () => openDetail(n.dataset.id));
+      I18N.apply(el);
+    } catch (e) { App.toastError(e); el.innerHTML = App.emptyState(T('common.failed'), e.message, 'alert'); }
+  }
+
+  function renderTabs() {
+    const t = $('#tabs');
+    t.innerHTML = [
+      { k:'in', label:T('letter.inbox') + (unread ? ' ('+unread+')' : '') },
+      { k:'out', label:T('letter.sent') },
+    ].map((x) => '<button class="tab' + (x.k===box?' active':'') + '" data-box="' + x.k + '">' + x.label + '</button>').join('');
+    $$('.tab', t).forEach((b) => b.onclick = () => { box = b.dataset.box; load(); });
+  }
+
+  function openDetail(id) {
+    const m = App.modal({ title: T('letter.title'), size: 'lg', footer: false, body: '<div class="loading-center"><div class="spinner"></div></div>' });
+    (async () => {
+      try {
+        const d = await API.Letters.get(id);
+        const l = d.letter, p = l.peer || {};
+        let html = '<div class="stack">' +
+          '<div class="row-between" style="gap:8px"><b class="truncate">'+esc(l.subject||'（无主题）')+'</b>' + (l.starred?'<span class="star-on">★</span>':'') + '</div>' +
+          '<div class="row" style="gap:8px;align-items:center">'+avatar(p, 'md', { official: !!p.official }) +
+            '<div><div>'+esc(p.displayName||T('letter.from'))+'</div><div class="xsmall muted" data-time="'+l.createdAt+'"></div></div></div>' +
+          '<div class="md-body" style="white-space:pre-wrap">'+esc(l.body||'')+'</div>' +
+          '<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:6px">' +
+            (box==='in' ? '<button class="btn btn-soft btn-sm" id="btnReply">'+T('letter.reply')+'</button>' : '') +
+            '<button class="btn btn-soft btn-sm" id="btnStar">'+(l.starred?T('letter.unstar'):T('letter.star'))+'</button>' +
+            '<button class="btn btn-soft btn-sm btn-danger-soft" id="btnDel">'+T('letter.delete')+'</button>' +
+          '</div></div>';
+        m.body.innerHTML = html; I18N.apply(m.body);
+        const sr = $('#btnStar', m.body), dl = $('#btnDel', m.body), rp = $('#btnReply', m.body);
+        if (sr) sr.onclick = async () => { try { const r = await API.Letters.star(id); App.toast.success(r.starred?T('letter.star'):T('letter.unstar')); l.starred = r.starred; sr.textContent = r.starred?T('letter.unstar'):T('letter.star'); } catch(e){ App.toastError(e); } };
+        if (dl) dl.onclick = async () => { try { await API.Letters.remove(id); App.toast.success(T('common.deleted')); m.close(); load(); } catch(e){ App.toastError(e); } };
+        if (rp) rp.onclick = () => { m.close(); openCompose(p); };
+      } catch (e) { m.body.innerHTML = App.emptyState(T('common.failed'), e.message, 'alert'); }
+    })();
+  }
+
+  function openCompose(preset) {
+    const body = document.createElement('div');
+    body.innerHTML =
+      '<div class="field"><label class="label">'+T('letter.to')+'</label><input class="input" id="fTo" value="'+(preset?esc(preset.username||preset.id):'')+'" placeholder="'+T('letter.toPh')+'"></div>' +
+      '<div class="field"><label class="label">'+T('letter.subject')+'</label><input class="input" id="fSubject" placeholder="'+T('letter.subjectPh')+'"></div>' +
+      '<div class="field"><label class="label">'+T('letter.content')+'</label><textarea class="textarea" id="fBody" rows="6" placeholder="'+T('letter.contentPh')+'"></textarea></div>';
+    const m = App.modal({ title: T('letter.compose'), body, size: 'lg', okText: T('letter.send'),
+      onOk: async () => {
+        const to = $('#fTo', body).value.trim();
+        const subject = $('#fSubject', body).value.trim();
+        const content = $('#fBody', body).value.trim();
+        if (!to) { App.toast.warn(T('letter.to')); return false; }
+        if (!subject) { App.toast.warn(T('letter.subject')); return false; }
+        if (!content) { App.toast.warn(T('letter.content')); return false; }
+        await API.Letters.send({ to, subject, body: content });
+        App.toast.success(T('common.success')); box='out'; m.close(); load();
+      }
+    });
+  }
+
+  function openBroadcast() {
+    const body = document.createElement('div');
+    body.innerHTML =
+      '<div class="field"><label class="label">'+T('letter.subject')+'</label><input class="input" id="fSubject" placeholder="'+T('letter.subjectPh')+'"></div>' +
+      '<div class="field"><label class="label">'+T('letter.content')+'</label><textarea class="textarea" id="fBody" rows="6" placeholder="'+T('letter.broadcastPh')+'"></textarea></div>';
+    App.modal({ title: T('letter.broadcast'), body, size: 'lg', okText: T('letter.broadcast'),
+      onOk: async () => {
+        const subject = $('#fSubject', body).value.trim();
+        const content = $('#fBody', body).value.trim();
+        if (!subject || !content) { App.toast.warn(T('common.required')); return false; }
+        await API.Letters.broadcast({ subject, body: content });
+        App.toast.success(T('common.success')); return true;
+      }
+    });
+  }
+
+  App.boot({
+    nav: 'letters',
+    requireAuth: true,
+    onReady: function () {
+      $('#icoNew').innerHTML = icon('edit-3'); $('#icoBc').innerHTML = icon('radio');
+      $('#btnNew').onclick = () => openCompose();
+      $('#btnBc').onclick = openBroadcast;
+      if (App.Session.isSuperAdmin) $('#btnBc').style.display = '';
+      load();
+    },
+  });
+})();
+</script>
+</body>
+</html>

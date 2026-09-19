@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="MarytOpens 经济目录管理（超级管理员）">
+  <title>经济目录管理 · MarytOpens</title>
+  <link rel="stylesheet" href="/assets/css/main.css">
+  <link rel="icon" href="/favicon.ico">
+  <style>
+    .tabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+    .tab { border:1px solid var(--border,#e5e7eb); background:var(--surface-2,#f8fafc); color:var(--text,#111);
+           padding:8px 16px; border-radius:10px; cursor:pointer; font-size:14px; }
+    .tab.active { background:var(--accent,#2563eb); color:#fff; border-color:var(--accent,#2563eb); }
+    .panel { display:none; }
+    .panel.active { display:block; }
+    .ed-row { border:1px solid var(--border,#e5e7eb); border-radius:12px; padding:12px; margin-bottom:10px;
+              display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; background:var(--surface,#fff); }
+    .ed-field { display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--muted,#64748b); }
+    .ed-field .input, .ed-field .select, .ed-field .textarea { font-size:13px; }
+    .ed-check { display:inline-flex; align-items:center; gap:6px; color:var(--text,#111); font-size:13px; }
+    .ed-checks { display:flex; flex-wrap:wrap; gap:8px; padding-top:4px; }
+    .ed-checks label { display:inline-flex; align-items:center; gap:4px; font-size:12px; color:var(--text,#111); }
+    .row-actions { display:flex; gap:10px; align-items:center; margin:6px 0 14px; flex-wrap:wrap; }
+    .hint { font-size:12px; color:var(--muted,#64748b); }
+    .rate-grid { display:flex; gap:14px; flex-wrap:wrap; margin-bottom:12px; }
+    .rate-grid .ed-field { min-width:150px; }
+  </style>
+</head>
+<body>
+  <header id="navbar"></header>
+  <main class="container container-mid" style="padding-top:24px;padding-bottom:60px">
+    <div class="section-head">
+      <div class="eyebrow">Admin</div>
+      <h1>经济目录管理</h1>
+      <p class="muted">超级管理员专属：编辑称号、装扮、等级特权、礼物目录与设计征集活动。保存即全站生效。</p>
+    </div>
+
+    <div id="gate" class="card card-pad" style="display:none">
+      <div class="muted text-center">该页面仅限超级管理员访问。正在校验身份…</div>
+    </div>
+
+    <div id="adminWrap" style="display:none">
+      <div class="card card-pad">
+        <div class="tabs" id="tabs">
+          <button class="tab active" data-tab="titles">称号</button>
+          <button class="tab" data-tab="decor">装扮</button>
+          <button class="tab" data-tab="levels">等级特权</button>
+          <button class="tab" data-tab="customlevel">自定义等级</button>
+          <button class="tab" data-tab="gifts">礼物 / 赞赏</button>
+          <button class="tab" data-tab="campaigns">设计征集</button>
+        </div>
+      </div>
+
+      <!-- 称号 -->
+      <div class="card card-pad panel active" id="panel-titles">
+        <h3 class="mb-0">称号目录</h3>
+        <p class="muted small">这些称号会出现在用户可佩戴列表，也可由后台颁发。颜色用于昵称旁标签。</p>
+        <div class="mt-3" id="titlesList"></div>
+        <div class="row-actions">
+          <button class="btn btn-soft btn-sm" id="btnAddTitle">+ 新增称号</button>
+          <button class="btn btn-primary btn-sm" id="btnSaveTitles">保存称号目录</button>
+          <span class="hint" id="titlesStat"></span>
+        </div>
+      </div>
+
+      <!-- 装扮 -->
+      <div class="card card-pad panel" id="panel-decor">
+        <h3 class="mb-0">装扮目录（头像框 / 名片 / 气泡）</h3>
+        <p class="muted small">样式类必须落在站点白名单内（随主题内置，不可后台随意新增）。这里控制「用哪个类上架成什么商品、卖多少钱、几级可买」。非装扮类商品（券 / 徽章 / 称号）会被一并保留。</p>
+        <div class="mt-3" id="decorList"></div>
+        <div class="row-actions">
+          <button class="btn btn-soft btn-sm" id="btnAddDecor">+ 新增装扮</button>
+          <button class="btn btn-primary btn-sm" id="btnSaveDecor">保存装扮目录</button>
+          <span class="hint" id="decorStat"></span>
+        </div>
+      </div>
+
+      <!-- 等级特权 -->
+      <div class="card card-pad panel" id="panel-levels">
+        <h3 class="mb-0">等级特权表</h3>
+        <p class="muted small">等级由 Meow 值决定。下表为各等级解锁的特权说明（仅展示文案）。</p>
+        <h4 class="mt-3 mb-0" style="font-size:15px">等级特权</h4>
+        <div class="mt-2" id="levelsList"></div>
+        <div class="row-actions">
+          <button class="btn btn-soft btn-sm" id="btnAddLevel">+ 新增等级</button>
+        </div>
+        <h4 class="mt-3 mb-0" style="font-size:15px">行为奖励（MO / Meow）</h4>
+        <p class="muted small">用户执行对应行为时获得的 MO 与 Meow 奖励。</p>
+        <div class="mt-2" id="rewardsList"></div>
+        <div class="row-actions">
+          <button class="btn btn-primary btn-sm" id="btnSaveLevels">保存等级与奖励</button>
+          <span class="hint" id="levelsStat"></span>
+        </div>
+      </div>
+
+      <!-- 自定义等级（专属） -->
+      <div class="card card-pad panel" id="panel-customlevel">
+        <h3 class="mb-0">自定义等级（专属）</h3>
+        <p class="muted small">为任意用户指定覆盖式等级与 Markdown 等级名（超管 / 官方账号常用）。等级名支持 Markdown，仅渲染行内元素并走安全管线，杜绝 XSS。</p>
+        <div class="ed-field" style="flex:2;min-width:260px">
+          <span>用户名</span>
+          <div class="row" style="gap:8px">
+            <input class="input" id="clUsername" placeholder="输入用户名后点查找" style="flex:1">
+            <button class="btn btn-soft btn-sm" id="clSearch" type="button">查找</button>
+          </div>
+        </div>
+        <div id="clTarget" class="mt-3"></div>
+        <div class="grid-2 mt-3">
+          <div class="ed-field"><span>目标等级（数字）</span><input class="input" id="clLevel" type="number" min="1" max="9999" value="1"></div>
+          <div class="ed-field"><span>徽章颜色</span><input class="input" id="clColor" type="color" value="#7c3aed"></div>
+        </div>
+        <div class="ed-field mt-3" style="flex:1">
+          <span>等级名称（支持 Markdown：<code>**粗体**</code> <code>*斜体*</code> <code>`代码`</code> <code>[链接](url)</code>）</span>
+          <textarea class="input" id="clName" rows="2" maxlength="60" placeholder="例如：**创世神** 或 *首席执事*"></textarea>
+        </div>
+        <div class="mt-3">
+          <span class="muted small">实时预览：</span><span id="clPreview" class="ml-2"></span>
+        </div>
+        <div class="row-actions mt-3">
+          <button class="btn btn-primary btn-sm" id="clSave" type="button">保存自定义等级</button>
+          <button class="btn btn-soft btn-sm" id="clReset" type="button">重置为默认（按经验推导）</button>
+          <span class="hint" id="clStat"></span>
+        </div>
+      </div>
+
+      <!-- 礼物 -->
+      <div class="card card-pad panel" id="panel-gifts">
+        <h3 class="mb-0">礼物目录 / 赞赏设置</h3>
+        <p class="muted small">礼物用于站内赠送；赞赏用于给帖子/作者打赏。</p>
+        <div class="rate-grid mt-3">
+          <div class="ed-field"><span>礼物接收比例（0–1）</span><input class="input" id="giftRate" type="number" min="0" max="1" step="0.01"></div>
+          <div class="ed-field"><span>赞赏接收比例（0–1）</span><input class="input" id="tipRate" type="number" min="0" max="1" step="0.01"></div>
+          <div class="ed-field"><span>赞赏单笔上限（MO）</span><input class="input" id="tipMax" type="number" min="1"></div>
+        </div>
+        <div id="giftsList"></div>
+        <div class="row-actions">
+          <button class="btn btn-soft btn-sm" id="btnAddGift">+ 新增礼物</button>
+          <button class="btn btn-primary btn-sm" id="btnSaveGifts">保存礼物目录</button>
+          <span class="hint" id="giftsStat"></span>
+        </div>
+      </div>
+
+      <!-- 设计征集 -->
+      <div class="card card-pad panel" id="panel-campaigns">
+        <h3 class="mb-0">设计征集活动</h3>
+        <p class="muted small">社区公开征集设计的「活动」。每个活动可限定接受的创作类型与奖励额度。</p>
+        <div class="mt-3" id="campaignsList"></div>
+        <div class="row-actions">
+          <button class="btn btn-soft btn-sm" id="btnAddCampaign">+ 新增活动</button>
+          <button class="btn btn-primary btn-sm" id="btnSaveCampaigns">保存征集活动</button>
+          <span class="hint" id="campaignsStat"></span>
+        </div>
+      </div>
+    </div>
+  </main>
+  <footer id="footer"></footer>
+
+  <script src="/assets/js/i18n.js"></script>
+  <script src="/assets/js/api.js"></script>
+  <script src="/assets/js/app.js"></script>
+  <script>
+    const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const num = (v, dv = 0) => (Number.isFinite(+v) ? Math.floor(+v) : dv);
+    const val = (node, sel) => { const e = node.querySelector(sel); return e ? e.value : ''; };
+    const checked = (node, sel) => { const e = node.querySelector(sel); return e ? e.checked : false; };
+
+    const KIND_LABEL = {
+      title: '称号', frame: '头像框', card: '名片', bubble: '气泡',
+      gift: '礼物', emoji: '表情', other: '其它',
+    };
+    const DECOR_KINDS = ['frame', 'card', 'bubble'];
+
+    App.boot({
+      nav: 'designs', requireAuth: true,
+      onReady: async function () {
+        const { $ } = App;
+        if (!App.Session.isSuperAdmin) {
+          $('#gate').style.display = 'block';
+          $('#gate').innerHTML = '<div class="muted text-center">⚠️ 仅超级管理员可访问此页面。</div>';
+          return;
+        }
+        $('#gate').style.display = 'none';
+        $('#adminWrap').style.display = 'block';
+
+        /* 切页 */
+        document.getElementById('tabs').addEventListener('click', (e) => {
+          const b = e.target.closest('.tab'); if (!b) return;
+          const tab = b.dataset.tab;
+          document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t === b));
+          document.querySelectorAll('.panel').forEach((p) => p.classList.toggle('active', p.id === 'panel-' + tab));
+        });
+
+        await Promise.all([loadTitles(), loadDecor(), loadLevels(), loadGifts(), loadCampaigns()]);
+
+        /* ---------------- 称号 ---------------- */
+        async function loadTitles() {
+          try {
+            const r = await API.Titles.catalog();
+            const box = $('#titlesList');
+            box.innerHTML = (r.items || []).map(titleRow).join('');
+            bindDelete(box);
+            $('#titlesStat').textContent = '当前 ' + (r.items || []).length + ' 个';
+          } catch (e) { $('#titlesList').innerHTML = '<div class="muted small">' + esc(e.message || '加载失败') + '</div>'; }
+        }
+        function titleRow(t) {
+          t = t || {};
+          return '<div class="ed-row" data-id="' + esc(t.id || '') + '">' +
+            '<div class="ed-field"><span>ID</span><input class="input f-id" value="' + esc(t.id || '') + '" readonly style="width:120px"></div>' +
+            '<div class="ed-field"><span>名称</span><input class="input f-name" value="' + esc(t.name || '') + '" maxlength="20" style="width:120px"></div>' +
+            '<div class="ed-field"><span>图标</span><input class="input f-icon" value="' + esc(t.icon || '') + '" maxlength="4" style="width:56px"></div>' +
+            '<div class="ed-field"><span>颜色</span><input type="color" class="input f-color" value="' + esc(t.color || '#6366f1') + '" style="width:48px;height:38px;padding:2px"></div>' +
+            '<div class="ed-field" style="flex:2;min-width:180px"><span>描述</span><input class="input f-desc" value="' + esc(t.desc || '') + '" maxlength="120"></div>' +
+            '<div class="ed-field"><span>稀有</span><label class="ed-check"><input type="checkbox" class="f-rare"' + (t.rare ? ' checked' : '') + '> 稀有</label></div>' +
+            '<button class="btn btn-ghost btn-sm ed-del">删除</button>' +
+            '</div>';
+        }
+        $('#btnAddTitle').onclick = () => { $('#titlesList').insertAdjacentHTML('beforeend', titleRow({})); bindDelete($('#titlesList')); };
+        $('#btnSaveTitles').onclick = async () => {
+          const items = [...$('#titlesList').querySelectorAll('.ed-row')].map((row) => ({
+            id: row.dataset.id || undefined,
+            name: val(row, '.f-name').trim(),
+            icon: val(row, '.f-icon').trim(),
+            color: val(row, '.f-color'),
+            desc: val(row, '.f-desc').trim(),
+            rare: checked(row, '.f-rare'),
+          })).filter((x) => x.name);
+          try { const r = await API.Titles.saveCatalog(items); $('#titlesList').innerHTML = (r.items || []).map(titleRow).join('');
+            bindDelete($('#titlesList')); $('#titlesStat').textContent = '已保存 ' + (r.items || []).length + ' 个'; App.toast('称号目录已保存'); }
+          catch (e) { App.toastError(e); }
+        };
+
+        /* ---------------- 装扮 ---------------- */
+        let decorPalette = { frames: [], cards: [], bubbles: [] };
+        let decorNonDecor = [];
+        async function loadDecor() {
+          try {
+            const [shop, cat] = await Promise.all([API.Economy.shopAdmin(), API.Economy.decorCatalog()]);
+            decorPalette = (cat && cat.palette) || decorPalette;
+            const all = Array.isArray(shop.items) ? shop.items : [];
+            decorNonDecor = all.filter((x) => !DECOR_KINDS.includes(x.kind));
+            const box = $('#decorList');
+            box.innerHTML = all.filter((x) => DECOR_KINDS.includes(x.kind)).map((x) => decorRow(x, true)).join('');
+            bindDelete(box);
+            $('#decorStat').textContent = '装扮 ' + all.filter((x) => DECOR_KINDS.includes(x.kind)).length + ' · 其它商品 ' + decorNonDecor.length + '（保留）';
+          } catch (e) { $('#decorList').innerHTML = '<div class="muted small">' + esc(e.message || '加载失败') + '</div>'; }
+        }
+        function clsOptions(kind, sel) {
+          const map = { frame: 'frames', card: 'cards', bubble: 'bubbles' };
+          const list = decorPalette[map[kind]] || [];
+          return list.map((c) => '<option value="' + esc(c) + '"' + (c === sel ? ' selected' : '') + '>' + esc(c) + '</option>').join('');
+        }
+        function decorRow(x, isExisting) {
+          x = x || {};
+          const kind = x.kind || 'frame';
+          const cls = (x.grant && (x.grant.frameCls || x.grant.cardCls || x.grant.bubbleCls)) || '';
+          return '<div class="ed-row" data-id="' + esc(x.id || '') + '" data-orig="' + esc(JSON.stringify(x)) + '">' +
+            '<div class="ed-field"><span>ID</span><input class="input f-id" value="' + esc(x.id || '') + '" readonly style="width:110px"></div>' +
+            '<div class="ed-field"><span>名称</span><input class="input f-name" value="' + esc(x.name || '') + '" maxlength="60" style="width:120px"></div>' +
+            '<div class="ed-field"><span>类型</span><select class="select f-kind">' +
+              DECOR_KINDS.map((k) => '<option value="' + k + '"' + (k === kind ? ' selected' : '') + '>' + (KIND_LABEL[k] || k) + '</option>').join('') +
+            '</select></div>' +
+            '<div class="ed-field"><span>样式类</span><select class="select f-cls">' + clsOptions(kind, cls) + '</select></div>' +
+            '<div class="ed-field"><span>价格 MO</span><input class="input f-price" type="number" min="0" value="' + num(x.price) + '" style="width:90px"></div>' +
+            '<div class="ed-field"><span>等级门槛</span><input class="input f-level" type="number" min="0" value="' + num(x.levelMin) + '" style="width:80px"></div>' +
+            '<div class="ed-field"><span>描述</span><input class="input f-desc" value="' + esc(x.desc || '') + '" maxlength="200" style="flex:1;min-width:160px"></div>' +
+            '<div class="ed-field"><span>上架</span><label class="ed-check"><input type="checkbox" class="f-active"' + (x.active !== false ? ' checked' : '') + '></label></div>' +
+            '<button class="btn btn-ghost btn-sm ed-del">删除</button>' +
+            '</div>';
+        }
+        // 类型切换时刷新可选项式类
+        $('#decorList').addEventListener('change', (e) => {
+          if (!e.target.classList.contains('f-kind')) return;
+          const row = e.target.closest('.ed-row'); const kind = e.target.value;
+          const sel = row.querySelector('.f-cls'); sel.innerHTML = clsOptions(kind, '');
+        });
+        $('#btnAddDecor').onclick = () => { $('#decorList').insertAdjacentHTML('beforeend', decorRow({ kind: 'frame' }, false)); bindDelete($('#decorList')); };
+        $('#btnSaveDecor').onclick = async () => {
+          const rows = [...$('#decorList').querySelectorAll('.ed-row')];
+          const edited = rows.map((row) => {
+            const base = (row.dataset.orig ? JSON.parse(row.dataset.orig) : {});
+            const id = row.dataset.id || base.id || ('it_' + Math.random().toString(36).slice(2, 9));
+            const name = val(row, '.f-name').trim() || (base.name || '未命名');
+            const kind = val(row, '.f-kind') || 'frame';
+            const cls = val(row, '.f-cls') || '';
+            const grant = kind === 'frame' ? { frameId: id, frameName: name, frameCls: cls }
+              : kind === 'card' ? { cardId: id, cardName: name, cardCls: cls }
+              : { bubbleId: id, bubbleName: name, bubbleCls: cls };
+            return { ...base, id, name, kind, desc: val(row, '.f-desc').trim(),
+              price: num(val(row, '.f-price')), levelMin: num(val(row, '.f-level')),
+              active: checked(row, '.f-active'), grant };
+          });
+          const items = decorNonDecor.concat(edited);
+          try { const r = await API.Economy.saveShopAdmin(items);
+            $('#decorStat').textContent = '已保存 ' + (edited.length) + ' 个装扮 + ' + decorNonDecor.length + ' 其它'; App.toast('装扮目录已保存'); }
+          catch (e) { App.toastError(e); }
+        };
+
+        /* ---------------- 等级特权 ---------------- */
+        async function loadLevels() {
+          try {
+            const r = await API.Economy.levels();
+            $('#levelsList').innerHTML = (r.perks || []).map(levelRow).join('');
+            bindDelete($('#levelsList'));
+            $('#rewardsList').innerHTML = Object.entries(r.rewards || {}).map(([k, v]) => rewardRow(k, v)).join('');
+            $('#levelsStat').textContent = '特权 ' + (r.perks || []).length + ' · 奖励 ' + Object.keys(r.rewards || {}).length;
+          } catch (e) { $('#levelsList').innerHTML = '<div class="muted small">' + esc(e.message || '加载失败') + '</div>'; }
+        }
+        function levelRow(p) {
+          p = p || {};
+          return '<div class="ed-row">' +
+            '<div class="ed-field"><span>等级</span><input class="input f-level" type="number" min="1" max="999" value="' + num(p.level, 1) + '" style="width:70px"></div>' +
+            '<div class="ed-field" style="flex:1;min-width:160px"><span>标签</span><input class="input f-label" value="' + esc(p.label || '') + '" maxlength="30"></div>' +
+            '<div class="ed-field" style="flex:2;min-width:240px"><span>特权说明</span><input class="input f-desc" value="' + esc(p.desc || '') + '" maxlength="200"></div>' +
+            '<button class="btn btn-ghost btn-sm ed-del">删除</button>' +
+            '</div>';
+        }
+        function rewardRow(k, v) {
+          v = v || {};
+          return '<div class="ed-row">' +
+            '<div class="ed-field" style="min-width:160px"><span>行为</span><input class="input f-key" value="' + esc(k) + '" readonly style="width:160px"></div>' +
+            '<div class="ed-field"><span>MO</span><input class="input f-mo" type="number" min="0" value="' + num(v.mo) + '" style="width:80px"></div>' +
+            '<div class="ed-field"><span>Meow</span><input class="input f-meow" type="number" min="0" value="' + num(v.meow) + '" style="width:80px"></div>' +
+            '</div>';
+        }
+        $('#btnAddLevel').onclick = () => { $('#levelsList').insertAdjacentHTML('beforeend', levelRow({})); bindDelete($('#levelsList')); };
+        $('#btnSaveLevels').onclick = async () => {
+          const perks = [...$('#levelsList').querySelectorAll('.ed-row')].map((row) => ({
+            level: num(val(row, '.f-level'), 1),
+            label: val(row, '.f-label').trim(),
+            desc: val(row, '.f-desc').trim(),
+          })).filter((x) => x.label || x.desc);
+          const rewards = {};
+          [...$('#rewardsList').querySelectorAll('.ed-row')].forEach((row) => {
+            const k = val(row, '.f-key').trim(); if (!k) return;
+            rewards[k] = { mo: num(val(row, '.f-mo')), meow: num(val(row, '.f-meow')) };
+          });
+          try { await API.Economy.saveLevelPerks({ perks, rewards }); $('#levelsStat').textContent = '已保存 特权 ' + perks.length + ' · 奖励 ' + Object.keys(rewards).length; App.toast('等级特权已保存'); }
+          catch (e) { App.toastError(e); }
+        };
+
+        /* ---------------- 自定义等级（专属） ---------------- */
+        let clTarget = null; // 当前选中的用户对象
+        function clRenderTarget() {
+          const box = $('#clTarget');
+          if (!clTarget) { box.innerHTML = '<div class="muted small">未选择用户。</div>'; return; }
+          const u = clTarget;
+          const cur = u.customLevel || null;
+          box.innerHTML =
+            '<div class="row" style="gap:10px;align-items:center">' +
+              App.avatar(u, 'sm', { official: !!u.official }) +
+              '<div><b>' + esc(u.displayName) + '</b> <span class="muted small">@' + esc(u.username) + '</span>' +
+              App.identityHTML(u) + '</div></div>' +
+            (cur ? '<div class="muted small mt-2">当前专属等级：等级 ' + esc(cur.level) + ' · 名称「' + esc(cur.name || '') + '」</div>'
+                 : '<div class="muted small mt-2">当前：按 Meow 经验推导（Lv.' + esc(u.level || 1) + '）</div>') +
+            '<input type="hidden" id="clId" value="' + esc(u.id) + '">';
+          $('#clLevel').value = cur ? cur.level : (u.level || 1);
+          if (cur && /^#[0-9a-fA-F]{6}$/.test(cur.color || '')) $('#clColor').value = cur.color;
+          $('#clName').value = cur ? (cur.name || '') : '';
+          clRenderPreview();
+        }
+        function clRenderPreview() {
+          const md = $('#clName').value || '';
+          const color = /^#[0-9a-fA-F]{6}$/.test($('#clColor').value) ? $('#clColor').value : '#7c3aed';
+          const level = num($('#clLevel').value, 1);
+          const html = md ? App.markdownInline(md) : ('Lv.' + level);
+          $('#clPreview').innerHTML = '<span class="level-badge custom" style="color:' + esc(color) +
+            ';background:' + esc(color) + '22;border-color:' + esc(color) + '66">' + html + '</span>';
+        }
+        async function clSearch() {
+          const q = $('#clUsername').value.trim();
+          if (!q) { $('#clTarget').innerHTML = '<div class="muted small">请输入用户名。</div>'; return; }
+          try {
+            const r = await API.Users.lookup(q);
+            if (!r || !r.user) { clTarget = null; $('#clTarget').innerHTML = '<div class="muted small">未找到用户「' + esc(q) + '」。</div>'; return; }
+            clTarget = r.user; clRenderTarget();
+          } catch (e) { App.toastError(e); }
+        }
+        $('#clSearch').onclick = clSearch;
+        $('#clUsername').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); clSearch(); } });
+        $('#clName').addEventListener('input', clRenderPreview);
+        $('#clColor').addEventListener('input', clRenderPreview);
+        $('#clLevel').addEventListener('input', clRenderPreview);
+        $('#clSave').onclick = async () => {
+          if (!clTarget) { App.toast('请先查找并选择用户'); return; }
+          const data = {
+            level: num($('#clLevel').value, 1),
+            name: $('#clName').value.trim().slice(0, 60),
+            color: /^#[0-9a-fA-F]{6}$/.test($('#clColor').value) ? $('#clColor').value : '#7c3aed',
+          };
+          App.busy($('#clSave'), true);
+          try { const r = await API.Users.setCustomLevel(clTarget.id, data); clTarget = r.user || clTarget; clRenderTarget(); $('#clStat').textContent = '已保存'; App.toast('自定义等级已保存'); }
+          catch (e) { App.toastError(e); $('#clStat').textContent = ''; }
+          finally { App.busy($('#clSave'), false); }
+        };
+        $('#clReset').onclick = async () => {
+          if (!clTarget) { App.toast('请先查找并选择用户'); return; }
+          App.busy($('#clReset'), true);
+          try { const r = await API.Users.setCustomLevel(clTarget.id, { reset: true }); clTarget = r.user || clTarget; clRenderTarget(); $('#clStat').textContent = '已重置'; App.toast('已重置为默认等级'); }
+          catch (e) { App.toastError(e); }
+          finally { App.busy($('#clReset'), false); }
+        };
+        clRenderTarget();
+
+        /* ---------------- 礼物 / 赞赏 ---------------- */
+        async function loadGifts() {
+          try {
+            const r = await API.Gifts.catalog();
+            $('#giftRate').value = (r.giftRate != null ? r.giftRate : 1);
+            $('#tipRate').value = (r.tipRate != null ? r.tipRate : 1);
+            $('#tipMax').value = (r.tipMax != null ? r.tipMax : 1000);
+            $('#giftsList').innerHTML = (r.items || []).map(giftRow).join('');
+            bindDelete($('#giftsList'));
+            $('#giftsStat').textContent = '当前 ' + (r.items || []).length + ' 个礼物';
+          } catch (e) { $('#giftsList').innerHTML = '<div class="muted small">' + esc(e.message || '加载失败') + '</div>'; }
+        }
+        function giftRow(g) {
+          g = g || {};
+          return '<div class="ed-row" data-id="' + esc(g.id || '') + '">' +
+            '<div class="ed-field"><span>ID</span><input class="input f-id" value="' + esc(g.id || '') + '" readonly style="width:110px"></div>' +
+            '<div class="ed-field"><span>名称</span><input class="input f-name" value="' + esc(g.name || '') + '" maxlength="20" style="width:120px"></div>' +
+            '<div class="ed-field"><span>图标</span><input class="input f-icon" value="' + esc(g.icon || '🎁') + '" maxlength="4" style="width:56px"></div>' +
+            '<div class="ed-field"><span>价格 MO</span><input class="input f-price" type="number" min="1" value="' + num(g.price, 1) + '" style="width:90px"></div>' +
+            '<div class="ed-field" style="flex:2;min-width:200px"><span>描述</span><input class="input f-desc" value="' + esc(g.desc || '') + '" maxlength="120"></div>' +
+            '<button class="btn btn-ghost btn-sm ed-del">删除</button>' +
+            '</div>';
+        }
+        $('#btnAddGift').onclick = () => { $('#giftsList').insertAdjacentHTML('beforeend', giftRow({})); bindDelete($('#giftsList')); };
+        $('#btnSaveGifts').onclick = async () => {
+          const items = [...$('#giftsList').querySelectorAll('.ed-row')].map((row) => ({
+            id: row.dataset.id || undefined,
+            name: val(row, '.f-name').trim(),
+            icon: val(row, '.f-icon').trim() || '🎁',
+            price: num(val(row, '.f-price'), 1),
+            desc: val(row, '.f-desc').trim(),
+          })).filter((x) => x.name);
+          const data = {
+            items,
+            giftReceiveRate: parseFloat($('#giftRate').value) || 0,
+            tipReceiveRate: parseFloat($('#tipRate').value) || 0,
+            tipMax: num($('#tipMax').value, 1),
+          };
+          try { const r = await API.Gifts.saveCatalog(data); $('#giftsList').innerHTML = (r.items || []).map(giftRow).join('');
+            bindDelete($('#giftsList')); $('#giftsStat').textContent = '已保存 ' + (r.items || []).length + ' 个礼物'; App.toast('礼物目录已保存'); }
+          catch (e) { App.toastError(e); }
+        };
+
+        /* ---------------- 设计征集 ---------------- */
+        let campaignKinds = [];
+        async function loadCampaigns() {
+          try {
+            const r = await API.Designs.campaigns();
+            campaignKinds = r.kinds || Object.keys(KIND_LABEL);
+            $('#campaignsList').innerHTML = (r.items || []).map((c) => campaignRow(c)).join('');
+            bindDelete($('#campaignsList'));
+            $('#campaignsStat').textContent = '当前 ' + (r.items || []).length + ' 个活动';
+          } catch (e) { $('#campaignsList').innerHTML = '<div class="muted small">' + esc(e.message || '加载失败') + '</div>'; }
+        }
+        function kindChecks(kinds) {
+          const set = new Set(kinds || []);
+          return campaignKinds.map((k) =>
+            '<label><input type="checkbox" class="f-kind" value="' + k + '"' + (set.has(k) ? ' checked' : '') + '> ' + (KIND_LABEL[k] || k) + '</label>').join('');
+        }
+        function campaignRow(c) {
+          c = c || {};
+          return '<div class="ed-row" data-id="' + esc(c.id || '') + '">' +
+            '<div class="ed-field" style="flex:1;min-width:200px"><span>活动标题</span><input class="input f-title" value="' + esc(c.title || '') + '" maxlength="60"></div>' +
+            '<div class="ed-field" style="flex:2;min-width:260px"><span>描述</span><input class="input f-desc" value="' + esc(c.desc || '') + '" maxlength="600"></div>' +
+            '<div class="ed-field" style="flex:1;min-width:200px"><span>接受类型</span><div class="ed-checks">' + kindChecks(c.kinds) + '</div></div>' +
+            '<div class="ed-field"><span>开放</span><label class="ed-check"><input type="checkbox" class="f-active"' + (c.active !== false ? ' checked' : '') + '></label></div>' +
+            '<div class="ed-field"><span>初审+MO</span><input class="input f-rmo" type="number" min="0" value="' + num(c.rewardMo) + '" style="width:80px"></div>' +
+            '<div class="ed-field"><span>初审+Meow</span><input class="input f-rmeow" type="number" min="0" value="' + num(c.rewardMeow) + '" style="width:80px"></div>' +
+            '<div class="ed-field"><span>采纳+MO</span><input class="input f-amo" type="number" min="0" value="' + num(c.adoptMo) + '" style="width:80px"></div>' +
+            '<div class="ed-field"><span>采纳+Meow</span><input class="input f-ameow" type="number" min="0" value="' + num(c.adoptMeow) + '" style="width:80px"></div>' +
+            '<div class="ed-field"><span>给设计师称号</span><label class="ed-check"><input type="checkbox" class="f-atitle"' + (c.adoptTitle !== false ? ' checked' : '') + '></label></div>' +
+            '<div class="ed-field"><span>每人上限</span><input class="input f-max" type="number" min="0" value="' + num(c.maxPerUser) + '" style="width:80px"></div>' +
+            '<button class="btn btn-ghost btn-sm ed-del">删除</button>' +
+            '</div>';
+        }
+        $('#btnAddCampaign').onclick = () => { $('#campaignsList').insertAdjacentHTML('beforeend', campaignRow({ active: true, adoptTitle: true })); bindDelete($('#campaignsList')); };
+        $('#btnSaveCampaigns').onclick = async () => {
+          const items = [...$('#campaignsList').querySelectorAll('.ed-row')].map((row) => ({
+            id: row.dataset.id || undefined,
+            title: val(row, '.f-title').trim(),
+            desc: val(row, '.f-desc').trim(),
+            kinds: [...row.querySelectorAll('.f-kind')].filter((c) => c.checked).map((c) => c.value),
+            active: checked(row, '.f-active'),
+            rewardMo: num(val(row, '.f-rmo')),
+            rewardMeow: num(val(row, '.f-rmeow')),
+            adoptMo: num(val(row, '.f-amo')),
+            adoptMeow: num(val(row, '.f-ameow')),
+            adoptTitle: checked(row, '.f-atitle'),
+            maxPerUser: num(val(row, '.f-max')),
+          })).filter((x) => x.title);
+          try { const r = await API.Designs.saveCampaigns(items); $('#campaignsList').innerHTML = (r.items || []).map(campaignRow).join('');
+            bindDelete($('#campaignsList')); $('#campaignsStat').textContent = '已保存 ' + (r.items || []).length + ' 个活动'; App.toast('征集活动已保存'); }
+          catch (e) { App.toastError(e); }
+        };
+
+        /* 通用删除绑定 */
+        function bindDelete(box) {
+          box.querySelectorAll('.ed-del').forEach((btn) => {
+            if (btn._b) return; btn._b = true;
+            btn.onclick = () => { btn.closest('.ed-row').remove(); };
+          });
+        }
+      },
+    });
+  </script>
+</body>
+</html>

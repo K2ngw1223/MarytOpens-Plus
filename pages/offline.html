@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>离线中 · MarytOpens</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/img/favicon.svg">
+  <style>
+    :root{ --bg:#0b0c15; --fg:#e2e5ef; --muted:#8b93a7; --accent:#6366f1; }
+    *{box-sizing:border-box}
+    body{margin:0;height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans SC",sans-serif;background:var(--bg);color:var(--fg);text-align:center}
+    .card{padding:2rem 1.5rem;max-width:360px}
+    .icon{width:80px;height:80px;border-radius:20px;background:linear-gradient(135deg,var(--accent),#0ea5e9);display:grid;place-items:center;margin:0 auto 1.25rem;font-size:2.5rem;color:#fff}
+    h1{margin:0 0 .5rem;font-size:1.6rem}
+    p{color:var(--muted);margin:0 0 1.5rem;line-height:1.6}
+    button{border:0;border-radius:10px;padding:.7rem 1.4rem;background:var(--accent);color:#fff;font-size:1rem;cursor:pointer}
+    button:hover{filter:brightness(1.1)}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">M</div>
+    <h1>当前处于离线状态</h1>
+    <p>你的设备暂时无法连接到 MarytOpens 服务器。<br>请检查网络后重试。</p>
+    <button onclick="location.reload()">重新加载</button>
+  </div>
+</body>
+</html>

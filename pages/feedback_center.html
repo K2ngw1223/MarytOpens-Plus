@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>意见反馈中心 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#6366f1">
+  <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.json">
+  <script>
+    (function() {
+      const apiMeta = document.querySelector('meta[name="mo-api"]');
+      const api = (apiMeta && apiMeta.content) || 'https://api.example.com';
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js?api=' + encodeURIComponent(api)).then(function(reg) {
+          reg.addEventListener('updatefound', function() {
+            const wb = reg.installing;
+            if (wb) wb.addEventListener('statechange', function() {
+              if (wb.state === 'activated') wb.postMessage({ type: 'mo-skip-waiting' });
+            });
+          });
+        }).catch(function() {});
+      }
+    })();
+  </script>
+<link rel="stylesheet" href="/assets/css/main.css">
+<script>(function(){var t=localStorage.getItem('mo_theme');var d=t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light');})();</script>
+</head>
+<body>
+
+<header id="navbar"></header>
+
+<main class="container container-mid py-6">
+  <div class="page-head">
+    <h1 data-i18n="feedback.center">意见反馈中心</h1>
+    <p class="muted">你的每一条反馈都会被认真对待。</p>
+  </div>
+
+  <div id="fcIntro" class="card card-pad mt-3"></div>
+
+  <div class="card card-pad mt-4">
+    <div class="section-title">反馈渠道</div>
+    <div id="fcChannels" class="fc-channels mt-2"></div>
+  </div>
+
+  <div class="card card-pad mt-4">
+    <div class="section-title">提交反馈</div>
+    <p class="muted">也可以在上方「反馈渠道」直接私信官方账号、加入 Telegram 频道或发送邮件。</p>
+    <form id="fcForm" class="mt-3">
+      <div class="field">
+        <label class="label">类型</label>
+        <select class="select" id="fcType">
+          <option value="bug">问题 / Bug</option>
+          <option value="suggest">功能建议</option>
+          <option value="other">其他</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="label">反馈内容</label>
+        <textarea class="textarea" id="fcMessage" rows="5" maxlength="4000" placeholder="请尽量描述清楚…" required></textarea>
+      </div>
+      <div class="field">
+        <label class="label">联系方式（可选，方便我们回复你）</label>
+        <input class="input" id="fcContact" maxlength="200" placeholder="邮箱 / 用户名 / 其他方式">
+      </div>
+      <button class="btn btn-primary mt-2" id="fcSubmit" type="submit">提交反馈</button>
+    </form>
+    <div id="fcResult" class="mt-3"></div>
+  </div>
+</main>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script src="/assets/js/feedback_center.js"></script>
+<script>
+App.boot({ nav: 'feedback', requireAuth: false, onReady: () => {
+  I18N.apply();
+  FeedbackCenter.init();
+}});
+</script>
+</body>
+</html>

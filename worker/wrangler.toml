@@ -1,0 +1,120 @@
+####################################################################
+# MarytOpens · Cloudflare Worker 配置模板
+#
+# 使用前请先执行： node scripts/configure.mjs   （读取 ../site.config.json 自动填写域名）
+# 或手动把下面所有占位值替换成你自己的。
+#
+#   后端 API 域名 : https://api.example.com
+#   前端站点域名 : https://example.com
+#
+# 资源 ID（KV / D1）无法自动生成，请按下方注释执行对应命令后回填。
+####################################################################
+
+name = "marytopens-api"
+main = "src/index.js"
+compatibility_date = "2026-01-01"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = false
+
+# ----------------------------- 自定义域名 -----------------------------
+# 前提：api.example.com 所在的根域已托管在同一个 Cloudflare 账号下。
+# 若暂时没有自定义域，可先删掉 routes 并把 workers_dev 改为 true，
+# 走 *.workers.dev 子域做联调（记得同步改前端与 site.config.json 的 apiOrigin）。
+routes = [
+  { pattern = "api.example.com", custom_domain = true }
+]
+
+# ----------------------------- KV 命名空间 ----------------------------
+# 创建命令：
+#   npx wrangler kv namespace create DB
+#   npx wrangler kv namespace create DB --preview
+# 把返回的 id 填到下面（注意：这是你自己的 ID，每个部署者都不同）
+[[kv_namespaces]]
+binding = "DB"
+id = "PASTE_YOUR_KV_NAMESPACE_ID_HERE"
+preview_id = "PASTE_YOUR_KV_PREVIEW_NAMESPACE_ID_HERE"
+
+# ----------------------------- D1 数据库（主存储） ----------------------------
+# 取代 KV 作为主存储（免费 10 万写/天，KV 仅保留文件回退 file:*）。
+# Worker 代码用 env.DB1 访问；运行时把 env.DB 包成「KV 模拟层」路由非 file 键到 D1。
+# 创建命令： npx wrangler d1 create marytopens
+# 表结构：见 docs/KV_SCHEMA.md（worker 不会自动建表，需手工执行）
+[[d1_databases]]
+binding = "DB1"
+database_name = "marytopens"
+database_id = "PASTE_YOUR_D1_DATABASE_ID_HERE"
+
+# ----------------------------- R2 对象存储（可选） ----------------------------
+# 如果你有 R2，取消下面注释并创建桶： npx wrangler r2 bucket create marytopens-media
+# 未绑定 R2 时，Worker 会自动回退到 KV 存储文件（头像/图片），功能不受影响。
+# [[r2_buckets]]
+# binding = "MEDIA"
+# bucket_name = "marytopens-media"
+# preview_bucket_name = "marytopens-media"
+
+# ------------------------- 非敏感环境变量 ----------------------------
+# 敏感变量（JWT_SECRET / TURNSTILE_SECRET / OAuth Secret / MAIL_API_TOKEN /
+# SUPER_ADMIN_PASSWORD / CF_OAUTH_CLIENT_SECRET / ENCRYPTION_SECRET）请一律使用
+# `npx wrangler secret put` 或 Cloudflare 控制台 → Workers → Settings → Variables → Encrypt 添加。
+[vars]
+SITE_NAME              = "MarytOpens"
+FRONTEND_ORIGIN        = "https://example.com"
+API_ORIGIN             = "https://api.example.com"
+ALLOWED_ORIGINS        = "https://example.com,https://www.example.com,https://marytopens.pages.dev,http://localhost:8788,http://127.0.0.1:8788,http://localhost:8080,http://127.0.0.1:8080"
+MEDIA_PUBLIC_BASE      = "https://api.example.com/files"
+
+# 超级管理员（首启动自动创建/纠正，密码走 Secret）
+SUPER_ADMIN_EMAIL      = "admin@example.com"
+SUPER_ADMIN_USERNAME   = "root"
+
+# Turnstile 人机验证（可选回退）
+# 推荐在后台管理 → 站点设置 → Turnstile 人机验证 中设置 Site Key / Secret；
+# 此处环境变量作为回退，仅在后台未配置时生效。Site Key 公开，Secret 请用
+# `npx wrangler secret put TURNSTILE_SECRET` 注入（不要写在此文件）。
+TURNSTILE_SITE_KEY     = "0xAAAAAAA_YOUR_TURNSTILE_SITE_KEY"
+TURNSTILE_ENABLED      = "false"
+
+# OAuth（Client ID 公开，Secret 走 Secret）
+GITHUB_CLIENT_ID       = "YOUR_GITHUB_CLIENT_ID"
+DISCORD_CLIENT_ID      = "YOUR_DISCORD_CLIENT_ID"
+
+# 用户绑定「自己的 Cloudflare 账号」所用的 OAuth 应用（在 dash.cloudflare.com
+# 个人资料 → OAuth 应用中创建；回调地址填 https://api.example.com/api/cf/bind/callback）
+# 作用域需包含 account:read / workers_kv_storage:edit / d1:edit
+# Client Secret 与下方 ENCRYPTION_SECRET 通过 secret 注入，不要写在这里。
+CF_OAUTH_CLIENT_ID     = "YOUR_CF_OAUTH_CLIENT_ID"
+
+# 邮件服务（可选回退）
+# 推荐在后台管理 → 邮件服务 中直接填写 Resend API Key / 发件地址；
+# 此处环境变量仅作为回退，仅在后台未配置时生效。
+# MAIL_PROVIDER 可选: cloudmail | resend | mailchannels | console
+MAIL_PROVIDER          = "console"
+MAIL_API_URL           = "https://api.resend.com/emails"
+MAIL_FROM              = "MarytOpens <no-reply@example.com>"
+
+# 运行参数
+JWT_TTL_SECONDS        = "604800"     # 7 天
+LOG_TTL_SECONDS        = "2592000"    # 访问日志保留 30 天
+RATE_LIMIT_WINDOW      = "60"
+RATE_LIMIT_MAX         = "120"
+
+# ------------------------- 部署登记（可选，默认关闭） -------------------------
+# 三个开关都设为 "true" 才会启用对应通道，详见 docs/DEPLOY_REGISTRY.md。
+# 通道 3（向项目仓库提交登记 Issue）需要 GITHUB_REGISTRY_TOKEN，
+# 且**必须**用 `npx wrangler secret put GITHUB_REGISTRY_TOKEN` 注入，不要写在此文件。
+DEPLOY_REGISTRY_ENABLED     = "false"   # 通道 2：公开接口 /api/deploy-info
+DEPLOY_REGISTRY_PUBLIC      = "false"   # 是否允许匿名读取该接口（false 时仅返回最小信息）
+DEPLOY_REGISTRY_ISSUE       = "false"   # 通道 3：向仓库提交登记 Issue
+DEPLOY_REGISTRY_REPO        = ""        # 例如 "yourname/marytopens"
+GITHUB_REGISTRY_TOKEN       = ""        # 留空；请用 secret 注入
+
+# ----------------------------- 定时任务 -------------------------------
+# 每天 04:00 UTC 清理过期验证码 / 过期限流键 / 生成站点统计快照
+[triggers]
+crons = ["0 4 * * *"]
+
+[observability]
+enabled = true
+
+[placement]
+mode = "smart"

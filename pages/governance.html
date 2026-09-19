@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>社区治理 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#6366f1">
+<link rel="stylesheet" href="/assets/css/main.css">
+</head>
+<body>
+<header id="navbar"></header>
+<div class="layout container-mid">
+  <aside class="sidebar" id="sidebar">
+    <div class="side-group">
+      <div class="section-title" data-i18n="gov.title">社区治理</div>
+      <a class="side-item" href="/home.html"><span data-i18n="nav.home">首页</span></a>
+      <a class="side-item" href="/channels.html"><span data-i18n="nav.channels">版块</span></a>
+      <a class="side-item" href="/explore.html"><span data-i18n="nav.explore">发现</span></a>
+    </div>
+  </aside>
+  <main class="main">
+    <section class="card card-pad">
+      <div class="row-between wrap mb-3" style="gap:10px">
+        <h2 class="mb-0" data-i18n="gov.title">社区治理</h2>
+        <div class="gov-tabs">
+          <button class="tab active" data-gtab="elections" data-i18n="gov.elections">用户代表选举</button>
+          <button class="tab" data-gtab="discipline" data-i18n="gov.discipline">风纪委员会</button>
+          <button class="tab" data-gtab="appeals" data-i18n="gov.appeals">申诉</button>
+        </div>
+      </div>
+      <p class="small muted mb-0" data-i18n="gov.subtitle">用户选举代表，风纪委员会审查违规并提出制裁，制裁须经站长/超管/官方账号确认后生效；短禁言与警告即时生效。</p>
+    </section>
+
+    <!-- 选举 -->
+    <section class="tab-panel active mt-4" id="paneElections">
+      <div class="row-between wrap mb-3" style="gap:8px">
+        <div class="section-title mb-0" data-i18n="gov.elections">用户代表选举</div>
+        <button class="btn btn-primary btn-sm" id="btnNewElection" hidden data-i18n="el.create">发起选举</button>
+      </div>
+      <div class="gov-grid" id="elGrid"></div>
+      <div id="elMore"></div>
+    </section>
+
+    <!-- 风纪 -->
+    <section class="tab-panel mt-4" id="paneDiscipline">
+      <div class="grid grid-2" style="align-items:start">
+        <div class="card card-pad">
+          <h4 class="mb-3" data-i18n="dc.report">提交处理 / 举报</h4>
+          <div class="field"><label class="label" data-i18n="dc.target">对象类型</label>
+            <select class="select" id="dcTargetType">
+              <option value="post" data-i18n="ch.postsTab">帖子</option>
+              <option value="comment" data-i18n="dc.type.delete">评论</option>
+              <option value="user" data-i18n="dc.target">用户</option>
+            </select></div>
+          <div class="field"><label class="label" data-i18n="dc.target">对象 ID</label>
+            <input class="input" id="dcTargetId" placeholder="post:xxx / user:xxx"></div>
+          <div class="field"><label class="label" data-i18n="dc.reason">原因</label>
+            <textarea class="input" id="dcReason" rows="3"></textarea></div>
+          <div class="row" style="gap:10px">
+            <div class="field grow"><label class="label" data-i18n="dc.sanction">拟处罚</label>
+              <select class="select" id="dcType">
+                <option value="warn" data-i18n="dc.type.warn">警告</option>
+                <option value="mute" data-i18n="dc.type.mute">禁言</option>
+                <option value="ban" data-i18n="dc.type.ban">封禁</option>
+                <option value="delete" data-i18n="dc.type.delete">删除内容</option>
+              </select></div>
+            <div class="field grow"><label class="label" data-i18n="dc.duration">时长（小时，0=永久）</label>
+              <input class="input" id="dcDuration" type="number" min="0" value="24"></div>
+          </div>
+          <p class="small muted2" id="dcHint"></p>
+          <button class="btn btn-primary btn-sm" id="dcSubmit" data-i18n="dc.report">提交</button>
+        </div>
+        <div class="card card-pad">
+          <div class="row-between mb-3"><h4 class="mb-0" data-i18n="dc.queue">待处理队列</h4>
+            <label class="switch-row"><input type="checkbox" id="dcShowAll"><span class="track"></span></label></div>
+          <div class="badge-list" id="dcList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 申诉 -->
+    <section class="tab-panel mt-4" id="paneAppeals">
+      <h3 class="section-head-sm mb-3" data-i18n="gov.appeals">申诉</h3>
+      <p class="small muted" data-i18n="dc.myReports">这里展示你提交的处理，以及需要你裁定的申诉。</p>
+      <div class="gov-grid" id="apGrid" style="margin-top:12px"></div>
+    </section>
+  </main>
+</div>
+<footer id="footer"></footer>
+<nav id="tabbar"></nav>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script>
+(function () {
+  'use strict';
+  const { $, $$, esc, icon, toast, toastError } = App;
+  const T = (k) => I18N.t(k);
+  const canConfirm = () => App.Session.isSuperAdmin || App.Session.can('site.admin') || App.Session.isOfficial;
+
+  function badge(text, cls) { return '<span class="stat-pill ' + (cls || '') + '">' + esc(text) + '</span>'; }
+  function statusPill(status) {
+    const map = { open:'status-open', closed:'status-closed', pending:'status-pending', confirmed:'status-confirmed', rejected:'status-rejected', appealed:'status-appealed' };
+    return badge(T('dc.status.' + status), map[status] || '');
+  }
+  function sanctionText(s) {
+    if (!s) return '';
+    const dur = (s.durationMs && s.durationMs > 0) ? ' · ' + Math.round(s.durationMs / 3600000) + 'h' : (s.type === 'mute' || s.type === 'ban' ? ' · 永久' : '');
+    return T('dc.type.' + s.type) + dur;
+  }
+
+  /* ----------------------------- 选举 ----------------------------- */
+  async function loadElections() {
+    const grid = $('#elGrid');
+    grid.innerHTML = App.skeletonList(3, 140);
+    try {
+      const d = await API.Elections.list({});
+      if (!d.items.length) { grid.innerHTML = '<div class="empty-hint" data-i18n="el.empty">' + T('el.empty') + '</div>'; return; }
+      grid.innerHTML = d.items.map((e) => {
+        const isSA = App.Session.isSuperAdmin;
+        return '<div class="card card-pad el-card">' +
+          '<div class="el-title">' + esc(e.title) + '</div>' +
+          (e.description ? '<p class="small muted mb-0">' + esc(e.description) + '</p>' : '') +
+          '<div class="el-meta">' + statusPill(e.status) + badge(T('el.candidates') + ' ' + e.candidateCount) + badge(T('el.totalVotes') + ' ' + e.totalVotes) + '</div>' +
+          '<div class="row" style="gap:8px;margin-top:4px">' +
+            '<button class="btn btn-sm btn-soft" data-open="' + esc(e.id) + '">' + (e.status === 'closed' ? T('el.results') : T('el.candidates')) + '</button>' +
+            (isSA && e.status === 'open' ? '<button class="btn btn-sm btn-warn" data-close="' + esc(e.id) + '">' + T('el.close') + '</button>' : '') +
+          '</div></div>';
+      }).join('');
+      grid.querySelectorAll('[data-open]').forEach((b) => b.onclick = () => openElection(b.dataset.open));
+      grid.querySelectorAll('[data-close]').forEach((b) => b.onclick = closeElection);
+    } catch (e) { grid.innerHTML = '<div class="empty-hint error-text">' + esc(e.message) + '</div>'; }
+  }
+
+  async function openElection(id) {
+    const d = await API.Elections.detail(id);
+    const e = d.election;
+    const body = App.el('div');
+    const render = () => {
+      const cand = (e.candidates || []).map((c) => {
+        const voted = e.myVote === c.id;
+        const act = e.status === 'open'
+          ? '<button class="btn btn-xs ' + (voted ? 'btn-soft' : 'btn-primary') + '" data-vote="' + esc(c.id) + '">' + (voted ? T('el.voted') : T('el.vote')) + '</button>'
+          : '<span class="cand-votes">' + (c.votes || 0) + ' ' + T('el.voteCount') + '</span>';
+        return '<div class="cand ' + (voted ? 'voted' : '') + '">' + App.avatar(c, 'sm') +
+          '<div style="min-width:0"><div class="truncate">' + esc(c.displayName || c.username) + '</div>' +
+          (c.roleTags && c.roleTags.length ? App.roleTagsHTML(c.roleTags) : '') + '</div>' +
+          '<div class="cand-actions">' + act + '</div></div>';
+      }).join('') || '<p class="small muted">' + T('el.empty') + '</p>';
+      body.innerHTML = '<p class="small muted">' + esc(e.description || '') + '</p>' +
+        (e.status === 'open' ? '<button class="btn btn-sm btn-soft mb-3" id="elNominate">' + T('el.nominateSelf') + '</button>' : '') +
+        '<div class="el-candidates">' + cand + '</div>' +
+        (e.status === 'closed' && e.results ? '<div class="mt-3"><b>' + T('el.results') + '：</b> ' +
+          e.results.map((w) => esc(w.cid)).join('、') + '</div>' : '');
+      body.querySelectorAll('[data-vote]').forEach((b) => b.onclick = async () => {
+        try { const r = await API.Elections.vote(id, { candidateId: b.dataset.vote }); e.candidates = r.election.candidates; e.myVote = r.election.myVote; render(); }
+        catch (err) { toastError(err); }
+      });
+      const nom = body.querySelector('#elNominate');
+      if (nom) nom.onclick = async () => { try { const r = await API.Elections.nominate(id, {}); e.candidates = r.election.candidates; render(); toast.success(T('el.nominateSelf')); } catch (err) { toastError(err); } };
+    };
+    render();
+    App.modal({ title: e.title, body, okText: T('common.close'), onOk: () => true });
+  }
+
+  async function closeElection() {
+    const id = this.dataset.close;
+    if (!(await App.confirmDialog(T('el.confirmClose'), { danger: true }))) return;
+    try { await API.Elections.close(id); toast.success(T('el.results')); loadElections(); } catch (e) { toastError(e); }
+  }
+
+  function newElection() {
+    const body = App.el('div');
+    body.innerHTML =
+      '<div class="field"><label class="label" data-i18n="el.title">标题</label><input class="input" id="neTitle" maxlength="60" placeholder="' + T('el.titlePH') + '"></div>' +
+      '<div class="field"><label class="label" data-i18n="el.desc">说明</label><textarea class="input" id="neDesc" rows="3" placeholder="' + T('el.descPH') + '"></textarea></div>' +
+      '<div class="field"><label class="label" data-i18n="el.maxWinners">当选名额</label><input class="input" id="neSeats" type="number" min="1" max="20" value="3"></div>';
+    App.modal({ title: T('el.create'), body, okText: T('common.create'), onOk: async () => {
+      const title = body.querySelector('#neTitle').value.trim();
+      if (!title) { toast.warn(T('el.title')); return false; }
+      try {
+        await API.Elections.create({ title, description: body.querySelector('#neDesc').value.trim(), maxWinners: Number(body.querySelector('#neSeats').value) || 3 });
+        toast.success(T('common.success')); loadElections();
+      } catch (e) { toastError(e); return false; }
+    } });
+  }
+
+  /* ----------------------------- 风纪 ----------------------------- */
+  async function loadDiscipline() {
+    const list = $('#dcList');
+    const all = $('#dcShowAll').checked;
+    list.innerHTML = App.skeletonList(2, 90);
+    try {
+      const d = await API.Discipline.list(all ? {} : { queue: '1' });
+      if (!d.items.length) { list.innerHTML = '<div class="empty-hint" data-i18n="dc.empty">' + T('dc.empty') + '</div>'; return; }
+      list.innerHTML = d.items.map((c) => {
+        const tgt = c.target ? (c.target.name || c.target.id) : c.targetId;
+        const canC = canConfirm();
+        const canAppeal = c.status === 'confirmed' || c.status === 'pending';
+        const actions = [];
+        if (canC && c.status === 'pending') actions.push('<button class="btn btn-xs btn-primary" data-confirm="' + esc(c.id) + '">' + T('dc.confirm') + '</button>');
+        if (canC && (c.status === 'pending' || c.status === 'confirmed')) actions.push('<button class="btn btn-xs" data-reject="' + esc(c.id) + '">' + T('dc.reject') + '</button>');
+        if (canAppeal) actions.push('<button class="btn btn-xs btn-soft" data-appeal="' + esc(c.id) + '">' + T('dc.appeal') + '</button>');
+        if (canC && c.status === 'appealed') actions.push('<button class="btn btn-xs btn-warn" data-resolve="' + esc(c.id) + '">' + T('dc.resolveAppeal') + '</button>');
+        return '<div class="card card-pad case-card" style="margin-bottom:10px">' +
+          '<div class="case-head">' + statusPill(c.status) + '<span class="small muted">' + esc(tgt) + '</span></div>' +
+          '<div class="case-reason">' + esc(c.reason) + '</div>' +
+          '<div class="el-meta">' + badge(T('dc.sanction') + '：' + sanctionText(c.proposedSanction)) +
+            (c.reporter ? badge(T('dc.reporter') + '：' + esc(c.reporter.name)) : '') + '</div>' +
+          (actions.length ? '<div class="case-actions">' + actions.join('') + '</div>' : '') +
+          (c.appeal ? '<p class="small muted2 mt-2">📝 ' + esc(c.appeal.reason) + (c.appeal.resolution ? ' · ' + (c.appeal.resolution === 'upheld' ? T('dc.uphold') : T('dc.overturn')) : '') + '</p>' : '') +
+          '</div>';
+      }).join('');
+      list.querySelectorAll('[data-confirm]').forEach((b) => b.onclick = async () => { try { await API.Discipline.confirm(b.dataset.confirm); toast.success(T('dc.confirm')); loadDiscipline(); } catch (e) { toastError(e); } });
+      list.querySelectorAll('[data-reject]').forEach((b) => b.onclick = async () => { try { await API.Discipline.reject(b.dataset.reject); toast.success(T('dc.reject')); loadDiscipline(); } catch (e) { toastError(e); } });
+      list.querySelectorAll('[data-appeal]').forEach((b) => b.onclick = async () => {
+        const reason = await App.promptDialog(T('dc.appealReason'), { required: true }); if (!reason) return;
+        try { await API.Discipline.appeal(b.dataset.appeal, { reason }); toast.success(T('dc.appeal')); loadDiscipline(); } catch (e) { toastError(e); }
+      });
+      list.querySelectorAll('[data-resolve]').forEach((b) => b.onclick = async () => {
+        if (!(await App.confirmDialog(T('dc.overturn') + '？', { danger: true }))) return;
+        try { await API.Discipline.resolveAppeal(b.dataset.resolve, { uphold: false }); toast.success(T('dc.overturn')); loadDiscipline(); } catch (e) { toastError(e); }
+      });
+    } catch (e) { list.innerHTML = '<div class="empty-hint error-text">' + esc(e.message) + '</div>'; }
+  }
+
+  async function submitCase() {
+    if (!App.Session.require()) return;
+    const payload = {
+      targetType: $('#dcTargetType').value,
+      targetId: $('#dcTargetId').value.trim(),
+      reason: $('#dcReason').value.trim(),
+      proposedSanction: { type: $('#dcType').value, durationMs: Number($('#dcDuration').value || 0) * 3600000 },
+    };
+    if (!payload.targetId || !payload.reason) { toast.warn(T('dc.reason')); return; }
+    const btn = $('#dcSubmit'); App.busy(btn, true);
+    try { await API.Discipline.create(payload); toast.success(T('common.success')); $('#dcReason').value = ''; loadDiscipline(); }
+    catch (e) { toastError(e); } finally { App.busy(btn, false); }
+  }
+
+  /* ----------------------------- 申诉 / 我的 ----------------------------- */
+  async function loadAppeals() {
+    const grid = $('#apGrid');
+    grid.innerHTML = App.skeletonList(2, 120);
+    try {
+      const d = await API.Discipline.list({ mine: '1' });
+      if (!d.items.length) { grid.innerHTML = '<div class="empty-hint" data-i18n="dc.empty">' + T('dc.empty') + '</div>'; return; }
+      grid.innerHTML = d.items.map((c) => {
+        const tgt = c.target ? (c.target.name || c.target.id) : c.targetId;
+        return '<div class="card card-pad case-card">' +
+          '<div class="case-head">' + statusPill(c.status) + '<span class="small muted">' + esc(tgt) + '</span></div>' +
+          '<div class="case-reason">' + esc(c.reason) + '</div>' +
+          '<div class="el-meta">' + badge(T('dc.sanction') + '：' + sanctionText(c.proposedSanction)) + '</div>' +
+          (c.appeal ? '<p class="small muted2 mt-2">📝 ' + esc(c.appeal.reason) + (c.appeal.resolution ? ' · ' + (c.appeal.resolution === 'upheld' ? T('dc.uphold') : T('dc.overturn')) : '') + '</p>' : '') +
+          '</div>';
+      }).join('');
+    } catch (e) { grid.innerHTML = '<div class="empty-hint error-text">' + esc(e.message) + '</div>'; }
+  }
+
+  function updateDcHint() {
+    const type = $('#dcType').value;
+    const short = type === 'mute' && Number($('#dcDuration').value || 0) <= 24;
+    $('#dcHint').textContent = (type === 'warn' || short) ? T('dc.noConfirm') : T('dc.needConfirm');
+  }
+
+  /* ------------------------------ 启动 -------------------------------- */
+  App.boot({
+    nav: 'governance',
+    requireAuth: true,
+    onReady: async function () {
+      $('#btnNewElection').hidden = !App.Session.isSuperAdmin;
+      $('#btnNewElection').onclick = newElection;
+      $('#dcSubmit').onclick = submitCase;
+      $('#dcShowAll').onchange = loadDiscipline;
+      ['#dcType', '#dcDuration'].forEach((s) => $(s).addEventListener('change', updateDcHint));
+      updateDcHint();
+
+      $$('.gov-tabs .tab').forEach((t) => t.onclick = () => {
+        $$('.gov-tabs .tab').forEach((x) => x.classList.toggle('active', x === t));
+        ['elections', 'discipline', 'appeals'].forEach((k) => $('#pane' + k.charAt(0).toUpperCase() + k.slice(1)).classList.toggle('active', k === t.dataset.gtab));
+        if (t.dataset.gtab === 'discipline') loadDiscipline();
+        if (t.dataset.gtab === 'appeals') loadAppeals();
+      });
+
+      await loadElections();
+    },
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "MarytOpens",
+  "short_name": "MarytOpens",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b0c15",
+  "theme_color": "#6366f1",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/assets/img/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/assets/img/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/assets/img/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

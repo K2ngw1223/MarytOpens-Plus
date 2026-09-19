@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="MarytOpens 设计征集：社区公开征集称号、头像框、名片、气泡与礼物设计，投票选出并署名上线">
+  <title>设计征集 · MarytOpens</title>
+  <link rel="stylesheet" href="/assets/css/main.css">
+  <link rel="icon" href="/favicon.ico">
+  <style>
+    .dz-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px; }
+    .dz-item { display:flex; flex-direction:column; gap:8px; }
+    .dz-preview { display:flex; align-items:center; justify-content:center; min-height:74px; padding:10px;
+      border:1px dashed var(--border,#e5e7eb); border-radius:12px; background:var(--surface-2,#f8fafc); overflow:hidden; }
+    .dz-preview img { max-width:100%; max-height:120px; border-radius:8px; }
+    .dz-kind { display:inline-block; align-self:flex-start; font-size:11px; padding:2px 8px; border-radius:999px;
+      background:var(--accent-soft,#dbeafe); color:var(--accent,#2563eb); }
+    .dz-meta { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12px; }
+    .dz-author { display:flex; align-items:center; gap:6px; min-width:0; }
+    .dz-author span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .dz-vote { display:inline-flex; align-items:center; gap:5px; }
+    .dz-vote.voted { color:var(--accent,#2563eb); font-weight:600; }
+    .dz-status { font-size:11px; padding:2px 8px; border-radius:999px; border:1px solid var(--border,#e5e7eb); }
+    .dz-status.pending { color:#b45309; border-color:#b4530955; }
+    .dz-status.approved { color:#2563eb; border-color:#2563eb55; }
+    .dz-status.adopted { color:#16a34a; border-color:#16a34a55; }
+    .dz-status.rejected, .dz-status.withdrawn { color:var(--muted,#64748b); }
+    .dz-filters { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+    .dz-chip { font-size:12px; padding:5px 12px; border-radius:999px; cursor:pointer;
+      border:1px solid var(--border,#e5e7eb); background:transparent; color:var(--text-2,#475569); }
+    .dz-chip.active { background:var(--accent,#2563eb); border-color:var(--accent,#2563eb); color:#fff; }
+    .dz-camp { border-left:3px solid var(--accent,#2563eb); padding-left:12px; }
+    .dz-reward { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+    .dz-tag { font-size:11px; padding:2px 8px; border-radius:6px; background:var(--surface-2,#f8fafc); border:1px solid var(--border,#e5e7eb); }
+    .dz-note { font-size:12px; color:var(--muted,#64748b); border-top:1px dashed var(--border,#e5e7eb); padding-top:6px; }
+    .avatar-frame .avatar { width:44px; height:44px; display:flex; align-items:center; justify-content:center;
+      color:#fff; font-weight:700; font-size:18px; border-radius:999px; }
+    .dz-swatch { width:100%; height:52px; border-radius:10px; }
+    .mt-2{margin-top:8px}.mt-3{margin-top:12px}.mt-4{margin-top:16px}
+    .mb-2{margin-bottom:8px}.row-between{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+    .xsmall{font-size:12px}.small{font-size:13px}.muted{color:var(--muted,#64748b)}
+    .field-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; }
+  </style>
+</head>
+<body>
+  <header id="navbar"></header>
+  <main class="container container-mid" style="padding-top:24px;padding-bottom:60px">
+    <div class="section-head">
+      <div class="eyebrow">Community Design</div>
+      <h1 data-i18n="design.title">设计征集</h1>
+      <p class="muted" data-i18n="design.intro">社区公开征集装扮设计：投稿、公示、投票，被采纳的作品署名上线并获得奖励。</p>
+    </div>
+
+    <div class="card card-pad mb-2" id="campCard"><div class="muted text-center">加载中…</div></div>
+
+    <div class="card card-pad mb-2" id="reviewCard" style="display:none">
+      <div class="row-between">
+        <h3 class="mb-0" data-i18n="design.reviewQueue">待审核队列</h3>
+        <span class="dz-tag" id="pendingCount">0</span>
+      </div>
+      <p class="muted small" data-i18n="design.reviewHint">初审通过后进入社区公开投票；采纳会把设计写入官方目录并给设计者署名与奖励。</p>
+      <div class="mt-3" id="reviewBody"><div class="muted small">加载中…</div></div>
+    </div>
+
+    <div class="card card-pad mb-2">
+      <div class="row-between">
+        <h3 class="mb-0" data-i18n="design.gallery">公开投票</h3>
+        <button class="btn btn-primary btn-sm" id="btnSubmit" data-i18n="design.submit">我要投稿</button>
+      </div>
+      <div class="dz-filters mt-3" id="kindFilters"></div>
+      <div class="dz-filters mt-2" id="sortFilters"></div>
+      <div class="dz-grid mt-3" id="galleryBody"><div class="muted small">加载中…</div></div>
+    </div>
+
+    <div class="card card-pad mb-2" id="mineCard">
+      <h3 class="mb-0" data-i18n="design.mine">我的投稿</h3>
+      <p class="muted small" data-i18n="design.mineHint">初审通过后会进入公开投票池，被采纳即上线。</p>
+      <div class="dz-grid mt-3" id="mineBody"><div class="muted small">加载中…</div></div>
+    </div>
+
+    <div class="card card-pad" id="hallCard">
+      <h3 class="mb-0" data-i18n="design.hall">采纳名人堂</h3>
+      <p class="muted small" data-i18n="design.hallHint">这些作品来自社区，已经上线为官方称号 / 装扮 / 礼物。</p>
+      <div class="dz-grid mt-3" id="hallBody"><div class="muted small">加载中…</div></div>
+    </div>
+  </main>
+  <footer id="footer"></footer>
+
+  <script src="/assets/js/i18n.js"></script>
+  <script src="/assets/js/api.js"></script>
+  <script src="/assets/js/app.js"></script>
+  <script>
+    const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    App.boot({
+      nav: 'designs',
+      onReady: async function () {
+        const T = (k, d) => (window.I18N ? I18N.t(k, d) : (d || k));
+        const { $, icon } = App;
+        const campCard = $('#campCard');
+        const reviewCard = $('#reviewCard');
+        const reviewBody = $('#reviewBody');
+        const galleryBody = $('#galleryBody');
+        const mineBody = $('#mineBody');
+        const hallBody = $('#hallBody');
+
+        /* 类型元信息：图标 + 中文名 + 预览渲染方式 */
+        const KIND_META = {
+          title:  { label: T('design.kind.title', '称号'),   emoji: '🏷' },
+          frame:  { label: T('design.kind.frame', '头像框'), emoji: '🖼' },
+          card:   { label: T('design.kind.card', '名片'),    emoji: '🪪' },
+          bubble: { label: T('design.kind.bubble', '气泡'),  emoji: '💬' },
+          gift:   { label: T('design.kind.gift', '礼物'),    emoji: '🎁' },
+          emoji:  { label: T('design.kind.emoji', '表情'),   emoji: '😺' },
+          other:  { label: T('design.kind.other', '其它'),   emoji: '✨' },
+        };
+        const STATUS_LABEL = {
+          pending: T('design.st.pending', '待初审'),
+          approved: T('design.st.approved', '公开投票中'),
+          adopted: T('design.st.adopted', '已采纳上线'),
+          rejected: T('design.st.rejected', '未通过'),
+          withdrawn: T('design.st.withdrawn', '已撤回'),
+        };
+
+        let campaigns = [];
+        let palette = { frames: [], cards: [], bubbles: [] };
+        let canReview = false;
+        let curKind = '';
+        let curSort = 'votes';
+
+        /* ---------------------------- 预览渲染 ---------------------------- */
+
+        /**
+         * 设计预览：装扮类只用后端白名单过滤后的 class，
+         * 颜色只用 #hex（后端已校验），因此可以安全内联。
+         */
+        function previewHTML(d) {
+          const spec = d.spec || {};
+          if (d.image) return '<img src="' + esc(API.fileURL(d.image)) + '" alt="">';
+          if (d.kind === 'title') {
+            const color = /^#[0-9a-fA-F]{3,6}$/.test(spec.color || '') ? spec.color : '#6366f1';
+            return App.titleHTML({ name: d.name, color: color, icon: spec.icon || '', rare: !!spec.rare });
+          }
+          if (d.kind === 'frame') {
+            const cls = App.FRAME_CLASSES.indexOf(spec.cls) >= 0 ? spec.cls : '';
+            return '<div class="avatar-frame ' + cls + '"><div class="avatar" style="background:' +
+              (/^#[0-9a-fA-F]{3,6}$/.test(spec.color || '') ? spec.color : '#6366f1') + '">' +
+              esc((d.name || '?').slice(0, 1)) + '</div></div>';
+          }
+          if (d.kind === 'card') {
+            const cls = App.CARD_CLASSES.indexOf(spec.cls) >= 0 ? spec.cls : '';
+            return '<div class="card ' + cls + ' dz-swatch" style="width:100%"></div>';
+          }
+          if (d.kind === 'bubble') {
+            const cls = App.BUBBLE_CLASSES.indexOf(spec.cls) >= 0 ? spec.cls : '';
+            return '<div class="bubble me ' + cls + '">' + esc(d.name || '示例消息') + '</div>';
+          }
+          if (d.kind === 'gift' || d.kind === 'emoji') {
+            return '<div style="font-size:38px;line-height:1">' + esc(spec.icon || KIND_META[d.kind].emoji) + '</div>';
+          }
+          return '<div style="font-size:30px;line-height:1">' + esc(KIND_META[d.kind] ? KIND_META[d.kind].emoji : '✨') + '</div>';
+        }
+
+        function authorHTML(d) {
+          if (!d.author) return '<span class="muted">' + esc(d.authorName || T('design.anon', '匿名设计师')) + '</span>';
+          return '<a class="dz-author" href="/profile.html?u=' + encodeURIComponent(d.author.username) + '">' +
+            App.avatar(d.author, 20) + '<span>' + esc(d.author.displayName || d.author.username) + '</span></a>';
+        }
+
+        function cardHTML(d, opts) {
+          opts = opts || {};
+          const km = KIND_META[d.kind] || KIND_META.other;
+          const spec = d.spec || {};
+          const canVote = App.Session.isLoggedIn && ['approved', 'adopted'].includes(d.status);
+          return '<div class="card card-pad dz-item" data-id="' + esc(d.id) + '">' +
+            '<div class="row-between"><span class="dz-kind">' + esc(km.emoji + ' ' + km.label) + '</span>' +
+              '<span class="dz-status ' + esc(d.status) + '">' + esc(STATUS_LABEL[d.status] || d.status) + '</span></div>' +
+            '<div class="dz-preview">' + previewHTML(d) + '</div>' +
+            '<strong>' + esc(d.name) + '</strong>' +
+            '<div class="xsmall muted" style="line-height:1.6">' + esc(d.summary || '') + '</div>' +
+            (spec.price ? '<div class="xsmall muted">' + T('design.suggestPrice', '建议售价') + '：' + spec.price + ' MO</div>' : '') +
+            '<div class="dz-meta">' + authorHTML(d) +
+              (canVote
+                ? '<button class="btn btn-ghost btn-sm dz-vote' + (d.voted ? ' voted' : '') + '" data-vote="' + esc(d.id) + '">' +
+                  icon('star') + '<b>' + (d.votes || 0) + '</b></button>'
+                : '<span class="dz-vote muted">' + icon('star') + '<b>' + (d.votes || 0) + '</b></span>') +
+            '</div>' +
+            (d.reviewNote ? '<div class="dz-note">' + T('design.reviewNote', '审核意见') + '：' + esc(d.reviewNote) + '</div>' : '') +
+            (opts.review && d.status === 'pending'
+              ? '<div class="mt-2" style="display:flex;gap:6px;flex-wrap:wrap">' +
+                '<button class="btn btn-primary btn-sm" data-approve="' + esc(d.id) + '">' + T('design.approve', '通过初审') + '</button>' +
+                '<button class="btn btn-soft btn-sm" data-reject="' + esc(d.id) + '">' + T('design.reject', '驳回') + '</button>' +
+                '</div>'
+              : '') +
+            (opts.review && d.status === 'approved' && App.Session.isSuperAdmin
+              ? '<button class="btn btn-primary btn-sm mt-2" data-adopt="' + esc(d.id) + '">' + T('design.adopt', '采纳上线') + '</button>'
+              : '') +
+            (opts.mine && d.status !== 'adopted'
+              ? '<button class="btn btn-ghost btn-sm mt-2" data-withdraw="' + esc(d.id) + '">' + T('design.withdraw', '撤回') + '</button>'
+              : '') +
+            '</div>';
+        }
+
+        /* ---------------------------- 征集活动 ---------------------------- */
+
+        async function loadCampaigns() {
+          try {
+            const r = await API.Designs.campaigns();
+            campaigns = r.items || [];
+            palette = r.palette || palette;
+            renderCampaigns();
+            renderFilters();
+          } catch (e) {
+            campCard.innerHTML = '<div class="muted small">' + esc(e.message || '加载失败') + '</div>';
+          }
+        }
+
+        function renderCampaigns() {
+          const open = campaigns.filter((c) => c.open);
+          const list = open.length ? open : campaigns;
+          if (!list.length) {
+            campCard.innerHTML = '<div class="muted small">' + T('design.noCampaign', '当前没有进行中的征集活动。') + '</div>';
+            return;
+          }
+          campCard.innerHTML = list.map((c) => {
+            const kinds = (c.kinds || []).map((k) => (KIND_META[k] ? KIND_META[k].label : k)).join(' / ');
+            const period = (c.startAt || c.endAt)
+              ? (c.startAt ? new Date(c.startAt).toLocaleDateString() : '不限') + ' — ' + (c.endAt ? new Date(c.endAt).toLocaleDateString() : '不限')
+              : T('design.always', '常设征集');
+            return '<div class="dz-camp mb-2">' +
+              '<div class="row-between"><strong>' + esc(c.title) + '</strong>' +
+                '<span class="dz-status ' + (c.open ? 'approved' : 'withdrawn') + '">' +
+                (c.open ? T('design.open', '征集中') : T('design.closed', '已结束')) + '</span></div>' +
+              '<div class="small muted mt-2" style="line-height:1.7">' + esc(c.desc || '') + '</div>' +
+              '<div class="dz-reward">' +
+                '<span class="dz-tag">' + T('design.period', '周期') + '：' + esc(period) + '</span>' +
+                (kinds ? '<span class="dz-tag">' + T('design.accept', '接受类型') + '：' + esc(kinds) + '</span>' : '') +
+                ((c.rewardMo || c.rewardMeow) ? '<span class="dz-tag">' + T('design.passReward', '初审通过') + '：+' + (c.rewardMo || 0) + ' MO / +' + (c.rewardMeow || 0) + ' Meow</span>' : '') +
+                ((c.adoptMo || c.adoptMeow) ? '<span class="dz-tag">' + T('design.adoptReward', '被采纳') + '：+' + (c.adoptMo || 0) + ' MO / +' + (c.adoptMeow || 0) + ' Meow</span>' : '') +
+                (c.adoptTitle ? '<span class="dz-tag">🎨 ' + T('design.designerTitle', '特约设计师称号') + '</span>' : '') +
+                (c.maxPerUser ? '<span class="dz-tag">' + T('design.maxPerUser', '每人上限') + '：' + c.maxPerUser + '</span>' : '') +
+              '</div></div>';
+          }).join('');
+        }
+
+        function renderFilters() {
+          const kinds = [''].concat(Object.keys(KIND_META));
+          $('#kindFilters').innerHTML = kinds.map((k) =>
+            '<button type="button" class="dz-chip' + (curKind === k ? ' active' : '') + '" data-kind="' + k + '">' +
+            (k ? esc(KIND_META[k].emoji + ' ' + KIND_META[k].label) : T('design.all', '全部')) + '</button>').join('');
+          $('#sortFilters').innerHTML =
+            '<button type="button" class="dz-chip' + (curSort === 'votes' ? ' active' : '') + '" data-sort="votes">' + T('design.sortHot', '按票数') + '</button>' +
+            '<button type="button" class="dz-chip' + (curSort === 'new' ? ' active' : '') + '" data-sort="new">' + T('design.sortNew', '按时间') + '</button>';
+        }
+
+        /* ---------------------------- 列表加载 ---------------------------- */
+
+        async function loadGallery() {
+          galleryBody.innerHTML = '<div class="muted small">' + T('common.loading', '加载中…') + '</div>';
+          try {
+            const r = await API.Designs.list({ kind: curKind || undefined, sort: curSort, limit: 60 });
+            canReview = !!r.canReview;
+            reviewCard.style.display = canReview ? '' : 'none';
+            $('#pendingCount').textContent = String(r.pendingCount || 0);
+            const items = r.items || [];
+            galleryBody.innerHTML = items.length
+              ? items.map((d) => cardHTML(d)).join('')
+              : '<div class="muted small">' + T('design.empty', '还没有进入公示的设计，来当第一个投稿的人吧。') + '</div>';
+            if (canReview) loadReview();
+          } catch (e) {
+            galleryBody.innerHTML = '<div class="muted small">' + esc(e.message || '加载失败') + '</div>';
+          }
+        }
+
+        async function loadReview() {
+          try {
+            const [pend, appr] = await Promise.all([
+              API.Designs.list({ status: 'pending', sort: 'new', limit: 60 }),
+              API.Designs.list({ status: 'approved', sort: 'votes', limit: 60 }),
+            ]);
+            const items = (pend.items || []).concat(appr.items || []);
+            reviewBody.innerHTML = items.length
+              ? '<div class="dz-grid">' + items.map((d) => cardHTML(d, { review: true })).join('') + '</div>'
+              : '<div class="muted small">' + T('design.reviewEmpty', '没有待处理的设计。') + '</div>';
+          } catch (e) {
+            reviewBody.innerHTML = '<div class="muted small">' + esc(e.message || '加载失败') + '</div>';
+          }
+        }
+
+        async function loadMine() {
+          if (!App.Session.isLoggedIn) { $('#mineCard').style.display = 'none'; return; }
+          try {
+            const r = await API.Designs.list({ mine: 1, sort: 'new', limit: 60 });
+            const items = r.items || [];
+            mineBody.innerHTML = items.length
+              ? items.map((d) => cardHTML(d, { mine: true })).join('')
+              : '<div class="muted small">' + T('design.mineEmpty', '你还没有投稿设计。') + '</div>';
+          } catch (e) {
+            mineBody.innerHTML = '<div class="muted small">' + esc(e.message || '加载失败') + '</div>';
+          }
+        }
+
+        async function loadHall() {
+          try {
+            const r = await API.Designs.hall();
+            const items = r.items || [];
+            hallBody.innerHTML = items.length
+              ? items.map((d) => cardHTML(d)).join('')
+              : '<div class="muted small">' + T('design.hallEmpty', '还没有被采纳的社区设计。') + '</div>';
+          } catch (e) {
+            hallBody.innerHTML = '<div class="muted small">' + esc(e.message || '加载失败') + '</div>';
+          }
+        }
+
+        /* ---------------------------- 投稿表单 ---------------------------- */
+
+        function clsOptions(kind) {
+          const map = { frame: palette.frames || [], card: palette.cards || [], bubble: palette.bubbles || [] };
+          const list = map[kind] || [];
+          if (!list.length) return '';
+          return '<label class="label mt-2">' + T('design.styleCls', '样式类（可选）') + '</label>' +
+            '<select class="select" id="dzCls"><option value="">' + T('design.conceptOnly', '仅概念稿（不指定样式）') + '</option>' +
+            list.map((c) => '<option value="' + esc(c) + '">' + esc(c) + '</option>').join('') + '</select>' +
+            '<div class="xsmall muted mt-2">' + T('design.clsHint', '样式类必须来自站点现有白名单；想要全新视觉效果请在说明里描述，采纳时由站长实现。') + '</div>';
+        }
+
+        function openSubmit() {
+          if (!App.Session.isLoggedIn) { location.href = '/login.html?next=' + encodeURIComponent('/designs.html'); return; }
+          const open = campaigns.filter((c) => c.open);
+          if (!open.length) { App.toast(T('design.noCampaign', '当前没有进行中的征集活动。')); return; }
+          const camp = open[0];
+          const allowed = (camp.kinds && camp.kinds.length) ? camp.kinds : Object.keys(KIND_META);
+
+          const m = App.modal({
+            title: T('design.submit', '我要投稿'),
+            okText: T('design.submitOk', '提交设计'),
+            body:
+              '<label class="label">' + T('design.campaign', '征集活动') + '</label>' +
+              '<select class="select" id="dzCamp">' + open.map((c) => '<option value="' + esc(c.id) + '">' + esc(c.title) + '</option>').join('') + '</select>' +
+              '<div class="field-row mt-2">' +
+                '<div><label class="label">' + T('design.kindLabel', '设计类型') + '</label>' +
+                  '<select class="select" id="dzKind">' + allowed.map((k) =>
+                    '<option value="' + esc(k) + '">' + esc((KIND_META[k] || KIND_META.other).label) + '</option>').join('') + '</select></div>' +
+                '<div><label class="label">' + T('design.nameLabel', '设计名称') + '</label>' +
+                  '<input class="input" id="dzName" maxlength="30" placeholder="' + T('design.namePh', '例如：深海回声') + '"></div>' +
+              '</div>' +
+              '<label class="label mt-2">' + T('design.summaryLabel', '设计说明') + '</label>' +
+              '<textarea class="textarea" id="dzSummary" rows="4" maxlength="1000" placeholder="' + T('design.summaryPh', '描述灵感来源、配色、适用场景，至少 10 个字') + '"></textarea>' +
+              '<div class="field-row mt-2">' +
+                '<div><label class="label">' + T('design.colorLabel', '主色') + '</label>' +
+                  '<input class="input" type="color" id="dzColor" value="#6366f1"></div>' +
+                '<div><label class="label">' + T('design.iconLabel', '图标 / Emoji') + '</label>' +
+                  '<input class="input" id="dzIcon" maxlength="4" placeholder="🌊"></div>' +
+                '<div><label class="label">' + T('design.priceLabel', '建议售价 (MO)') + '</label>' +
+                  '<input class="input" type="number" id="dzPrice" min="0" max="100000" value="0"></div>' +
+              '</div>' +
+              '<div id="dzClsWrap"></div>' +
+              '<label class="label mt-2">' + T('design.imageLabel', '参考图链接（可选）') + '</label>' +
+              '<input class="input" id="dzImage" placeholder="https:// 或 站内上传后的路径">' +
+              '<label class="mt-3" style="display:flex;align-items:center;gap:8px">' +
+                '<input type="checkbox" id="dzAnon"> <span class="small">' + T('design.anonLabel', '匿名投稿（不公开我的昵称）') + '</span></label>',
+            onOk: async () => {
+              const name = m.body.querySelector('#dzName').value.trim();
+              const summary = m.body.querySelector('#dzSummary').value.trim();
+              if (name.length < 2) { App.toast(T('design.errName', '设计名称至少 2 个字符')); return false; }
+              if (summary.length < 10) { App.toast(T('design.errSummary', '设计说明至少 10 个字符')); return false; }
+              const clsEl = m.body.querySelector('#dzCls');
+              await API.Designs.create({
+                campaignId: m.body.querySelector('#dzCamp').value,
+                kind: m.body.querySelector('#dzKind').value,
+                name: name,
+                summary: summary,
+                image: m.body.querySelector('#dzImage').value.trim(),
+                anonymous: m.body.querySelector('#dzAnon').checked,
+                spec: {
+                  color: m.body.querySelector('#dzColor').value,
+                  icon: m.body.querySelector('#dzIcon').value.trim(),
+                  price: parseInt(m.body.querySelector('#dzPrice').value, 10) || 0,
+                  cls: clsEl ? clsEl.value : '',
+                },
+              });
+              App.toast(T('design.submitted', '投稿已提交，等待初审'));
+              loadMine();
+              return true;
+            },
+          });
+          const kindSel = m.body.querySelector('#dzKind');
+          const clsWrap = m.body.querySelector('#dzClsWrap');
+          const syncCls = () => { clsWrap.innerHTML = clsOptions(kindSel.value); };
+          kindSel.addEventListener('change', syncCls);
+          syncCls();
+        }
+
+        /* ---------------------------- 审核 / 采纳 ---------------------------- */
+
+        async function doReview(id, decision) {
+          const note = decision === 'reject'
+            ? await App.promptDialog(T('design.rejectReason', '驳回理由（会通知投稿人）'), { value: '' })
+            : '';
+          if (decision === 'reject' && note === null) return;
+          try {
+            const r = await API.Designs.review(id, { decision: decision, note: note || '' });
+            App.toast(decision === 'approve'
+              ? T('design.approved', '已通过初审，进入公开投票') + (r.reward ? '（+' + r.reward.mo + ' MO / +' + r.reward.meow + ' Meow）' : '')
+              : T('design.rejected', '已驳回'));
+            loadReview(); loadGallery();
+          } catch (e) { App.toastError(e); }
+        }
+
+        function openAdopt(id) {
+          const card = document.querySelector('[data-id="' + id + '"]');
+          const m = App.modal({
+            title: T('design.adopt', '采纳上线'),
+            okText: T('design.adoptOk', '确认采纳'),
+            body:
+              '<p class="small muted" style="margin-top:0;line-height:1.7">' +
+                T('design.adoptHint', '采纳后会把该设计写入官方目录（称号 / 礼物）或上架商城（头像框 / 名片 / 气泡），并给设计者署名、发放奖励与「特约设计师」称号。') + '</p>' +
+              '<div class="field-row">' +
+                '<div><label class="label">' + T('design.adoptPrice', '售价 (MO)') + '</label>' +
+                  '<input class="input" type="number" id="adPrice" min="0" max="100000" value="0"></div>' +
+                '<div><label class="label">' + T('design.adoptLevel', '等级门槛') + '</label>' +
+                  '<input class="input" type="number" id="adLevel" min="0" max="999" value="0"></div>' +
+              '</div>' +
+              '<label class="label mt-2">' + T('design.adoptCls', '映射样式类（装扮类必填）') + '</label>' +
+              '<select class="select" id="adCls"><option value="">' + T('design.adoptClsAuto', '沿用投稿中的样式') + '</option>' +
+                [].concat(palette.frames || [], palette.cards || [], palette.bubbles || [])
+                  .map((c) => '<option value="' + esc(c) + '">' + esc(c) + '</option>').join('') + '</select>' +
+              '<div class="field-row mt-2">' +
+                '<div><label class="label">' + T('design.adoptRewardMo', '奖励 MO（留空用活动默认）') + '</label>' +
+                  '<input class="input" type="number" id="adMo" min="0" placeholder="默认"></div>' +
+                '<div><label class="label">' + T('design.adoptRewardMeow', '奖励 Meow') + '</label>' +
+                  '<input class="input" type="number" id="adMeow" min="0" placeholder="默认"></div>' +
+              '</div>' +
+              '<label class="label mt-2">' + T('design.adoptNote', '备注') + '</label>' +
+              '<input class="input" id="adNote" maxlength="200">',
+            onOk: async () => {
+              const num = (sel) => {
+                const v = m.body.querySelector(sel).value.trim();
+                return v === '' ? undefined : (parseInt(v, 10) || 0);
+              };
+              const r = await API.Designs.adopt(id, {
+                price: num('#adPrice'), levelMin: num('#adLevel'),
+                cls: m.body.querySelector('#adCls').value,
+                rewardMo: num('#adMo'), rewardMeow: num('#adMeow'),
+                note: m.body.querySelector('#adNote').value.trim(),
+              });
+              App.toast(T('design.adoptDone', '已采纳并上线') + (r.listed ? T('design.listed', '（已上架商城）') : ''));
+              loadReview(); loadGallery(); loadHall();
+              return true;
+            },
+          });
+          // 预填投稿里的建议售价，省得站长再翻一遍
+          if (card) {
+            const priceTxt = (card.textContent.match(/(\d+)\s*MO/) || [])[1];
+            if (priceTxt) m.body.querySelector('#adPrice').value = priceTxt;
+          }
+        }
+
+        async function doVote(id) {
+          if (!App.Session.isLoggedIn) { location.href = '/login.html?next=' + encodeURIComponent('/designs.html'); return; }
+          try {
+            const r = await API.Designs.vote(id);
+            document.querySelectorAll('[data-vote="' + id + '"]').forEach((btn) => {
+              btn.classList.toggle('voted', !!r.voted);
+              const b = btn.querySelector('b');
+              if (b) b.textContent = String(r.votes || 0);
+            });
+          } catch (e) { App.toastError(e); }
+        }
+
+        async function doWithdraw(id) {
+          if (!(await App.confirmDialog(T('design.withdrawConfirm', '确定撤回这份设计投稿？'), { danger: true }))) return;
+          try { await API.Designs.withdraw(id); App.toast(T('design.withdrawn', '已撤回')); loadMine(); loadGallery(); }
+          catch (e) { App.toastError(e); }
+        }
+
+        /* ---------------------------- 事件绑定 ---------------------------- */
+
+        document.addEventListener('click', (e) => {
+          const t = e.target.closest && e.target.closest('[data-vote],[data-approve],[data-reject],[data-adopt],[data-withdraw],[data-kind],[data-sort]');
+          if (!t) return;
+          if (t.dataset.vote) { e.preventDefault(); doVote(t.dataset.vote); return; }
+          if (t.dataset.approve) { e.preventDefault(); doReview(t.dataset.approve, 'approve'); return; }
+          if (t.dataset.reject) { e.preventDefault(); doReview(t.dataset.reject, 'reject'); return; }
+          if (t.dataset.adopt) { e.preventDefault(); openAdopt(t.dataset.adopt); return; }
+          if (t.dataset.withdraw) { e.preventDefault(); doWithdraw(t.dataset.withdraw); return; }
+          if (t.dataset.kind !== undefined && t.hasAttribute('data-kind')) {
+            curKind = t.dataset.kind; renderFilters(); loadGallery(); return;
+          }
+          if (t.dataset.sort) { curSort = t.dataset.sort; renderFilters(); loadGallery(); }
+        });
+
+        $('#btnSubmit').onclick = openSubmit;
+
+        await loadCampaigns();
+        await loadGallery();
+        loadMine();
+        loadHall();
+        if (window.I18N) I18N.apply(document.body);
+
+        /* 深链：/designs.html?id=xxx 直接滚动定位到那张卡 */
+        const wantId = new URLSearchParams(location.search).get('id');
+        if (wantId) {
+          setTimeout(() => {
+            const node = document.querySelector('[data-id="' + wantId.replace(/"/g, '') + '"]');
+            if (node) { node.scrollIntoView({ behavior: 'smooth', block: 'center' }); node.classList.add('is-highlight'); }
+          }, 400);
+        }
+      },
+    });
+  </script>
+</body>
+</html>

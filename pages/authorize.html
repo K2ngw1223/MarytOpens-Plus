@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>授权登录 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#6366f1">
+<link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.json">
+<script>(function(){var t=localStorage.getItem('mo_theme');var d=t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light');})();</script>
+<link rel="stylesheet" href="/assets/css/main.css">
+</head>
+<body>
+
+<header id="navbar"></header>
+
+<main class="container" style="max-width:520px;margin:0 auto;padding:40px 20px 60px">
+  <div class="card card-pad" id="box">
+    <div class="loading-center"><div class="spinner"></div></div>
+  </div>
+</main>
+
+<footer id="footer"></footer>
+<nav id="tabbar"></nav>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script>
+(function () {
+  'use strict';
+  const { $, esc, icon } = App;
+  const T = (k, p) => I18N.t(k, p);
+
+  const qp = new URLSearchParams(location.search);
+  const clientId = qp.get('client_id') || '';
+  const redirectUri = qp.get('redirect_uri') || '';
+  const scopeParam = qp.get('scope') || '';
+  const state = qp.get('state') || '';
+  const challenge = qp.get('code_challenge') || '';
+  const challengeMethod = qp.get('code_challenge_method') || '';
+
+  function err(msg) {
+    $('#box').innerHTML = '<div class="empty"><div class="big-ico">'+icon('alert')+'</div>' +
+      '<h3>'+esc(msg)+'</h3>' +
+      '<a class="btn btn-primary mt-3" href="/">'+T('nav.home')+'</a></div>';
+  }
+
+  async function start() {
+    if (!clientId || !redirectUri) { err('缺少 client_id 或 redirect_uri'); return; }
+    try {
+      const d = await API.OAuthApps.authorizeInfo({ client_id: clientId, redirect_uri: redirectUri, scope: scopeParam });
+      if (!App.Session.user) {
+        const back = encodeURIComponent(location.pathname + location.search);
+        $('#box').innerHTML = '<div class="empty">' +
+          '<div class="big-ico">'+icon('user')+'</div>' +
+          '<h3>'+T('oauth.authorize.title')+'</h3>' +
+          '<p class="muted">'+esc(T('oauth.authorize.appRequest', { app: d.app.name }))+'</p>' +
+          '<a class="btn btn-primary mt-3" href="/login.html?to='+back+'">'+T('nav.login')+'</a></div>';
+        return;
+      }
+      render(d);
+    } catch (e) { err(e.message || T('common.failed')); }
+  }
+
+  function render(d) {
+    const app = d.app;
+    const scopeHtml = (d.scopes || []).map((s) => {
+      const isNew = !(d.grantedScopes || []).includes(s.key);
+      return '<li class="scope-row"><span class="grow">'+esc(s.zh || s.en || s.key)+'</span>' + (isNew?'<span class="badge badge-warn">new</span>':'<span class="badge badge-ok">✓</span>') + '</li>';
+    }).join('');
+    const owner = app.owner ? (app.owner.displayName || app.owner.username) : '';
+    $('#box').innerHTML =
+      '<div class="row" style="gap:12px;align-items:center">' +
+        (app.logo ? '<img class="app-logo lg" src="'+esc(app.logo)+'" onerror="this.style.display=\'none\'">' : '<span class="app-logo-placeholder lg">'+icon('code')+'</span>') +
+        '<div class="grow"><b>'+esc(app.name)+'</b>' +
+        (owner?'<div class="xsmall muted">'+T('codespace.owner')+'：'+esc(owner)+'</div>':'') + '</div></div>' +
+      '<h3 class="mt-3">'+T('oauth.authorize.appRequest', { app: app.name })+'</h3>' +
+      (app.description?'<p class="muted small">'+esc(app.description)+'</p>':'') +
+      '<div class="alert-soft mt-2">'+esc(app.homepage || redirectUri)+'</div>' +
+      '<p class="small muted mt-3">'+T('oauth.authorize.scopes')+'</p>' +
+      '<ul class="scope-list">'+scopeHtml+'</ul>' +
+      (d.granted ? '<p class="xsmall muted">'+T('oauth.grants')+'：'+T('common.yes')+'</p>' : '') +
+      '<div class="row" style="gap:10px;margin-top:14px">' +
+        '<button class="btn btn-primary grow" id="btnOk">'+T('oauth.authorize.confirm')+'</button>' +
+        '<button class="btn btn-soft grow" id="btnNo">'+T('oauth.authorize.deny')+'</button>' +
+      '</div>';
+    $('#btnOk').onclick = () => submit(true);
+    $('#btnNo').onclick = () => submit(false);
+  }
+
+  async function submit(approve) {
+    try {
+      const d = await API.OAuthApps.authorize({
+        client_id: clientId, redirect_uri: redirectUri, scope: scopeParam,
+        state, code_challenge: challenge, code_challenge_method: challengeMethod, approve,
+      });
+      if (d.redirect) { location.href = d.redirect; return; }
+      err('授权完成，但未返回跳转地址');
+    } catch (e) { App.toastError(e); }
+  }
+
+  App.boot({ nav: '', requireAuth: false, onReady: start });
+})();
+</script>
+</body>
+</html>

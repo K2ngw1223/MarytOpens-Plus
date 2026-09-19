@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>客服中心 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#6366f1">
+<link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.json">
+<script>(function(){var t=localStorage.getItem('mo_theme');var d=t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light');})();</script>
+<link rel="stylesheet" href="/assets/css/main.css">
+</head>
+<body>
+
+<header id="navbar"></header>
+
+<main class="container container-mid py-6">
+  <div class="page-head row-between" style="gap:12px;flex-wrap:wrap">
+    <div>
+      <h1 data-i18n="support.title">客服中心</h1>
+      <p class="muted" data-i18n="support.subtitle">遇到问题？提交工单，客服会尽快处理。</p>
+    </div>
+    <div class="row" style="gap:8px">
+      <button class="btn btn-soft" id="btnCfg" style="display:none"><span id="icoCfg"></span> <span data-i18n="support.config">客服配置</span></button>
+      <button class="btn btn-primary" id="btnNew"><span id="icoNew"></span> <span data-i18n="support.new">提交工单</span></button>
+    </div>
+  </div>
+
+  <div class="card card-pad" id="infoCard" style="margin-bottom:14px"></div>
+
+  <div class="tabs" id="tabs" style="margin-bottom:14px"></div>
+
+  <div id="list" class="stack-lg"></div>
+</main>
+
+<footer id="footer"></footer>
+<nav id="tabbar"></nav>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script>
+(function () {
+  'use strict';
+  const { $, $$, esc, icon, markdown } = App;
+  const T = (k, p) => I18N.t(k, p);
+
+  const CATS = ['account','payment','content','abuse','technical','other'];
+  const CAT_LABEL = { account:'账号', payment:'支付', content:'内容', abuse:'举报/滥用', technical:'技术', other:'其他' };
+  const PRIO = ['low','normal','high','urgent'];
+  const PRIO_LABEL = { low:'ticket.priority.low', normal:'ticket.priority.normal', high:'ticket.priority.high', urgent:'ticket.priority.urgent' };
+  const PRIO_CLASS = { low:'badge-muted', normal:'badge-soft', high:'badge-warn', urgent:'badge-bad' };
+  const ST_LABEL = { open:'ticket.status.open', pending:'ticket.status.pending', resolved:'ticket.status.resolved', closed:'ticket.status.closed' };
+  const ST_CLASS = { open:'badge-soft', pending:'badge-warn', resolved:'badge-ok', closed:'badge-muted' };
+
+  let isStaff = false;
+  let mode = 'mine';
+  let cfg = null;
+
+  function badge(label, cls) { return '<span class="badge ' + (cls||'badge-soft') + '">' + T(label) + '</span>'; }
+
+  function tktCard(t) {
+    return '<div class="card card-pad tkt-card" data-id="' + esc(t.id) + '">' +
+      '<div class="row-between" style="gap:8px">' +
+        '<b class="truncate grow">' + esc(t.subject) + '</b>' +
+        (t.unreadForUser ? '<span class="dt-unread">1</span>' : '') +
+      '</div>' +
+      '<div class="row mt-2" style="gap:8px;flex-wrap:wrap;align-items:center">' +
+        badge(ST_LABEL[t.status]||t.status, ST_CLASS[t.status]) +
+        badge(PRIO_LABEL[t.priority]||t.priority, PRIO_CLASS[t.priority]) +
+        '<span class="tag">' + (CAT_LABEL[t.category]||t.category) + '</span>' +
+        (isStaff && t.user ? '<span class="xsmall muted">· '+esc(t.user.name)+'</span>' : '') +
+        '<span class="xsmall muted" style="margin-left:auto" data-time="' + (t.lastReplyAt||t.updatedAt) + '"></span>' +
+      '</div>' +
+    '</div>';
+  }
+
+  async function load() {
+    const box = $('#list'); box.innerHTML = App.loadingBlock();
+    try {
+      const params = (mode === 'mine' || !isStaff) ? { mine: 1 } : {};
+      const d = await API.Tickets.list(params);
+      isStaff = !!d.isStaff;
+      $('#btnCfg').style.display = isStaff ? '' : 'none';
+      renderTabs();
+      const items = d.items || [];
+      if (!items.length) { box.innerHTML = App.emptyState(T('support.empty'), '', 'life-buoy'); return; }
+      box.innerHTML = items.map(tktCard).join('');
+      $$('.tkt-card', box).forEach((n) => n.onclick = () => openDetail(n.dataset.id));
+      I18N.apply(box);
+    } catch (e) { App.toastError(e); box.innerHTML = App.emptyState(T('common.failed'), e.message, 'alert'); }
+  }
+
+  function renderTabs() {
+    const t = $('#tabs');
+    const tabs = [{ k:'mine', label:T('support.new') }];
+    if (isStaff) tabs.push({ k:'all', label:T('support.title') });
+    t.innerHTML = tabs.map((x) => '<button class="tab' + ((x.k==='mine'?mode==='mine':mode==='all')?' active':'') + '" data-mode="' + x.k + '">' + (x.k==='mine'?T('support.mine'):T('support.title')) + '</button>').join('');
+    $$('.tab', t).forEach((b) => b.onclick = () => { mode = b.dataset.mode; load(); });
+  }
+
+  function openDetail(id) {
+    const m = App.modal({ title: T('support.title'), size: 'lg', footer: false, body: '<div class="loading-center"><div class="spinner"></div></div>' });
+    (async () => {
+      try {
+        const d = await API.Tickets.get(id);
+        const t = d.ticket, staff = d.isStaff;
+        const msgs = t.messages || [];
+        let html = '<div class="stack">' +
+          '<div class="row-between" style="gap:8px"><b class="truncate">' + esc(t.subject) + '</b>' + badge(ST_LABEL[t.status]||t.status, ST_CLASS[t.status]) + '</div>' +
+          '<div class="row" style="gap:8px;flex-wrap:wrap"><span class="tag">' + (CAT_LABEL[t.category]||t.category) + '</span>' +
+            badge(PRIO_LABEL[t.priority]||t.priority, PRIO_CLASS[t.priority]) +
+            (t.contact ? '<span class="xsmall muted">'+T('ticket.contact')+'：'+esc(t.contact)+'</span>' : '') + '</div>' +
+          '<div class="tkt-msgs" id="tktMsgs"></div>';
+        if (staff) html += '<label class="check-row"><input type="checkbox" id="fInternal"> <span class="muted">'+T('ticket.internal')+'</span></label>';
+        html += '<div class="row" style="gap:8px;margin-top:6px"><textarea class="textarea grow" id="fReply" rows="2" placeholder="'+T('ticket.replyPh')+'"></textarea>' +
+          '<button class="btn btn-primary" id="btnReply">'+T('ticket.send')+'</button></div>';
+        if (staff) {
+          html += '<div class="row" style="gap:8px;margin-top:8px">' +
+            (t.status!=='resolved' ? '<button class="btn btn-soft btn-sm" id="stResolved">'+T('ticket.resolve')+'</button>' : '<button class="btn btn-soft btn-sm" id="stReopen">'+T('ticket.reopen')+'</button>') +
+            (t.status!=='closed' ? '<button class="btn btn-soft btn-sm" id="stClosed">'+T('ticket.close')+'</button>' : '') +
+          '</div>';
+        }
+        html += '</div>';
+        m.body.innerHTML = html; I18N.apply(m.body);
+
+        const box2 = $('#tktMsgs', m.body);
+        function renderMsgs() {
+          if (!msgs.length) { box2.innerHTML = '<p class="small muted" style="padding:8px 0">'+T('ticket.emptyMsgs')+'</p>'; return; }
+          box2.innerHTML = msgs.map((x) => {
+            const mine = x.from === 'user' && !x.internal;
+            return '<div class="tkt-msg ' + (x.internal ? 'internal' : (mine ? 'me':'you')) + '">' +
+              '<div class="xsmall muted row" style="gap:6px"><span>'+esc(x.name||(x.from==='staff'?'客服':'用户'))+'</span>' +
+              (x.internal?'<span class="badge badge-muted">内部</span>':'')+'<span data-time="'+x.createdAt+'"></span></div>' +
+              '<div class="tkt-text">' + esc(x.body) + '</div></div>';
+          }).join('');
+          I18N.apply(box2);
+        }
+        renderMsgs();
+
+        $('#btnReply', m.body).onclick = async () => {
+          const v = $('#fReply', m.body).value.trim();
+          if (!v) return;
+          try {
+            await API.Tickets.reply(id, { message: v, internal: staff && $('#fInternal', m.body).checked });
+            const d2 = await API.Tickets.get(id); Object.assign(t, d2.ticket); msgs.length = 0; msgs.push.apply(msgs, d2.ticket.messages||[]);
+            $('#fReply', m.body).value = ''; renderMsgs();
+          } catch (e) { App.toastError(e); }
+        };
+        const sr = $('#stResolved', m.body), ro = $('#stReopen', m.body), sc = $('#stClosed', m.body);
+        if (sr) sr.onclick = () => changeStatus(id, 'resolved');
+        if (ro) ro.onclick = () => changeStatus(id, 'open');
+        if (sc) sc.onclick = () => changeStatus(id, 'closed');
+      } catch (e) { m.body.innerHTML = App.emptyState(T('common.failed'), e.message, 'alert'); }
+    })();
+  }
+
+  async function changeStatus(id, st) {
+    try { await API.Tickets.setStatus(id, { status: st }); App.toast.success(T('common.saved')); load(); }
+    catch (e) { App.toastError(e); }
+  }
+
+  function openCompose() {
+    const body = document.createElement('div');
+    body.innerHTML =
+      '<div class="field"><label class="label">'+T('ticket.subject')+'</label><input class="input" id="fSubject" maxlength="200" placeholder="'+T('ticket.subjectPh')+'"></div>' +
+      '<div class="row" style="gap:10px"><div class="field grow"><label class="label">'+T('ticket.category')+'</label><select class="select" id="fCat">'+CATS.map((c)=>'<option value="'+c+'">'+CAT_LABEL[c]+'</option>').join('')+'</select></div>' +
+      '<div class="field grow"><label class="label">'+T('ticket.priority')+'</label><select class="select" id="fPrio">'+PRIO.map((p)=>'<option value="'+p+'">'+T(PRIO_LABEL[p])+'</option>').join('')+'</select></div></div>' +
+      '<div class="field"><label class="label">'+T('ticket.contact')+'</label><input class="input" id="fContact" placeholder="'+T('ticket.contactPh')+'"></div>' +
+      '<div class="field"><label class="label">'+T('ticket.message')+'</label><textarea class="textarea" id="fMsg" rows="6" placeholder="'+T('ticket.messagePh')+'"></textarea></div>';
+    const m = App.modal({ title: T('support.new'), body, size: 'lg', okText: T('support.new'),
+      onOk: async () => {
+        const subject = $('#fSubject', body).value.trim();
+        const message = $('#fMsg', body).value.trim();
+        if (subject.length < 2) { App.toast.warn(T('common.required')); return false; }
+        if (message.length < 5) { App.toast.warn(T('ticket.message')); return false; }
+        await API.Tickets.create({ subject, message, category: $('#fCat', body).value, priority: $('#fPrio', body).value, contact: $('#fContact', body).value.trim() });
+        App.toast.success(T('common.success')); mode='mine'; m.close(); load();
+      }
+    });
+  }
+
+  function openConfig() {
+    if (!cfg) return;
+    const faqs = (cfg.faq||[]).map((f,i)=>({q:f.q,a:f.a,i})).filter((f)=>f.q);
+    const body = document.createElement('div');
+    body.innerHTML =
+      '<div class="field"><label class="label">服务时间</label><input class="input" id="cHours" value="'+esc(cfg.hours||'')+'"></div>' +
+      '<div class="field"><label class="label">响应时效</label><input class="input" id="cSla" value="'+esc(cfg.sla||'')+'"></div>' +
+      '<div class="field"><label class="label">公告</label><textarea class="textarea" id="cNotice" rows="3">'+esc(cfg.notice||'')+'</textarea></div>';
+    App.modal({ title: T('support.config'), body, size: 'lg', okText: T('common.save'),
+      onOk: async () => {
+        const next = { hours: $('#cHours', body).value.trim(), sla: $('#cSla', body).value.trim(), notice: $('#cNotice', body).value.trim(), faq: faqs.map((f)=>({q:f.q,a:f.a})) };
+        try { const d = await API.Tickets.saveConfig(next); cfg = d.config; App.toast.success(T('common.saved')); renderInfo(); } catch(e){ App.toastError(e); }
+      }
+    });
+  }
+
+  function renderInfo() {
+    const c = $('#infoCard');
+    if (!cfg) { c.style.display='none'; return; }
+    c.style.display='';
+    let html = '<div class="row" style="gap:18px;flex-wrap:wrap"><div><div class="xsmall muted">服务时间</div><div>'+esc(cfg.hours||'—')+'</div></div>' +
+      '<div><div class="xsmall muted">响应时效</div><div>'+esc(cfg.sla||'—')+'</div></div></div>';
+    if (cfg.notice) html += '<div class="alert-soft mt-2">'+esc(cfg.notice)+'</div>';
+    if (cfg.faq && cfg.faq.length) {
+      html += '<div class="mt-3"><b class="small">常见问题</b>' + cfg.faq.map((f)=>'<details class="faq"><summary>'+esc(f.q)+'</summary><div class="muted small">'+esc(f.a)+'</div></details>').join('') + '</div>';
+    }
+    c.innerHTML = html; I18N.apply(c);
+  }
+
+  App.boot({
+    nav: 'support',
+    requireAuth: true,
+    onReady: async function () {
+      $('#icoNew').innerHTML = icon('plus'); $('#icoCfg').innerHTML = icon('settings');
+      $('#btnNew').onclick = openCompose;
+      $('#btnCfg').onclick = openConfig;
+      try { const d = await API.Tickets.config(); cfg = d.config; renderInfo(); } catch (e) {}
+      load();
+    },
+  });
+})();
+</script>
+</body>
+</html>

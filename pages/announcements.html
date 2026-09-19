@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>官方公告 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#6366f1">
+<link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.json">
+<script>
+  (function() {
+    var apiMeta = document.querySelector('meta[name="mo-api"]');
+    var api = (apiMeta && apiMeta.content) || 'https://api.example.com';
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js?api=' + encodeURIComponent(api)).catch(function() {});
+    }
+  })();
+</script>
+<link rel="stylesheet" href="/assets/css/main.css">
+</head>
+<body>
+
+<header id="navbar"></header>
+
+<div class="layout container-mid">
+  <main class="main">
+    <div class="card card-pad row-between wrap" style="gap:12px">
+      <div>
+        <h2 class="mb-0" data-i18n="ann.title">官方公告</h2>
+        <p class="small muted mb-0" data-i18n="ann.subtitle">平台的重要通知、更新与维护安排。</p>
+      </div>
+      <button class="btn btn-sm btn-soft" id="btnRefresh">刷新</button>
+    </div>
+    <div id="annList" style="display:flex;flex-direction:column;gap:var(--sp-4);margin-top:var(--sp-4)"></div>
+    <div id="officialCol" style="display:flex;flex-direction:column;gap:var(--sp-4);margin-top:var(--sp-6)"></div>
+  </main>
+</div>
+
+<footer id="footer"></footer>
+<nav id="tabbar"></nav>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script>
+(function () {
+  'use strict';
+  var App = window.App;
+  var T = function (k, fb) { return (window.I18N && I18N.t(k)) || fb || k; };
+
+  function esc(s) { return App.esc ? App.esc(s) : String(s == null ? '' : s); }
+  function icon(n) { return App.icon ? App.icon(n) : ''; }
+
+  function renderAnn(a) {
+    var pinned = a.pinned ? '<span class="badge badge-accent">' + icon('pin') + ' ' + T('ann.pin', '置顶') + '</span>' : '';
+    var official = a.official ? '<span class="badge badge-ok">' + T('ann.official', '官方') + '</span>' : '';
+    var metaParts = [];
+    if (a.authorName) metaParts.push(a.authorName);
+    if (a.createdAt) { try { metaParts.push(new Date(a.createdAt).toLocaleString()); } catch (e) {} }
+    var meta = metaParts.join(' · ');
+    var href = a.kind === 'post' ? ('/post.html?id=' + encodeURIComponent(a.id)) : '';
+    return '<div class="card card-pad' + (href ? ' clickable' : '') + '"' +
+      (href ? ' style="cursor:pointer" onclick="location.href=\'' + href + '\'"' : '') + '>' +
+      '<div class="row-between wrap mb-2" style="gap:8px">' +
+        '<h3 style="margin:0;font-size:var(--fs-lg)">' + esc(a.title || T('ann.untitled', '无标题')) + '</h3>' +
+        '<div class="row" style="gap:6px">' +
+          (a.kind === 'post' ? '<span class="badge badge-soft">文章</span>' : '') +
+          pinned + official + '</div>' +
+      '</div>' +
+      '<div class="prose small">' + (App.markdown ? App.markdown(a.body || '') : esc(a.body || '')) + '</div>' +
+      (meta ? '<div class="small muted2 mt-2">' + esc(meta) + '</div>' : '') +
+    '</div>';
+  }
+
+  function offRow(iconUrl, iconTxt, name, sub, href) {
+    return '<a class="row" style="gap:12px;padding:10px 0;border-bottom:1px solid var(--border);min-width:0"' +
+      (href ? ' href="' + esc(href) + '"' : '') + '>' +
+      '<div style="font-size:30px;line-height:1">' + App.iconImage(iconUrl, iconTxt || '📁', 'font-size:30px') + '</div>' +
+      '<div style="flex:1;min-width:0"><b class="truncate">' + esc(name) + '</b>' +
+        (sub ? '<div class="xsmall muted truncate">' + esc(sub) + '</div>' : '') + '</div>' +
+      '<span class="badge badge-ok">' + T('official.badge', '官方') + '</span></a>';
+  }
+
+  function renderOfficialCol(off) {
+    var box = document.getElementById('officialCol');
+    var boards = (off && off.boards) || [], channels = (off && off.channels) || [], groups = (off && off.groups) || [];
+    if (!boards.length && !channels.length && !groups.length) { box.innerHTML = ''; return; }
+    var html = '<div class="card card-pad"><div class="card-head"><h3 class="mb-0">' +
+      T('official.colTitle', '官方版块 / 频道 / 群组') + '</h3></div><div class="card-body">';
+    if (boards.length) {
+      html += '<div class="section-title">版块</div>';
+      html += boards.map(function (b) {
+        return offRow(b.iconUrl, b.icon, b.name, b.description, '/channels.html?id=' + encodeURIComponent(b.id));
+      }).join('');
+    }
+    if (channels.length) {
+      html += '<div class="section-title mt-4">频道</div>';
+      html += channels.map(function (c) {
+        var href = '/channels.html?id=' + encodeURIComponent(c.boardId || '') + (c.boardId ? '&channel=' + encodeURIComponent(c.id) : '');
+        return offRow(c.iconUrl, c.icon, c.name, c.topic, href);
+      }).join('');
+    }
+    if (groups.length) {
+      html += '<div class="section-title mt-4">群组</div>';
+      html += groups.map(function (g) {
+        return offRow(g.iconUrl, g.icon, g.name, g.description, '/groups.html');
+      }).join('');
+    }
+    html += '</div></div>';
+    box.innerHTML = html;
+  }
+
+  async function load() {
+    var box = document.getElementById('annList');
+    box.innerHTML = '<div class="card card-pad"><div class="skeleton sk-line w60"></div></div>';
+    try {
+      var d = await API.Announcements.list({ limit: 50 });
+      var list = (d && d.items) || [];
+      if (!list.length) {
+        box.innerHTML = '<div class="card card-pad muted text-center">' + T('ann.empty', '暂无公告') + '</div>';
+      } else {
+        box.innerHTML = list.map(renderAnn).join('');
+      }
+      if (window.I18N && I18N.apply) I18N.apply(box);
+    } catch (e) {
+      box.innerHTML = '<div class="card card-pad muted text-center">' + T('ann.empty', '暂无公告') + '</div>';
+    }
+    try {
+      var off = await API.OfficialItems.list();
+      renderOfficialCol(off);
+    } catch (e) { /* 官方栏失败不阻塞公告 */ }
+  }
+
+  document.getElementById('btnRefresh').onclick = load;
+  App.boot({ nav: 'announcements', onReady: function () { load(); } });
+})();
+</script>
+</body>
+</html>

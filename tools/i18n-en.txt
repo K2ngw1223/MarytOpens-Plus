@@ -1,0 +1,299 @@
+Saved
+Contact Us
+Select a role on the left to start editing
+Server
+Unsaved
+Leave blank to keep the currently stored value
+Back to home
+digits
+Delete board
+Optional
+Address
+-hour clock
+Force rename
+Currently auto-detected
+Loading file info…
+Mute duration
+Site level
+Require email verification
+Upload failed
+Upload failed, please check your network
+Download / open file
+To keep the community orderly, the following accounts or IPs have been banned
+Home
+Human verification
+Global-scope roles determine what a user can do across the whole site
+Invalid share link format
+minutes
+Create bot
+Read only
+Basic info
+Resolved
+Resolution note
+Note
+Avatar masked
+Audit log
+Password must be at least 8 characters
+Ban reason
+Ban days
+Filled
+Deleted user
+Locked to
+Force sign-out
+Members and role assignment
+Selected roles
+Try a different keyword
+Feedback recipient mailbox
+A higher value ranks first
+File not found or link invalid
+This file is served from the uploader's own Cloudflare storage
+Untitled
+Cannot reach the backend API
+No data yet
+Recent IP
+Unnamed file
+Empty
+Unknown error
+Unverified
+View
+View file
+View target
+Mark email verified
+Body
+Registered
+Browser push
+Add link
+Click or drag to upload a banner
+Feedback submitted by users is sent to this mailbox
+Use the environment variable
+Separate with commas
+Leave blank for permanent
+permissions
+Confirm
+Confirm ban
+Remove banner
+This file is protected by a preview code
+Request failed
+Enter the preview code provided by the sharer to view it
+Please enter a valid email address
+Please enter the verification code
+Roles and permissions
+Back to board
+Back to community
+Mail service is not configured correctly, please contact an administrator
+Link expired
+Requires a configured mail service
+Channel management
+The code is valid for 10 minutes
+Failed to send the verification code
+All systems normal
+Describe this board in one line
+One-line description
+One-line tagline
+Let's build something together
+Uploading…
+Last sign-in
+Last sign-in IP
+Download URL
+Cannot be dismissed
+Hidden
+Do not apply the site template
+When unsure, start with Resend's official test address
+and health checks excluded
+cached URLs
+channels
+Issue access tokens for Discord bots or automation scripts
+Assign roles, mute and rename board members
+Built for modern community governance
+Primary color
+Theme / appearance
+Theme, language and time format. Language and time are auto-detected from your browser by default
+Subject and body cannot be empty
+Accent color
+Theme settings
+Reporter
+You may also enter the name manually
+you
+Learn about this community and the story behind it
+Members only
+Stored on the server only, never sent to browsers. A Resend key looks like re
+Log only, for debugging
+Fill this in only when you need to replace it
+Visible only to members of the selected roles
+Signed-out only
+Only you can see your following and follower lists
+Visible to signed-in users only
+Signed-in users only
+Administrators only
+Visible only to you and super administrators
+Only super administrators can view the audit log
+Only super administrators can require verification
+Tell us about yourself…
+Repository
+Proxied
+Code block
+Token
+The token is shown only once. Copy and store it now; if lost, you can only delete and recreate it
+Token lifetime
+The following actions cannot be undone
+The following actions cannot be undone, proceed with care
+to confirm
+to confirm deletion
+to confirm account deletion
+Hidden from everyone; readable only by the author and super administrators, or by selected roles
+Task list
+The avatar and username are captured automatically
+Invalid session
+Session validation failed
+The reporter will be notified
+letters / digits / underscores / Chinese characters
+letters, digits, underscores, hyphens or Chinese characters
+verified
+users with an unverified email will be asked to verify, and they
+users will be asked to verify
+-digit code
+Scope level
+Author
+Authors
+You can also ask an administrator to mark it verified manually
+You can create and edit roles within this scope
+You have no admin permissions
+You lack role management permission for this scope
+You lack management permission for this board
+your-domain
+your-domain/api/send
+Your device cannot reach the MarytOpens server right now
+Your account was created through third-party sign-in and has no password yet — leave this blank and set a new one directly
+Your email
+You aren't following anyone yet
+e.g. 7
+e.g. Office hours 9:00-18:00; for urgent matters, reach us on QQ
+e.g. Removed the violating content and muted for 24 hours
+e.g. Bulk registration
+e.g. General discussion
+After saving, the avatar and name are resolved automatically and replace the landing page icon
+Save new password
+Leave blank when saving to keep the stored secret unchanged
+Save draft
+After you change your password, sessions on other devices are ended immediately
+Allow Discord sign-in
+Allow GitHub sign-in
+Let others see who you follow
+Let others see your favorites
+Allow search engine indexing
+Allow direct messages from strangers
+Sign up free and publish right away
+A generous free tier with low latency worldwide
+Global scope permissions
+Site-wide
+Site-wide report queue; reporters are notified of the outcome
+Site-wide broadcast
+Every board at a glance — open any board's own management panel
+Mark all read
+Announcements and copy
+Announcements appear in the "Official announcements" search category and the community board, and can be pinned
+Announcement body
+Announcement title
+Public following list
+Public favorites
+Public email
+Public key
+About
+About page content
+Follow alerts
+Linked account violation
+Keyword
+When off, profile pages carry a noindex tag
+When off, only mutual follows can message you
+When off, only administrators can create accounts
+When off, anyone can register and security is weaker
+When off, nothing is verified anywhere
+Every channel under it will be deleted and cannot be recovered
+assign roles within
+Determines where the entry appears
+Divider
+Columns
+Assign roles ·
+Column A
+Column B
+Create a token so a Discord bot can connect to the community
+After creating it, tick the specific permissions on the right
+After creating it, tick specific permissions in the matrix on the right
+Created
+Create your first board to start governing the community
+Deleting removes every channel and role setting under this board, and its posts become unassigned. Only moderators and super administrators can do this
+The token stops working immediately after deletion. Continue?
+Strikethrough
+Delete this channel? Its role settings will stop working too
+Delete role
+Expires
+Refresh session state
+Go to
+Go create one
+Go to bot management
+Remaining
+Subtitle
+Join the community
+Members of a channel can create standalone groups linked to it; the category and affiliation show the matching channel
+Join channels and take part in governance
+Bold
+Load statistics
+Load records
+Action
+Anonymous
+In px; 0 means no blur
+placeholder
+Send as is
+Native, no key needed
+Go to board
+Discuss kindly, no personal attacks
+Feedback
+Feedback must be at least 5 characters
+Sender address
+Sender settings
+Publish to
+Post announcement
+Make sure your content is lawful and compliant before posting
+Publish posts, join channels, take part in governance — all with one account
+Published
+Communities that post frequently can turn this off
+Start a conversation
+Sending…
+Sending, please keep this page open…
+Send a single email
+Send failed
+Send failed, please try again later
+Send test email
+Send code to email
+Clear selection
+Optional
+Visible to roles
+Optional; it will be logged and notified
+number / QQ group ID / group invite link
+Total
+Also send an in-app notification
+Also push an in-app notification
+The name doesn't match, cancelled
+Name and content cannot be empty
+Background activity
+Shows a floating button once Contact Us is enabled in the admin panel
+Once Contact Us is enabled in the admin panel, site-wide
+Backend not connected, showing default content
+? After unlinking you can no longer sign in with it
+including the spam folder
+including the home page
+Enable the Contact Us button
+Branding, home mode, sign-up policy and human verification
+Press Enter to add, up to 8
+Images must not exceed 5MB
+Failed to read the image
+Show your email address on your profile
+Search favorites
+Tap Favorite on a post and find it here later
+Immediately when online, on your next visit when offline
+Write your content here…
+Spam
+A community governance platform on Cloudflare's edge network, with a full permission system and channels
+Base URL
+Handle reports within this board's scope
+Resolution

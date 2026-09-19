@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>投稿 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#6366f1">
+<link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.json">
+<script>
+  (function() {
+    const apiMeta = document.querySelector('meta[name="mo-api"]');
+    const api = (apiMeta && apiMeta.content) || 'https://api.example.com';
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js?api=' + encodeURIComponent(api)).catch(function(){});
+    }
+  })();
+</script>
+<script>(function(){var t=localStorage.getItem('mo_theme');var d=t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light');})();</script>
+<link rel="stylesheet" href="/assets/css/main.css">
+</head>
+<body>
+
+<header id="navbar"></header>
+
+<main class="container container-mid py-6">
+  <div class="page-head row-between" style="gap:12px;flex-wrap:wrap">
+    <div>
+      <h1 data-i18n="sub.title">投稿</h1>
+      <p class="muted" data-i18n="sub.subtitle">向我们投稿，优质内容将被推荐至首页或官方频道。</p>
+    </div>
+    <button class="btn btn-primary" id="btnNew"><span id="icoNew"></span> <span data-i18n="sub.new">发起投稿</span></button>
+  </div>
+
+  <div class="tabs" id="tabs" style="margin-bottom:14px"></div>
+
+  <div id="list" class="stack-lg"></div>
+</main>
+
+<footer id="footer"></footer>
+<nav id="tabbar"></nav>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script>
+(function () {
+  'use strict';
+  const { $, $$, esc, icon, avatar, markdown } = App;
+  const T = (k, p) => I18N.t(k, p);
+
+  const SUB_CATS = ['article','tutorial','news','opinion','translation','other'];
+  const SUB_CAT_LABEL = { article:'文章', tutorial:'教程', news:'资讯', opinion:'观点', translation:'翻译', other:'其他' };
+  const STATUS_LABEL = { pending:'sub.status.pending', approved:'sub.status.approved', rejected:'sub.status.rejected', withdrawn:'sub.status.withdrawn' };
+  const STATUS_CLASS = { pending:'badge-warn', approved:'badge-ok', rejected:'badge-bad', withdrawn:'badge-muted' };
+
+  let canReview = false;
+  let mode = 'mine';
+
+  function statusBadge(s) {
+    return '<span class="badge ' + (STATUS_CLASS[s] || 'badge-muted') + '">' + T(STATUS_LABEL[s] || s) + '</span>';
+  }
+
+  function subCard(s) {
+    const author = s.anonymous ? '<span class="muted">' + T('sub.anonymous') + '</span>'
+      : (s.authorName ? esc(s.authorName) : (s.authorId ? esc(s.authorId) : T('sub.anonymous')));
+    return '<div class="card card-pad sub-card" data-id="' + esc(s.id) + '">' +
+      '<div class="row-between" style="gap:8px">' +
+        '<div class="row" style="gap:8px;align-items:center;min-width:0">' +
+          '<b class="truncate grow">' + esc(s.title) + '</b>' + statusBadge(s.status) +
+        '</div>' +
+        (s.postId ? '<a class="mini-link" href="/post.html?id=' + esc(s.postId) + '">'+T('sub.published')+'</a>' : '') +
+      '</div>' +
+      '<p class="muted small mt-2">' + esc(s.summary || (s.excerpt || '')) + '</p>' +
+      '<div class="row mt-2" style="gap:10px;align-items:center;flex-wrap:wrap">' +
+        '<span class="tag">' + (SUB_CAT_LABEL[s.category] || s.category || 'article') + '</span>' +
+        (s.wordCount ? '<span class="xsmall muted">' + s.wordCount + ' ' + T('sub.wordCount') + '</span>' : '') +
+        (canReview && !s.anonymous ? '<span class="xsmall muted">· ' + T('sub.author') + ' ' + author + '</span>' : '') +
+        '<span class="xsmall muted" style="margin-left:auto" data-time="' + (s.updatedAt||s.createdAt) + '"></span>' +
+      '</div>' +
+    '</div>';
+  }
+
+  async function load() {
+    const box = $('#list');
+    box.innerHTML = App.loadingBlock();
+    try {
+      const params = mode === 'mine' ? { mine: 1 } : {};
+      const d = await API.Submissions.list(params);
+      canReview = !!d.canReview;
+      renderTabs();
+      const items = d.items || [];
+      if (!items.length) {
+        box.innerHTML = App.emptyState(mode === 'mine' ? T('sub.empty') : T('sub.reviewer'), '', 'edit-3');
+        return;
+      }
+      box.innerHTML = items.map(subCard).join('');
+      $$('.sub-card', box).forEach((n) => n.onclick = () => openDetail(n.dataset.id));
+      I18N.apply(box);
+    } catch (e) { App.toastError(e); box.innerHTML = App.emptyState(T('common.failed'), e.message, 'alert'); }
+  }
+
+  function renderTabs() {
+    const t = $('#tabs');
+    const tabs = [{ k:'mine', label:T('sub.mine') }];
+    if (canReview) tabs.push({ k:'reviewer', label:T('sub.reviewer') });
+    t.innerHTML = tabs.map((x) => '<button class="tab' + (x.k===mode?' active':'') + '" data-mode="' + x.k + '">' + x.label + '</button>').join('');
+    $$('.tab', t).forEach((b) => b.onclick = () => { mode = b.dataset.mode; load(); });
+  }
+
+  function openDetail(id) {
+    const m = App.modal({ title: T('sub.title'), size: 'lg', footer: false, body: '<div class="loading-center"><div class="spinner"></div></div>' });
+    (async () => {
+      try {
+        const d = await API.Submissions.get(id);
+        const s = d.submission;
+        let html = '<div class="stack">' +
+          '<div class="row-between" style="gap:8px"><b class="truncate">' + esc(s.title) + '</b>' + statusBadge(s.status) + '</div>' +
+          '<div class="row" style="gap:8px;flex-wrap:wrap"><span class="tag">' + (SUB_CAT_LABEL[s.category]||s.category) + '</span>' +
+            (s.anonymous ? '<span class="badge badge-muted">'+T('sub.anonymous')+'</span>' : '') +
+            (s.tags && s.tags.length ? s.tags.map((t)=>'<span class="tag">'+esc(t)+'</span>').join('') : '') +
+          '</div>' +
+          '<div class="md-body">' + (s.content ? markdown(s.content) : '') + '</div>';
+        if (s.status === 'rejected' && s.note) html += '<div class="alert-soft">'+T('sub.rejectReason')+'：'+esc(s.note)+'</div>';
+        if (canReview && s.status === 'pending') {
+          html += '<div class="row" style="gap:8px;margin-top:8px">' +
+            '<button class="btn btn-primary" id="ap">' + T('sub.approve') + '</button>' +
+            '<button class="btn btn-danger-soft" id="rj">' + T('sub.reject') + '</button></div>';
+        } else if (s.status === 'pending' && (s.authorId === App.Session.user.id || (!s.authorId && !s.anonymous))) {
+          html += '<div class="row" style="gap:8px;margin-top:8px"><button class="btn btn-soft" id="wd">'+T('sub.withdraw')+'</button></div>';
+        }
+        html += '</div>';
+        m.body.innerHTML = html;
+        I18N.apply(m.body);
+        const ap = $('#ap', m.body), rj = $('#rj', m.body), wd = $('#wd', m.body);
+        if (ap) ap.onclick = async () => { try { await API.Submissions.review(id, { decision:'approve', featured:true }); App.toast.success(T('sub.status.approved')); m.close(); load(); } catch(e){ App.toastError(e); } };
+        if (rj) rj.onclick = async () => {
+          const note = await App.promptDialog(T('sub.rejectReason'), { title:T('sub.reject'), placeholder:T('sub.rejectReasonPh'), multiline:true });
+          if (note === null) return;
+          try { await API.Submissions.review(id, { decision:'reject', note }); App.toast.success(T('sub.status.rejected')); m.close(); load(); } catch(e){ App.toastError(e); }
+        };
+        if (wd) wd.onclick = async () => { try { await API.Submissions.withdraw(id); App.toast.success(T('sub.status.withdrawn')); m.close(); load(); } catch(e){ App.toastError(e); } };
+      } catch (e) { m.body.innerHTML = App.emptyState(T('common.failed'), e.message, 'alert'); }
+    })();
+  }
+
+  function openCompose() {
+    const body = document.createElement('div');
+    body.innerHTML =
+      '<div class="field"><label class="label">'+T('sub.title')+'</label><input class="input" id="fTitle" maxlength="200" placeholder="'+T('sub.titlePh')+'"></div>' +
+      '<div class="field"><label class="label">'+T('sub.category')+'</label><select class="select" id="fCat">' +
+        SUB_CATS.map((c)=>'<option value="'+c+'">'+SUB_CAT_LABEL[c]+'</option>').join('') + '</select></div>' +
+      '<div class="field"><label class="label">'+T('sub.summary')+'</label><input class="input" id="fSum" maxlength="200" placeholder="'+T('sub.summaryPh')+'"></div>' +
+      '<div class="field"><label class="label">'+T('sub.content')+'</label><textarea class="textarea" id="fBody" rows="8" placeholder="'+T('sub.contentPh')+'"></textarea></div>' +
+      '<div class="field"><label class="label">'+T('sub.tags')+'</label><input class="input" id="fTags" placeholder="用逗号分隔"></div>' +
+      '<div class="field"><label class="label">'+T('sub.cover')+'</label><input class="input" id="fCover" placeholder="https://…"></div>' +
+      '<label class="check-row"><input type="checkbox" id="fAnon"> '+T('sub.anonymous')+'</label>';
+    const m = App.modal({ title: T('sub.new'), body, size: 'lg',
+      okText: T('sub.submit'), onOk: async () => {
+        const title = $('#fTitle', body).value.trim();
+        const content = $('#fBody', body).value.trim();
+        if (title.length < 2) { App.toast.warn(T('common.required')); return false; }
+        if (content.length < 20) { App.toast.warn(T('sub.content')+' ≥ 20'); return false; }
+        const tags = $('#fTags', body).value.split(',').map((x)=>x.trim()).filter(Boolean).slice(0,8);
+        await API.Submissions.create({
+          title, content, summary: $('#fSum', body).value.trim(),
+          category: $('#fCat', body).value, tags, cover: $('#fCover', body).value.trim(),
+          anonymous: $('#fAnon', body).checked,
+        });
+        App.toast.success(T('sub.status.pending'));
+        mode = 'mine'; m.close(); load();
+      }
+    });
+  }
+
+  App.boot({
+    nav: 'submissions',
+    requireAuth: true,
+    onReady: function () {
+      $('#icoNew').innerHTML = icon('edit-3');
+      $('#btnNew').onclick = openCompose;
+      load();
+    },
+  });
+})();
+</script>
+</body>
+</html>

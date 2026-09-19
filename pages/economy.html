@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="MarytOpens 经济中心：MO值、Meow值、每日签到与积分商城">
+  <title>经济中心 · MarytOpens</title>
+  <link rel="stylesheet" href="/assets/css/main.css">
+  <link rel="icon" href="/favicon.ico">
+  <style>
+    .kv-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+    .kv-cell { text-align:center; padding:14px 8px; border:1px solid var(--border,#e5e7eb); border-radius:12px; background:var(--surface-2,#f8fafc); }
+    .kv-num { font-size:24px; font-weight:700; color:var(--accent,#2563eb); }
+    .kv-label { font-size:12px; color:var(--muted,#64748b); margin-top:4px; }
+    .shop-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:14px; }
+    .shop-item { display:flex; flex-direction:column; }
+    .shop-kind { display:inline-block; align-self:flex-start; font-size:11px; padding:2px 8px; border-radius:999px; background:var(--accent-soft,#dbeafe); color:var(--accent,#2563eb); margin-bottom:8px; }
+    .mt-2{margin-top:8px}.mt-3{margin-top:12px}.mt-4{margin-top:16px}
+    .mb-2{margin-bottom:8px}.row-between{display:flex;justify-content:space-between;align-items:center;gap:8px}
+    .xsmall{font-size:12px}.small{font-size:13px}.muted{color:var(--muted,#64748b)}
+    .btn-block{width:100%}
+    /* 头像框预览 / 我的头像框 */
+    .frame-preview { display:flex; justify-content:center; margin:6px 0 4px; }
+    .my-frames { display:flex; flex-wrap:wrap; gap:14px; margin-top:8px; }
+    .my-frame { display:flex; flex-direction:column; align-items:center; gap:2px; }
+    .frame-name { font-size:11px; color:var(--muted,#64748b); margin-bottom:4px; }
+    .avatar-frame .avatar { width:44px; height:44px; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:18px; border-radius:999px; }
+  </style>
+</head>
+<body>
+  <header id="navbar"></header>
+  <main class="container container-mid" style="padding-top:24px;padding-bottom:60px">
+    <div class="section-head">
+      <div class="eyebrow">Economy</div>
+      <h1 data-i18n="economy.title">经济中心</h1>
+      <p class="muted">MO值可消费，Meow值决定等级；每日签到与积分商城让你成长更快。</p>
+    </div>
+
+    <div class="card card-pad mb-2" id="statsCard"><div class="muted text-center">加载中…</div></div>
+
+    <div class="card card-pad mb-2" id="checkinCard"><div class="muted text-center">加载中…</div></div>
+
+    <div class="card card-pad mb-2" id="titlesCard">
+      <h3 class="mb-0" data-i18n="economy.myTitles">我的称号</h3>
+      <p class="muted small">佩戴称号展示在昵称旁，彰显你的身份与成就。</p>
+      <div class="mt-3" id="titlesBody"><div class="muted small">加载中…</div></div>
+    </div>
+
+    <div class="card card-pad mb-2" id="decorCard">
+      <h3 class="mb-0" data-i18n="economy.myDecor">我的装扮</h3>
+      <p class="muted small">装备名片背景与气泡皮肤，打造专属的个人页与聊天风格。</p>
+      <div class="mt-3" id="decorBody"><div class="muted small">加载中…</div></div>
+    </div>
+
+    <div class="card card-pad mb-2" id="levelsCard">
+      <h3 class="mb-0" data-i18n="economy.levels">等级体系</h3>
+      <p class="muted small" id="levelsIntro"></p>
+      <div class="mt-3" id="levelsBody"><div class="muted small">加载中…</div></div>
+    </div>
+
+    <div class="card card-pad mb-2">
+      <h3 class="mb-0" data-i18n="economy.shop">积分商城</h3>
+      <p class="muted small">用 MO值 兑换加速券、经验加成券、徽章、称号、装扮等。</p>
+      <div class="shop-grid mt-3" id="productGrid"><div class="muted">加载中…</div></div>
+    </div>
+
+    <div class="card card-pad mb-2">
+      <h3 class="mb-0" data-i18n="economy.myVouchers">我的券包</h3>
+      <div class="mt-3" id="voucherList"><div class="muted small">加载中…</div></div>
+    </div>
+
+    <div class="card card-pad mb-2">
+      <h3 class="mb-0">我的头像框</h3>
+      <p class="muted small">在商城购买头像框后，可在此装备或卸下，立即在全站头像上生效。</p>
+      <div class="mt-3" id="myFrames"><div class="muted small">加载中…</div></div>
+    </div>
+
+    <div class="card card-pad mb-2" id="ordersCard">
+      <h3 class="mb-0" data-i18n="economy.orders">我的订单</h3>
+      <div class="mt-3" id="ordersBody"><div class="muted small">加载中…</div></div>
+    </div>
+
+    <div class="card card-pad mb-2" id="giftWallCard">
+      <h3 class="mb-0" data-i18n="economy.giftWall">礼物墙</h3>
+      <p class="muted small">好友与社区成员赠予你的礼物都会展示在这里。</p>
+      <div class="mt-3" id="giftWallBody"><div class="muted small">加载中…</div></div>
+    </div>
+
+    <div class="card card-pad" id="adminCard" style="display:none">
+      <h3 class="mb-0">商城后台（超管）</h3>
+      <p class="muted small">编辑商品 JSON（数组）后保存。kind 可为 voucher / badge / role / frame / title / card / bubble（frame 需 grant.frameCls 为 frame-gold/frame-neon/frame-rose/frame-emerald/frame-galaxy 之一）。</p>
+      <button class="btn btn-soft btn-sm mt-2" id="btnShopAdmin">拉取当前商品</button>
+      <textarea id="shopAdminEditor" class="textarea mt-2" rows="8" style="width:100%;font-family:ui-monospace,monospace"></textarea>
+      <button class="btn btn-primary btn-sm mt-2" id="btnShopSave">保存商品</button>
+    </div>
+  </main>
+  <footer id="footer"></footer>
+
+  <script src="/assets/js/i18n.js"></script>
+  <script src="/assets/js/api.js"></script>
+  <script src="/assets/js/app.js"></script>
+  <script>
+    const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    App.boot({
+      nav: 'economy', requireAuth: true,
+      onReady: async function () {
+        const T = (k) => (window.I18N ? I18N.t(k) : k);
+        const { $, $$ } = App;
+        const statsCard = $('#statsCard');
+        const checkinCard = $('#checkinCard');
+        const titlesBody = $('#titlesBody');
+        const decorBody = $('#decorBody');
+        const levelsBody = $('#levelsBody');
+        const productGrid = $('#productGrid');
+        const voucherList = $('#voucherList');
+        const adminCard = $('#adminCard');
+        const myFrames = $('#myFrames');
+        const ordersBody = $('#ordersBody');
+        const giftWallBody = $('#giftWallBody');
+        let economy = null;
+        let calData = null;
+
+        const stat = (label, val) =>
+          '<div class="kv-cell"><div class="kv-num">' + esc(val) + '</div><div class="kv-label">' + esc(label) + '</div></div>';
+
+        /* ---------------- 统计 ---------------- */
+        function renderStats() {
+          if (!economy) return;
+          const lv = economy.level || 1, pct = economy.levelPct || 0;
+          const into = economy.levelInto || 0, need = economy.levelNeed || 0;
+          statsCard.innerHTML =
+            '<div class="kv-grid">' + stat(T('economy.mo'), economy.moUnlimited ? '∞' : economy.mo) + stat(T('economy.meow'), economy.meow) + stat(T('economy.level'), 'Lv.' + lv) + '</div>' +
+            '<div class="mt-4">' +
+              '<div class="row-between xsmall muted"><span>' + T('economy.levelProgress') + '</span><span>' + into + ' / ' + need + '</span></div>' +
+              '<div class="progress mt-2"><div class="bar" style="width:' + pct + '%"></div></div>' +
+            '</div>';
+        }
+
+        /* ---------------- 签到 + 日历 ---------------- */
+        function renderCheckin() {
+          const c = economy.checkin || {};
+          const day = Math.floor(Date.now() / 86400000);
+          const lastDay = Math.floor((c.last || 0) / 86400000);
+          const done = lastDay === day;
+          checkinCard.innerHTML =
+            '<div class="row-between"><div><b>' + T('economy.checkin') + '</b></div>' +
+            '<div class="xsmall muted">' + T('economy.streak') + ': <b>' + (c.streak || 0) + '</b> · ' + T('economy.count') + ': <b>' + (c.count || 0) + '</b></div></div>' +
+            '<button class="btn btn-primary btn-block mt-3" id="btnCheckin" ' + (done ? 'disabled' : '') + '>' + (done ? T('economy.checkinDone') : T('economy.checkin')) + '</button>' +
+            '<div class="mt-4"><div class="xsmall muted mb-2">' + T('economy.checkinCalendar') + '</div><div id="calMount"><div class="muted small">加载中…</div></div></div>';
+          const b = $('#btnCheckin');
+          if (b && !done) b.onclick = doCheckin;
+        }
+
+        async function doCheckin() {
+          try {
+            const d = await API.Economy.checkin();
+            economy = d.economy; renderStats(); renderCheckin(); await loadCalendar();
+            App.toast('+' + d.mo + ' MO · +' + d.meow + ' Meow', 'success');
+          } catch (e) { App.toastError(e); }
+        }
+
+        async function loadCalendar() {
+          try {
+            const d = await API.Economy.calendar();
+            calData = d; renderCalendar();
+          } catch (e) { const m = $('#calMount'); if (m) m.innerHTML = '<div class="muted small">日历加载失败</div>'; }
+        }
+
+        function renderCalendar() {
+          const d = calData; if (!d) return;
+          const mount = $('#calMount'); if (!mount) return;
+          const days = d.days || [];
+          let grid = '<div class="checkin-cal">';
+          days.forEach((x) => {
+            const cls = 'cal-cell' + (x.checked ? ' checked' : '') + (x.today ? ' today' : '') + (x.future ? ' future' : '');
+            grid += '<div class="' + cls + '"><span class="cal-day">' + esc(x.day || '') + '</span>' +
+              (x.checked ? '<span class="ck">✓</span>' : (x.today ? '<span class="ck">•</span>' : '')) + '</div>';
+          });
+          grid += '</div>';
+          let target = null;
+          days.forEach((x) => { if (!target && !x.checked && !x.future) target = x.date; });
+          let foot = '';
+          if ((d.makeupLeft || 0) > 0 && target) {
+            foot = '<div class="checkin-foot"><span class="xsmall muted">' + T('economy.makeupLeft') + ': <b>' + (d.makeupLeft || 0) + '</b></span>' +
+              '<button class="btn btn-soft btn-sm" id="btnMakeup">' + T('economy.makeup') + '</button></div>';
+          }
+          mount.innerHTML = grid + foot;
+          const mb = $('#btnMakeup'); if (mb) mb.onclick = doMakeup;
+        }
+
+        async function doMakeup() {
+          const d = calData; if (!d) return;
+          let target = null;
+          (d.days || []).forEach((x) => { if (!target && !x.checked && !x.future) target = x.date; });
+          if (!target) { App.toast(T('economy.makeup') + '：没有可补签的日期', 'warn'); return; }
+          try {
+            const r = await API.Economy.makeup(target);
+            economy = r.economy; renderStats(); renderCheckin(); await loadCalendar();
+            App.toast('补签成功 +' + r.mo + ' MO', 'success');
+          } catch (e) { App.toastError(e); }
+        }
+
+        /* ---------------- 称号 ---------------- */
+        async function loadTitles() {
+          try { const d = await API.Titles.mine(); renderTitles(d); }
+          catch (e) { titlesBody.innerHTML = '<div class="muted small">加载失败</div>'; }
+        }
+        function renderTitles(d) {
+          const titles = d.titles || [];
+          const equipped = d.equipped || '';
+          if (!titles.length) { titlesBody.innerHTML = '<div class="muted small">' + T('economy.noTitle') + '</div>'; return; }
+          titlesBody.innerHTML = '<div class="choice-row">' +
+            '<button class="choice none ' + (!equipped ? 'active' : '') + '" data-tid="">' + T('economy.unequip') + '</button>' +
+            titles.map((t) => '<button class="choice ' + (t.id === equipped ? 'active' : '') + '" data-tid="' + esc(t.id) + '">' +
+              (t.icon ? '<span>' + esc(t.icon) + '</span>' : '') + esc(t.name) + '</button>').join('') + '</div>';
+          $$('.choice', titlesBody).forEach((b) => b.onclick = () => equipTitle(b.dataset.tid));
+        }
+        async function equipTitle(id) {
+          try { await API.Titles.equip(id); await refreshMe(); loadTitles(); App.toast(id ? '已佩戴称号' : '已卸下称号', 'success'); }
+          catch (e) { App.toastError(e); }
+        }
+
+        /* ---------------- 装扮（名片 / 气泡） ---------------- */
+        async function loadDecor() {
+          try { const d = await API.Decor.mine(); renderDecor(d); }
+          catch (e) { decorBody.innerHTML = '<div class="muted small">加载失败</div>'; }
+        }
+        function renderDecor(d) {
+          const cards = d.cardStyles || [];
+          const bubbles = d.bubbleStyles || [];
+          const curCard = d.cardStyle || '';
+          const curBubble = d.bubbleStyle || '';
+          let html = '<div class="small muted mb-2">' + T('economy.cardStyle') + '</div>';
+          if (!cards.length) html += '<div class="muted small">' + T('economy.noDecor') + '</div>';
+          else html += '<div class="choice-row"><button class="choice none ' + (!curCard ? 'active' : '') + '" data-card="">' + T('economy.unequip') + '</button>' +
+            cards.map((c) => '<button class="choice ' + (c.cls === curCard ? 'active' : '') + '" data-card="' + esc(c.id) + '">' + esc(c.name || c.cls) + '</button>').join('') + '</div>';
+          html += '<div class="small muted mb-2 mt-3">' + T('economy.bubbleStyle') + '</div>';
+          if (!bubbles.length) html += '<div class="muted small">' + T('economy.noDecor') + '</div>';
+          else html += '<div class="choice-row"><button class="choice none ' + (!curBubble ? 'active' : '') + '" data-bubble="">' + T('economy.unequip') + '</button>' +
+            bubbles.map((c) => '<button class="choice ' + (c.cls === curBubble ? 'active' : '') + '" data-bubble="' + esc(c.id) + '">' + esc(c.name || c.cls) + '</button>').join('') + '</div>';
+          decorBody.innerHTML = html;
+          $$('[data-card]', decorBody).forEach((b) => b.onclick = () => equipCard(b.dataset.card));
+          $$('[data-bubble]', decorBody).forEach((b) => b.onclick = () => equipBubble(b.dataset.bubble));
+        }
+        async function equipCard(id) {
+          try { await API.Decor.equipCard(id); await refreshMe(); loadDecor(); App.toast(id ? '已装备名片' : '已卸下名片', 'success'); }
+          catch (e) { App.toastError(e); }
+        }
+        async function equipBubble(id) {
+          try { await API.Decor.equipBubble(id); await refreshMe(); loadDecor(); App.toast(id ? '已装备气泡' : '已卸下气泡', 'success'); }
+          catch (e) { App.toastError(e); }
+        }
+
+        /* ---------------- 等级体系 ---------------- */
+        async function loadLevels() {
+          try { const d = await API.Economy.levels(); renderLevels(d); }
+          catch (e) { levelsBody.innerHTML = '<div class="muted small">加载失败</div>'; }
+        }
+        function renderLevels(d) {
+          $('#levelsIntro').textContent = T('economy.levelIntro');
+          const curve = d.curve || [];
+          const perks = d.perks || [];
+          const me = d.me || {};
+          const perkByLevel = {};
+          perks.forEach((p) => { perkByLevel[p.level] = p; });
+          let html = '<table class="level-table"><thead><tr><th>' + T('economy.level') + '</th><th>' + T('economy.levelNeed') + '</th><th>' + T('economy.levelPerk') + '</th></tr></thead><tbody>';
+          curve.forEach((c) => {
+            const p = perkByLevel[c.level];
+            const cur = (me.level === c.level);
+            html += '<tr' + (cur ? ' style="background:var(--accent-soft)"' : '') + '>' +
+              '<td>Lv.' + c.level + '</td><td>' + c.need + '</td><td>' +
+              (p ? '<span class="level-perk">' + esc(p.title || p.desc || '') + '</span>' : '') + '</td></tr>';
+          });
+          html += '</tbody></table>';
+          const rw = d.rewards || {};
+          if (rw.post) {
+            html += '<div class="xsmall muted mt-3">发帖 +' + (rw.post.mo || 0) + ' MO / +' + (rw.post.meow || 0) + ' Meow · ' +
+              '评论 +' + (rw.comment ? (rw.comment.mo || 0) : 0) + ' MO / +' + (rw.comment ? (rw.comment.meow || 0) : 0) + ' Meow</div>';
+          }
+          levelsBody.innerHTML = html;
+        }
+
+        /* ---------------- 订单 ---------------- */
+        async function loadOrders() {
+          try { const d = await API.Economy.orders(); renderOrders(d); }
+          catch (e) { ordersBody.innerHTML = '<div class="muted small">加载失败</div>'; }
+        }
+        function renderOrders(d) {
+          const orders = d.orders || [];
+          if (!orders.length) { ordersBody.innerHTML = '<div class="muted small">' + T('economy.orderEmpty') + '</div>'; return; }
+          ordersBody.innerHTML = orders.map((o) => {
+            const name = (o.item && o.item.name) || o.name || '商品';
+            const price = (typeof o.price === 'number') ? o.price : (o.item && o.item.price);
+            const t = o.createdAt ? new Date(o.createdAt).toLocaleDateString() : '';
+            return '<div class="order-row"><div><b>' + esc(name) + '</b>' +
+              (t ? '<div class="order-meta">' + esc(t) + '</div>' : '') + '</div>' +
+              '<b>' + (price != null ? price + ' MO' : '') + '</b></div>';
+          }).join('');
+        }
+
+        /* ---------------- 礼物墙 ---------------- */
+        async function loadGiftWall() {
+          try {
+            const me = App.Session.user;
+            if (!me) { giftWallBody.innerHTML = '<div class="muted small">加载中…</div>'; return; }
+            const d = await API.Gifts.wall(me.id);
+            renderGiftWall(d);
+          } catch (e) { giftWallBody.innerHTML = '<div class="muted small">加载失败</div>'; }
+        }
+        function renderGiftWall(d) {
+          const wall = d.wall || [];
+          const stats = d.stats || {};
+          if (!wall.length) { giftWallBody.innerHTML = '<div class="muted small">' + T('economy.noGifts') + '</div>'; return; }
+          giftWallBody.innerHTML =
+            '<div class="gift-stats"><span><b>' + (stats.count || 0) + '</b><span class="xsmall muted"> ' + T('economy.giftCount') + '</span></span>' +
+            '<span><b>' + (stats.mo || 0) + '</b><span class="xsmall muted"> ' + T('economy.giftMo') + '</span></span></div>' +
+            '<div class="gift-wall">' + wall.map((w) =>
+              '<div class="gift-item"><div class="g-emoji">' + esc((w.gift && w.gift.emoji) || '🎁') + '</div>' +
+              '<div class="g-count">×' + (w.count || 0) + '</div>' +
+              '<div class="g-name">' + esc((w.gift && w.gift.name) || '') + '</div></div>').join('') + '</div>';
+        }
+
+        /* ---------------- 商城 ---------------- */
+        function voucherLabel(k) {
+          return k === 'accelerate' ? T('economy.accelerate')
+            : k === 'boost' ? T('economy.boost')
+            : k === 'cosmetic' ? T('economy.cosmetic') : '券';
+        }
+
+        function framePreview(cls) {
+          return '<div class="frame-preview"><span class="avatar-frame ' + esc(cls) + '"><span class="avatar" style="background:#6366f1">A</span></span></div>';
+        }
+
+        function itemCard(it) {
+          const price = it.price || 0;
+          const soldOut = it.stock != null && it.stock >= 0 && (it.sold || 0) >= it.stock;
+          let kindLabel;
+          if (it.kind === 'voucher') kindLabel = voucherLabel(it.grant && it.grant.voucherKind);
+          else if (it.kind === 'badge') kindLabel = '徽章';
+          else if (it.kind === 'role') kindLabel = '身份组';
+          else if (it.kind === 'frame') kindLabel = '头像框';
+          else if (it.kind === 'title') kindLabel = '称号';
+          else if (it.kind === 'card') kindLabel = '名片';
+          else if (it.kind === 'bubble') kindLabel = '气泡';
+          else kindLabel = '商品';
+
+          let preview = '', action;
+          if (it.kind === 'frame') {
+            const cls = (it.grant && it.grant.frameCls) || '';
+            const owned = (App.Session.user && (App.Session.user.avatarFrames || [])) || [];
+            const has = owned.some((f) => f.id === it.id);
+            const equipped = has && App.Session.user.avatarFrame === cls;
+            preview = framePreview(cls);
+            action = has
+              ? '<button class="btn btn-sm ' + (equipped ? 'btn-soft' : 'btn-primary') + ' equip-btn" data-id="' + esc(it.id) + '">' + (equipped ? '已装备' : '装备') + '</button>'
+              : '<button class="btn btn-primary btn-sm buy-btn" data-id="' + esc(it.id) + '" ' + (soldOut ? 'disabled' : '') + '>' + (soldOut ? T('economy.soldOut') : (it.granted ? '领取' : T('economy.buy'))) + '</button>';
+          } else {
+            action = '<button class="btn btn-primary btn-sm buy-btn" data-id="' + esc(it.id) + '" ' + (soldOut ? 'disabled' : '') + '">' + (soldOut ? T('economy.soldOut') : (it.granted ? '领取' : T('economy.buy'))) + '</button>';
+          }
+          return '<div class="card card-pad shop-item">' +
+            '<div class="shop-kind">' + esc(kindLabel) + '</div>' +
+            '<div class="bold">' + esc(it.name) + '</div>' +
+            '<div class="small muted mt-2" style="min-height:36px">' + esc(it.desc || '') + '</div>' +
+            preview +
+            '<div class="row-between mt-3"><b>' + (it.granted ? '免费（特权）' : price + ' MO') + '</b>' + action + '</div>' +
+            '</div>';
+        }
+
+        async function loadShop() {
+          try {
+            const d = await API.Economy.shop();
+            const items = d.items || [];
+            productGrid.innerHTML = items.length ? items.map(itemCard).join('')
+              : '<div class="muted">—</div>';
+            $$('.buy-btn', productGrid).forEach((b) => b.onclick = () => buy(b.dataset.id));
+            $$('.equip-btn', productGrid).forEach((b) => b.onclick = () => equip(b.dataset.id));
+          } catch (e) { productGrid.innerHTML = '<div class="muted">加载失败</div>'; }
+        }
+
+        async function buy(id) {
+          try {
+            const d = await API.Economy.buy(id);
+            economy = d.economy; renderStats(); loadShop(); loadVouchers();
+            await refreshMe(); renderMyFrames(); loadTitles(); loadDecor();
+            App.toast(T('economy.bought'), 'success');
+          } catch (e) { App.toastError(e); }
+        }
+
+        async function equip(id) {
+          try {
+            await API.Auth.setAvatarFrame(id);
+            await refreshMe(); renderMyFrames(); loadShop();
+            App.toast(id ? '已装备头像框' : '已卸下头像框', 'success');
+          } catch (e) { App.toastError(e); }
+        }
+
+        async function refreshMe() {
+          try { const d = await API.Auth.me(); if (d && d.user) App.Session.user = d.user; } catch (e) { /* ignore */ }
+        }
+
+        function renderMyFrames() {
+          if (!myFrames) return;
+          const frames = (App.Session.user && (App.Session.user.avatarFrames || [])) || [];
+          const cur = (App.Session.user && App.Session.user.avatarFrame) || '';
+          if (!frames.length) { myFrames.innerHTML = '<div class="muted small">还没有头像框，去商城看看吧。</div>'; return; }
+          myFrames.innerHTML = '<div class="my-frames">' + frames.map((f) => {
+            const equipped = cur === f.cls;
+            return '<div class="my-frame">' +
+              '<span class="avatar-frame ' + esc(f.cls) + '"><span class="avatar" style="background:#6366f1">A</span></span>' +
+              '<div class="frame-name">' + esc(f.name || f.cls) + '</div>' +
+              (equipped
+                ? '<button class="btn btn-soft btn-sm unequip-btn" data-id="">卸下</button>'
+                : '<button class="btn btn-primary btn-sm equip-btn" data-id="' + esc(f.id) + '">装备</button>') +
+              '</div>';
+          }).join('') + '</div>';
+          $$('.equip-btn', myFrames).forEach((b) => b.onclick = () => equip(b.dataset.id));
+          $$('.unequip-btn', myFrames).forEach((b) => b.onclick = () => equip(''));
+        }
+
+        async function loadVouchers() {
+          try {
+            const d = await API.Economy.mine();
+            const vs = d.vouchers || [];
+            voucherList.innerHTML = vs.length ? vs.map((v) =>
+              '<div class="chip mb-2">' + esc(v.label || '券') +
+              (v.expiresAt ? ' · ' + T('economy.voucherExpire') + ': ' + new Date(v.expiresAt).toLocaleDateString() : '') +
+              '</div>').join('')
+              : '<div class="muted small">' + T('economy.emptyVouchers') + '</div>';
+          } catch (e) { voucherList.innerHTML = '<div class="muted">—</div>'; }
+        }
+
+        if (App.Session.isSuperAdmin && adminCard) {
+          adminCard.style.display = '';
+          $('#btnShopAdmin').onclick = async () => {
+            try {
+              const d = await API.get('/api/shop/admin');
+              $('#shopAdminEditor').value = JSON.stringify(d.items || [], null, 2);
+              adminCard.classList.add('open');
+            } catch (e) { App.toastError(e); }
+          };
+          $('#btnShopSave').onclick = async () => {
+            try {
+              const items = JSON.parse($('#shopAdminEditor').value);
+              await API.put('/api/shop/admin', { items });
+              App.toast('已保存', 'success');
+              loadShop();
+            } catch (e) { App.toast('JSON 解析失败', 'warn'); }
+          };
+        }
+
+        async function load() {
+          try {
+            const d = await API.Economy.me();
+            economy = d.economy;
+            renderStats(); renderCheckin();
+          } catch (e) { App.toastError(e); }
+          loadShop(); loadVouchers(); renderMyFrames();
+          loadCalendar(); loadTitles(); loadDecor(); loadLevels(); loadOrders(); loadGiftWall();
+        }
+        load();
+      }
+    });
+  </script>
+</body>
+</html>

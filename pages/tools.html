@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>小工具 · MarytOpens</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+
+  <meta name="theme-color" content="#6366f1">
+  <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.json">
+  <script>
+    (function() {
+      const apiMeta = document.querySelector('meta[name="mo-api"]');
+      const api = (apiMeta && apiMeta.content) || 'https://api.example.com';
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js?api=' + encodeURIComponent(api)).then(function(reg) {
+          reg.addEventListener('updatefound', function() {
+            const wb = reg.installing;
+            if (wb) wb.addEventListener('statechange', function() {
+              if (wb.state === 'activated') wb.postMessage({ type: 'mo-skip-waiting' });
+            });
+          });
+        }).catch(function() {});
+      }
+    })();
+  </script>
+<link rel="stylesheet" href="/assets/css/main.css">
+<script>(function(){var t=localStorage.getItem('mo_theme');var d=t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light');})();</script>
+</head>
+<body>
+
+<header id="navbar"></header>
+
+<main class="container container-mid py-6">
+  <div class="page-head">
+    <h1 data-i18n="nav.tools">小工具</h1>
+    <p class="muted">无聊的时候来玩玩，或者顺手用用这些小工具。</p>
+  </div>
+
+  <section class="card card-pad mb-4" id="featuredTools" style="display:none"></section>
+
+  <div class="tools-grid" id="toolsGrid">
+
+    <!-- 掷骰子 -->
+    <section class="card card-pad tool-card">
+      <div class="tool-head">
+        <span class="tool-ico" id="icoDice"></span>
+        <h3 data-i18n="tools.dice">掷骰子</h3>
+      </div>
+      <p class="muted" data-i18n="tools.diceDesc">选好骰子数量与面数，点一下试试手气。</p>
+      <div class="tool-row">
+        <label class="mini-label" data-i18n="tools.count">数量</label>
+        <select class="select" id="diceCount">
+          <option value="1">1 颗</option><option value="2">2 颗</option><option value="3">3 颗</option>
+          <option value="4">4 颗</option><option value="5">5 颗</option>
+        </select>
+        <label class="mini-label" data-i18n="tools.dice">面数</label>
+        <select class="select" id="diceSides">
+          <option value="4">D4</option><option value="6" selected>D6</option><option value="8">D8</option>
+          <option value="10">D10</option><option value="12">D12</option><option value="20">D20</option><option value="100">D100</option>
+        </select>
+      </div>
+      <button class="btn btn-primary mt-3" id="diceRoll" data-i18n="tools.dice">掷骰子</button>
+      <div class="tool-result" id="diceResult">—</div>
+    </section>
+
+    <!-- 抛硬币 -->
+    <section class="card card-pad tool-card">
+      <div class="tool-head">
+        <span class="tool-ico" id="icoCoin"></span>
+        <h3 data-i18n="tools.coin">抛硬币</h3>
+      </div>
+      <p class="muted" data-i18n="tools.coinDesc">正反面，命运的选择。</p>
+      <button class="btn btn-primary mt-3" id="coinFlip" data-i18n="tools.coin">抛一下</button>
+      <div class="tool-result" id="coinResult">—</div>
+    </section>
+
+    <!-- 随机抽签 -->
+    <section class="card card-pad tool-card">
+      <div class="tool-head">
+        <span class="tool-ico" id="icoPick"></span>
+        <h3 data-i18n="tools.picker">随机抽签</h3>
+      </div>
+      <p class="muted" data-i18n="tools.pickerDesc">每行一个选项，抽中谁就是谁。</p>
+      <textarea class="textarea" id="pickList" rows="5" placeholder="张三&#10;李四&#10;王五"></textarea>
+      <button class="btn btn-primary mt-3" id="pickBtn" data-i18n="tools.picker">抽一个</button>
+      <div class="tool-result" id="pickResult">—</div>
+    </section>
+
+    <!-- 今天吃什么 -->
+    <section class="card card-pad tool-card">
+      <div class="tool-head">
+        <span class="tool-ico" id="icoEat"></span>
+        <h3 data-i18n="tools.eat">今天吃什么</h3>
+      </div>
+      <p class="muted" data-i18n="tools.eatDesc">选择困难症救星。可自定义菜单。</p>
+      <textarea class="textarea" id="eatList" rows="4" placeholder="火锅&#10;烧烤&#10;麻辣烫&#10;沙拉&#10;泡面"></textarea>
+      <button class="btn btn-primary mt-3" id="eatBtn" data-i18n="tools.eat">帮我决定</button>
+      <div class="tool-result" id="eatResult">—</div>
+    </section>
+
+    <!-- 文字计数 -->
+    <section class="card card-pad tool-card">
+      <div class="tool-head">
+        <span class="tool-ico" id="icoCount"></span>
+        <h3 data-i18n="tools.counter">文字计数</h3>
+      </div>
+      <p class="muted" data-i18n="tools.counterDesc">字数、字符数、行数一目了然。</p>
+      <textarea class="textarea" id="countInput" rows="4" placeholder="在这里粘贴或输入文字…"></textarea>
+      <div class="count-grid" id="countOut">
+        <div><b id="cntChars">0</b><span data-i18n="tools.counter">字符</span></div>
+        <div><b id="cntNoSpace">0</b><span>去空格</span></div>
+        <div><b id="cntWords">0</b><span>词</span></div>
+        <div><b id="cntLines">0</b><span>行</span></div>
+      </div>
+    </section>
+
+    <!-- 随机颜色 -->
+    <section class="card card-pad tool-card">
+      <div class="tool-head">
+        <span class="tool-ico" id="icoColor"></span>
+        <h3 data-i18n="tools.color">随机颜色</h3>
+      </div>
+      <p class="muted" data-i18n="tools.colorDesc">生成十六进制色值，点一下复制。</p>
+      <button class="btn btn-primary mt-3" id="colorBtn" data-i18n="tools.color">来个颜色</button>
+      <div class="tool-result tool-color-row" id="colorResult">
+        <span class="color-swatch" id="colorSwatch"></span>
+        <code id="colorHex">#------</code>
+      </div>
+    </section>
+
+    <!-- Markdown 预览 -->
+    <section class="card card-pad tool-card tool-wide">
+      <div class="tool-head">
+        <span class="tool-ico" id="icoMd"></span>
+        <h3 data-i18n="tools.markdown">Markdown 预览</h3>
+      </div>
+      <p class="muted" data-i18n="tools.markdownDesc">左边写，右边实时渲染。和反馈弹窗用的是同一套解析。</p>
+      <div class="md-split">
+        <textarea class="textarea" id="mdInput" rows="8" placeholder="## 标题&#10;- 列表项&#10;**加粗** 与 `代码`"></textarea>
+        <div class="md-preview" id="mdPreview"><span class="muted">预览将显示在这里</span></div>
+      </div>
+    </section>
+
+    <!-- 密码生成器 -->
+    <section class="card card-pad tool-card">
+      <div class="tool-head">
+        <span class="tool-ico" id="icoPwd"></span>
+        <h3 data-i18n="tools.password">密码生成器</h3>
+      </div>
+      <p class="muted" data-i18n="tools.passwordDesc">生成高强度随机密码，可自定义长度与字符集。</p>
+      <div class="tool-row">
+        <label class="mini-label" data-i18n="tools.passwordLen">长度</label>
+        <input class="input input-sm" id="pwdLen" type="number" min="4" max="64" value="16" style="max-width:80px">
+      </div>
+      <div class="check-row" id="pwdOpts">
+        <label><input type="checkbox" id="pwdUpper" checked> <span data-i18n="tools.upper">大写</span></label>
+        <label><input type="checkbox" id="pwdLower" checked> <span data-i18n="tools.lower">小写</span></label>
+        <label><input type="checkbox" id="pwdNum" checked> <span>0-9</span></label>
+        <label><input type="checkbox" id="pwdSym" checked> <span>符号</span></label>
+      </div>
+      <button class="btn btn-primary mt-3" id="pwdGen" data-i18n="tools.generate">生成</button>
+      <div class="tool-result"><code id="pwdResult" class="mono select-all">—</code></div>
+    </section>
+
+    <!-- UUID 生成器 -->
+    <section class="card card-pad tool-card">
+      <div class="tool-head">
+        <span class="tool-ico" id="icoUuid"></span>
+        <h3 data-i18n="tools.uuid">UUID 生成器</h3>
+      </div>
+      <p class="muted" data-i18n="tools.uuidDesc">生成 UUID v4，适合当主键或追踪 ID。</p>
+      <div class="tool-row">
+        <label class="mini-label" data-i18n="tools.count">数量</label>
+        <input class="input input-sm" id="uuidCount" type="number" min="1" max="20" value="3" style="max-width:80px">
+      </div>
+      <button class="btn btn-primary mt-3" id="uuidGen" data-i18n="tools.generate">生成</button>
+      <div class="tool-result" id="uuidResult">—</div>
+    </section>
+
+    <!-- 时间戳转换 -->
+    <section class="card card-pad tool-card">
+      <div class="tool-head">
+        <span class="tool-ico" id="icoTs"></span>
+        <h3 data-i18n="tools.timestamp">时间戳转换</h3>
+      </div>
+      <p class="muted" data-i18n="tools.timestampDesc">Unix 时间戳与本地时间互转。</p>
+      <div class="tool-row">
+        <input class="input input-sm" id="tsInput" type="number" placeholder="1700000000">
+        <button class="btn btn-soft btn-sm" id="tsNow" data-i18n="tools.now">现在</button>
+      </div>
+      <div class="tool-result" id="tsResult">—</div>
+    </section>
+
+    <!-- 文本大小写转换 -->
+    <section class="card card-pad tool-card">
+      <div class="tool-head">
+        <span class="tool-ico" id="icoCase"></span>
+        <h3 data-i18n="tools.case">文本大小写转换</h3>
+      </div>
+      <p class="muted" data-i18n="tools.caseDesc">一键转换大小写 / 标题化 / 句首大写。</p>
+      <textarea class="textarea" id="caseInput" rows="3" placeholder="hello WORLD"></textarea>
+      <div class="row mt-2" style="gap:6px;flex-wrap:wrap">
+        <button class="btn btn-soft btn-sm" data-case="upper" data-i18n="tools.upper">大写</button>
+        <button class="btn btn-soft btn-sm" data-case="lower" data-i18n="tools.lower">小写</button>
+        <button class="btn btn-soft btn-sm" data-case="title" data-i18n="tools.titleCase">标题化</button>
+        <button class="btn btn-soft btn-sm" data-case="sentence" data-i18n="tools.sentence">句首大写</button>
+      </div>
+      <div class="tool-result"><code id="caseResult" class="mono select-all">—</code></div>
+    </section>
+
+    <!-- 进制转换 -->
+    <section class="card card-pad tool-card">
+      <div class="tool-head">
+        <span class="tool-ico" id="icoBase"></span>
+        <h3 data-i18n="tools.base">进制转换</h3>
+      </div>
+      <p class="muted" data-i18n="tools.baseDesc">十进制 / 十六进制 / 二进制互转。</p>
+      <div class="tool-row">
+        <select class="select" id="baseFrom">
+          <option value="10" selected>十进制</option>
+          <option value="16">十六进制</option>
+          <option value="2">二进制</option>
+        </select>
+        <span class="muted">→</span>
+        <select class="select" id="baseTo">
+          <option value="16">十六进制</option>
+          <option value="2">二进制</option>
+          <option value="10" selected>十进制</option>
+        </select>
+      </div>
+      <input class="input mt-2" id="baseInput" placeholder="255">
+      <div class="tool-result" id="baseResult">—</div>
+    </section>
+
+  </div>
+</main>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/app.js"></script>
+<script src="/assets/js/tools.js"></script>
+<script>
+async function loadFeaturedTools() {
+  const box = document.getElementById('featuredTools');
+  try {
+    const d = await API.Tools.list();
+    const list = (d.tools || []).filter((t) => t && t.public !== false);
+    if (!list.length) { box.style.display = 'none'; return; }
+    box.style.display = '';
+    let html = '<div class="row-between" style="gap:8px;margin-bottom:10px"><b data-i18n="tools.featured">推荐工具</b>' +
+      (App.Session && App.Session.isSuperAdmin ? '<button class="btn btn-soft btn-sm" id="btnManageTools">'+I18N.t('tools.manage')+'</button>' : '') + '</div>' +
+      '<div class="featured-grid">';
+    html += list.map((t) => '<a class="featured-card" href="'+encodeURI(t.url||'#')+'">' +
+      '<span class="ft-ico">'+(t.icon||'🔧')+'</span>' +
+      '<div class="grow"><div class="ft-name">'+App.esc(t.name||'工具')+'</div>' +
+      '<div class="xsmall muted">'+App.esc(t.desc||'')+'</div></div>' +
+      '<span class="ft-go">'+App.icon('arrowRight')+'</span></a>').join('');
+    html += '</div>';
+    box.innerHTML = html; I18N.apply(box);
+    const bm = document.getElementById('btnManageTools');
+    if (bm) bm.onclick = openToolsManager;
+  } catch (e) { box.style.display = 'none'; }
+}
+
+function openToolsManager() {
+  const body = document.createElement('div');
+  body.innerHTML = '<p class="muted small">工具目录由后台 site_meta 的 tools 键驱动，可在此为该数组编辑 JSON。</p>' +
+    '<div class="field"><label class="label">tools (JSON)</label><textarea class="textarea mono" id="fTools" rows="10" placeholder=\'[{"id":"gateway","name":"本地网关","desc":"…","url":"/gateway.html","icon":"🛰️","public":true}]\'></textarea></div>';
+  App.modal({ title: I18N.t('tools.manage'), body, size: 'lg', okText: I18N.t('common.save'),
+    onOk: async () => {
+      let arr; try { arr = JSON.parse(document.getElementById('fTools').value); } catch (e) { App.toast.warn('JSON 格式错误'); return false; }
+      if (!Array.isArray(arr)) { App.toast.warn('必须是数组'); return false; }
+      await API.Tools.save({ tools: arr }); App.toast.success(I18N.t('common.saved')); loadFeaturedTools(); return true;
+    }
+  });
+}
+
+App.boot({ nav: 'tools', requireAuth: false, onReady: () => {
+  I18N.apply();
+  ToolsUI.init();
+  loadFeaturedTools();
+}});
+</script>
+<footer id="footer"></footer>
+</body>
+</html>
