@@ -1825,6 +1825,7 @@
           '</div></div>' +
           '<div><h5>' + T('nav.about') + '</h5><div class="footer-links">' +
             '<a href="/about.html">' + T('about.title') + '</a>' +
+            '<a href="/instances.html">' + T('nav.instances', '使用情况') + '</a>' +
             '<a href="/index.html">' + T('landing.about') + '</a>' +
             custom.map((l) => '<a href="' + esc(l.url) + '"' + (l.target === '_blank' ? ' target="_blank" rel="noopener"' : '') + '>' + esc(l.label) + '</a>').join('') +
           '</div></div>' +

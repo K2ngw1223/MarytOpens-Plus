@@ -10334,6 +10334,74 @@ async function registryRegister(env) {
   }
 }
 
+/* —— 通道 4：把登记仓库里的 Issue 聚合成「谁在用」列表 —— */
+
+const INSTANCES_KEY = 'sys:instances-cache';
+const INSTANCES_TTL = 10 * 60 * 1000;   // 10 分钟，别把 GitHub 的匿名配额打满
+
+/** 从登记 Issue 里抽出站点信息。标题形如 `[deploy] 站点名 · api域名` */
+function parseRegistryIssue(issue) {
+  const title = String(issue.title || '');
+  const m = title.match(/^\[deploy\]\s*(.+?)\s*·\s*(.+)$/);
+  const body = String(issue.body || '');
+  const pick = (label) => {
+    const mm = body.match(new RegExp('\\|\\s*' + label + '\\s*\\|\\s*([^|]+?)\\s*\\|'));
+    return mm ? mm[1].trim() : '';
+  };
+  return {
+    siteName: m ? m[1] : (pick('站点名') || '未命名站点'),
+    apiOrigin: m ? m[2] : pick('API'),
+    siteOrigin: pick('前端'),
+    instanceId: pick('实例').replace(/`/g, ''),
+    version: pick('版本').replace(/^v/, ''),
+    registeredAt: pick('首次登记'),
+    lastSeenAt: issue.updated_at || issue.created_at || '',
+    issueUrl: issue.html_url || '',
+  };
+}
+
+router.get('/api/instances', async (ctx) => {
+  const { env } = ctx;
+  const cfg = registryConfig(env);
+  if (!cfg.repo) return fail(503, 'REGISTRY_OFF', '本站没有配置登记仓库', ctx);
+
+  const cached = await KV.getJSON(env, INSTANCES_KEY).catch(() => null);
+  if (cached?.at && Date.now() - cached.at < INSTANCES_TTL) {
+    return ok({ ...cached.data, cached: true });
+  }
+
+  let list;
+  try {
+    const headers = { 'Accept': 'application/vnd.github+json', 'User-Agent': 'marytopens-registry' };
+    if (cfg.token) headers['Authorization'] = `Bearer ${cfg.token}`;
+    const res = await fetch(
+      `https://api.github.com/repos/${cfg.repo}/issues?state=all&per_page=100&sort=updated`,
+      { headers });
+    if (!res.ok) throw new Error(`GitHub ${res.status}`);
+    const arr = await res.json();
+    list = (Array.isArray(arr) ? arr : [])
+      .filter((i) => !i.pull_request && /^\[deploy\]/.test(String(i.title || '')))
+      .map(parseRegistryIssue);
+  } catch (e) {
+    console.log('[instances] 拉取登记失败：', e?.message || e);
+    if (cached?.data) return ok({ ...cached.data, cached: true, stale: true });
+    return fail(502, 'UPSTREAM_FAIL', '读取登记仓库失败', ctx);
+  }
+
+  const data = {
+    count: list.length,
+    repo: cfg.repo,
+    repoUrl: `https://github.com/${cfg.repo}`,
+    updatedAt: nowMs(),
+    instances: list,
+  };
+  try {
+    await KV.putJSON(env, INSTANCES_KEY, { at: Date.now(), data }, { expirationTtl: 3600 });
+  } catch { /* 缓存写失败不影响返回 */ }
+  return ok(data);
+});
+
+
 /* ========================================================================== *
  * 21. 主入口
  * ========================================================================== */

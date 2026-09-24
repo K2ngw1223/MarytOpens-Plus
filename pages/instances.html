@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="MarytOpens 项目使用情况">
+  <title>使用情况 · MarytOpens</title>
+  <link rel="stylesheet" href="/assets/css/main.css">
+  <link rel="icon" href="/favicon.ico">
+</head>
+<body>
+  <header id="navbar"></header>
+  <main class="container container-mid" style="padding-top:24px;padding-bottom:60px">
+    <div class="section-head">
+      <div class="eyebrow">Instances</div>
+      <h1>使用情况</h1>
+      <p class="muted">MarytOpens 是开源项目。下面是采用它的站点，以及本站自身的规模。</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:20px">
+      <div class="card card-pad">
+        <div class="muted xsmall">部署实例</div>
+        <div id="nInstances" style="font-size:28px;font-weight:700;margin-top:4px">—</div>
+      </div>
+      <div class="card card-pad">
+        <div class="muted xsmall">本站注册用户</div>
+        <div id="nUsers" style="font-size:28px;font-weight:700;margin-top:4px">—</div>
+      </div>
+      <div class="card card-pad">
+        <div class="muted xsmall">本站文章</div>
+        <div id="nPosts" style="font-size:28px;font-weight:700;margin-top:4px">—</div>
+      </div>
+    </div>
+
+    <div class="card card-pad" style="margin-bottom:16px">
+      <div class="row" style="align-items:center;gap:10px;flex-wrap:wrap">
+        <div class="grow" style="min-width:0">
+          <div class="muted xsmall">项目仓库</div>
+          <div id="repoLine" class="truncate" style="margin-top:2px">—</div>
+        </div>
+        <a id="repoBtn" class="btn btn-soft btn-sm" target="_blank" rel="noopener" href="https://github.com/YOUR_NAME/marytopens">查看仓库</a>
+      </div>
+    </div>
+
+    <div id="instList" class="card card-pad">
+      <div class="muted text-center">加载中…</div>
+    </div>
+  </main>
+  <footer id="footer"></footer>
+
+  <script src="/assets/js/i18n.js"></script>
+  <script src="/assets/js/api.js"></script>
+  <script src="/assets/js/app.js"></script>
+  <script>
+    const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const fmt = (d) => { try { return new Date(d).toLocaleDateString(); } catch (e) { return '—'; } };
+
+    App.boot();
+
+    /* 项目仓库地址：由 tools/configure.mjs 按 site.config.json 的 repoUrl 注入 */
+    const REPO_URL = 'https://github.com/YOUR_NAME/marytopens';
+    document.getElementById('repoLine').textContent = REPO_URL.replace(/^https?:\/\//, '');
+    document.getElementById('repoBtn').href = REPO_URL;
+
+    (async () => {
+      // 本站规模
+      try {
+        const m = await API.meta();
+        const s = m.stats || {};
+        document.getElementById('nUsers').textContent = I18N.formatNumber(s.users || 0);
+        document.getElementById('nPosts').textContent = I18N.formatNumber(s.posts || 0);
+      } catch (e) { /* 忽略 */ }
+
+      // 项目部署实例
+      const box = document.getElementById('instList');
+      try {
+        const d = await API.get('/api/instances');
+        document.getElementById('nInstances').textContent = I18N.formatNumber(d.count || 0);
+
+        const items = d.instances || [];
+        if (!items.length) {
+          box.innerHTML = '<div class="muted text-center">还没有已登记的实例。<br>' +
+            '<span class="xsmall">部署者开启登记后，站点会自动出现在这里。</span></div>';
+          return;
+        }
+        box.innerHTML =
+          '<div class="row" style="justify-content:space-between;align-items:center;margin-bottom:10px">' +
+            '<b>已登记的站点</b>' +
+            '<span class="muted xsmall">更新于 ' + fmt(d.updatedAt) + (d.cached ? '（缓存）' : '') + '</span>' +
+          '</div>' +
+          items.map((it) => {
+            const host = esc((it.siteOrigin || it.apiOrigin || '').replace(/^https?:\/\//, '')) || '未知域名';
+            const link = it.siteOrigin || it.apiOrigin || '';
+            return '<div class="list-row" style="display:flex;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--border)">' +
+              '<div class="grow" style="min-width:0">' +
+                '<div class="bold truncate">' + esc(it.siteName) + '</div>' +
+                '<div class="xsmall muted truncate">' + host + (it.version ? ' · v' + esc(it.version) : '') + '</div>' +
+              '</div>' +
+              '<div class="xsmall muted" style="white-space:nowrap">' + fmt(it.lastSeenAt) + '</div>' +
+              (link ? '<a class="btn btn-soft btn-sm" href="' + esc(link) + '" target="_blank" rel="noopener">访问</a>' : '') +
+            '</div>';
+          }).join('');
+      } catch (e) {
+        const off = e && e.code === 'REGISTRY_OFF';
+        box.innerHTML = '<div class="muted text-center">' +
+          (off ? '本站未配置登记仓库，暂时无法展示实例列表。' : '加载失败。') + '</div>';
+      }
+    })();
+  </script>
+</body>
+</html>

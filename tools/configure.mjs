@@ -27,6 +27,7 @@ const PLACEHOLDER = {
   wwwOrigin: 'https://www.example.com',
   supportEmail: 'admin@example.com',
   noReplyEmail: 'no-reply@example.com',
+  repoUrl: 'https://github.com/YOUR_NAME/marytopens',
 };
 
 const TEXT_EXTS = new Set(['.js', '.mjs', '.html', '.json', '.toml', '.md', '.py', '.css', '.example', '.txt']);
@@ -62,6 +63,7 @@ const derived = {
   wwwOrigin: siteOrigin.replace(/^(https?:\/\/)/, '$1www.'),
   supportEmail,
   noReplyEmail: `no-reply@${host(siteOrigin)}`,
+  repoUrl: origin(cfg.repoUrl),
 };
 
 const prev = cfg._applied || {};
@@ -138,6 +140,7 @@ function buildPairs() {
     [PLACEHOLDER.wwwOrigin, derived.wwwOrigin, prev.siteOrigin && prev.siteOrigin.replace(/^(https?:\/\/)/, '$1www.')],
     [PLACEHOLDER.siteOrigin, derived.siteOrigin, prev.siteOrigin],
     [PLACEHOLDER.siteOrigin.replace(/^https?:\/\//, ''), host(derived.siteOrigin), prev.siteOrigin && host(prev.siteOrigin)],
+    [PLACEHOLDER.repoUrl, derived.repoUrl, prev.repoUrl],
   ];
   const seen = new Set();
   return pairs.filter(([from, to, old]) => {
