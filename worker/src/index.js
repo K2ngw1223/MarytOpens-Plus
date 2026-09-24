@@ -10384,8 +10384,17 @@ router.get('/api/instances', async (ctx) => {
       .map(parseRegistryIssue);
   } catch (e) {
     console.log('[instances] 拉取登记失败：', e?.message || e);
+    // 有旧缓存就先用旧的；没有则返回空列表 + 提示，而不是让前端报错
     if (cached?.data) return ok({ ...cached.data, cached: true, stale: true });
-    return fail(502, 'UPSTREAM_FAIL', '读取登记仓库失败', ctx);
+    return ok({
+      count: 0,
+      repo: cfg.repo,
+      repoUrl: `https://github.com/${cfg.repo}`,
+      updatedAt: nowMs(),
+      degraded: true,
+      message: '暂时读不到登记仓库（多为 GitHub 接口限流）。配置 GITHUB_REGISTRY_TOKEN 可大幅提高限额。',
+      instances: [],
+    });
   }
 
   const data = {
